@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuxMeet - Encontros Premium</title>
+  <meta name="description" content="LuxMeet - O app de relacionamentos para pessoas sofisticadas">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Navbar Premium -->
+  <nav class="lux-navbar">
+    <div class="lux-nav-container">
+      <div class="lux-nav-brand">
+        <span class="lux-logo">LuxMeet</span>
+      </div>
+      
+      <div class="lux-nav-items">
+        <a href="#" class="lux-nav-item active" data-section="dashboard">
+          <i class="fas fa-home"></i>
+          <span>Início</span>
+        </a>
+        
+        <a href="#" class="lux-nav-item" data-section="discover">
+          <i class="fas fa-search"></i>
+          <span>Descobrir</span>
+        </a>
+        <a href="#" class="lux-nav-item" data-section="news">
+  <i class="fas fa-newspaper"></i>
+  <span>Novidades</span>
+</a>
+
+        <a href="#" class="lux-nav-item" data-section="matches">
+          <i class="fas fa-heart"></i>
+          <span>Matches</span>
+          <span class="lux-badge">3</span>
+        </a>
+        
+        <a href="#" class="lux-nav-item" data-section="messages">
+          <i class="fas fa-envelope"></i>
+          <span>Mensagens</span>
+          <span class="lux-badge">5</span>
+        </a>
+        
+        <a href="#" class="lux-nav-item" data-section="profile">
+          <i class="fas fa-user"></i>
+          <span>Perfil</span>
+        </a>
+      </div>
+      
+      <div class="lux-nav-footer">
+        <a href="#" class="lux-settings-btn">
+          <i class="fas fa-cog"></i>
+          <span>Configurações</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Conteúdo Principal -->
+  <main class="lux-main-content">
+    <!-- Seção do Perfil do Usuário -->
+    <header class="lux-profile-header">
+      <div class="lux-profile-info">
+        <div class="lux-avatar-container">
+<img id="userAvatar" class="lux-user-avatar" src="https://via.placeholder.com/150" alt="Foto do perfil">          <span class="lux-online-status"></span>
+        </div>
+        <div class="lux-user-details">
+          <h1 id="userName">Carregando...</h1>
+          <p id="userTitle">Membro LuxMeet</p>
+          <div class="lux-user-stats">
+            <div class="lux-stat">
+              <span class="lux-stat-value" id="matchCount">0</span>
+              <span class="lux-stat-label">Matches</span>
+            </div>
+            <div class="lux-stat">
+              <span class="lux-stat-value" id="viewCount">0</span>
+              <span class="lux-stat-label">Visualizações</span>
+            </div>
+          <div class="lux-stat lux-stat-interactive" title="Curtidas recebidas no seu perfil">
+  <span class="lux-stat-value" id="likesCount">0</span>
+  <span class="lux-stat-label">Curtidas</span>
+  <div class="lux-pulse-animation" id="likesPulse" style="display:none;"></div>
+</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="lux-profile-actions">
+        <button class="lux-btn lux-btn-primary" id="upgradeBtn">
+          <i class="fas fa-crown"></i> Upgrade VIP
+        </button>
+        <button class="lux-btn lux-btn-secondary" id="editProfileBtn">
+          <i class="fas fa-edit"></i> Editar Perfil
+        </button>
+      </div>
+    </header>
+
+    <!-- Seções de Conteúdo -->
+    <div class="lux-content-sections">
+      <!-- Seção de Descobrir Pessoas -->
+     <section id="discoverSection" class="section">
+  <div class="lux-section-header">
+    <h2>Descobrir Pessoas</h2>
+    <div class="lux-filter-controls">
+      <select id="discoverFilter" class="lux-select" onchange="loadDiscoverUsers()">
+        <option value="all">Todos</option>
+        <option value="sugar_daddy">Sugar Daddies</option>
+        <option value="sugar_mommy">Sugar Mommies</option>
+        <option value="sugar_baby">Sugar Babies</option>
+      </select>
+      <button class="lux-btn lux-btn-icon" onclick="refreshDiscover()">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+  </div>
+  
+  <div class="lux-user-grid" id="discoverGrid"></div>
+</section>
+
+      <!-- Seção de Novidades -->
+<section class="lux-section" id="newsSection" style="display:none;">
+  <div class="lux-section-header">
+    <h2>Novidades</h2>
+  </div>
+
+  <!-- Formulário de postagem -->
+  <div class="lux-post-form">
+    <input type="text" id="newsTitle" placeholder="Título" class="lux-input">
+    <textarea id="newsText" rows="3" placeholder="O que há de novo?" class="lux-textarea"></textarea>
+    <input type="file" id="newsImage" accept="image/*">
+    <button class="lux-btn lux-btn-primary" id="newsPostBtn">
+      <i class="fas fa-paper-plane"></i> Publicar
+    </button>
+  </div>
+
+  <!-- Feed -->
+  <div id="newsFeed" class="lux-news-feed"></div>
+</section>
+
+      <!-- Seção de Matches -->
+      <section class="lux-section" id="matchesSection" style="display: none;">
+        <div class="lux-section-header">
+          <h2>Seus Matches</h2>
+          <button class="lux-btn lux-btn-primary">
+            Ver Todos
+          </button>
+        </div>
+        
+        <div class="lux-matches-container" id="matchesContainer">
+          <!-- Matches serão carregados aqui -->
+        </div>
+      </section>
+
+      <!-- Seção de Mensagens -->
+      <section class="lux-section" id="messagesSection" style="display: none;">
+        <div class="lux-section-header">
+          <h2>Suas Mensagens</h2>
+          <button class="lux-btn lux-btn-primary">
+            Nova Mensagem
+          </button>
+        </div>
+        
+        <div class="lux-messages-list" id="messagesList">
+          <!-- Mensagens serão carregadas aqui -->
+        </div>
+      </section>
+
+      <!-- Seção de Perfil -->
+      <section class="lux-section" id="profileSection" style="display: none;">
+        <!-- Conteúdo do perfil será carregado aqui -->
+      </section>
+    </div>
+  </main>
+
+  <!-- Modais -->
+  <div class="lux-modal" id="profileModal">
+    <div class="lux-modal-content">
+      <span class="lux-modal-close">&times;</span>
+      <div class="lux-modal-header">
+        <h2>Perfil Completo</h2>
+      </div>
+      <div class="lux-modal-body" id="profileModalContent">
+        <!-- Conteúdo do modal de perfil -->
+      </div>
+    </div>
+  </div>
+
+ <div class="lux-news-card">
+  <h3 class="lux-news-title">Título da Postagem</h3>
+
+  <img src="url-da-imagem.jpg" alt="descrição" class="lux-news-img">
+
+  <p class="lux-news-desc">
+    Breve descrição ou texto da postagem. A fonte é discreta e legível,
+    mantendo o aspecto premium.
+  </p>
+
+  <div class="lux-news-card">
+  <h3 class="lux-news-title">{{title}}</h3>
+
+  <img src="{{imageURL}}" class="lux-news-img" alt="imagem">
+
+  <p class="lux-news-desc">{{description}}</p>
+
+  <!-- AÇÕES (likes, dislikes, abrir comentários) -->
+  <div class="lux-news-actions">
+    <!-- botões ... -->
+  </div>
+<div class="lux-comments-container" id="comments-container-${postId}">
+
+  <!-- COMENTÁRIOS -->
+  <form class="lux-comment-form" id="comment-form-${postId}">
+  <input type="text" class="lux-comment-input" placeholder="Escreva um comentário..." required>
+  <button type="submit" class="lux-comment-submit">
+    <i class="fas fa-paper-plane"></i>
+  </button>
+</form>
+</div>
+</div>
+
+
+<!-- Modal de Curtidas -->
+<div id="likesModal" class="lux-modal">
+  <div class="lux-modal-content" style="max-width: 400px;">
+    <span class="lux-modal-close">&times;</span>
+    <h3>Quem curtiu você</h3>
+    <div class="lux-likes-list" id="likesList">
+      <!-- Lista de usuários será injetada aqui -->
+    </div>
+  </div>
+</div>
+
+
+  <!-- Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

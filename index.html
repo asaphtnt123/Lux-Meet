@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuxMeet | Conexões Premium</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <style>
+        /* --- Reset & Base Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* --- Animação de Fundo --- */
+        .circles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            overflow: hidden;
+        }
+
+        .circles li {
+            position: absolute;
+            display: block;
+            list-style: none;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            animation: animate 25s linear infinite;
+            bottom: -150px;
+            border-radius: 50%;
+        }
+
+        @keyframes animate {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Cria 10 círculos com posições e tamanhos diferentes */
+        .circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
+        .circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
+        .circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
+        .circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
+        .circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
+        .circles li:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
+        .circles li:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
+        .circles li:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
+        .circles li:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
+        .circles li:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
+
+        /* --- Container Principal --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- Logo e Slogan --- */
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            color: #FFD700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .slogan {
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* --- Botões --- */
+        .auth-buttons {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background-color: #FFD700;
+            color: #000;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #FFD700;
+            border: 2px solid #FFD700;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* --- Modais --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: #111;
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid #FFD700;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            animation: modalFadeIn 0.3s;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close {
+            color: #aaa;
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: #FFD700;
+        }
+
+        /* --- Formulários --- */
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #FFD700;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #FFD700;
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+        }
+
+        .form-title {
+            color: #FFD700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 1.8rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background-color: #FFD700;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            background-color: #ffcc00;
+            transform: translateY(-2px);
+        }
+
+        .form-footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .form-footer a {
+            color: #FFD700;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Responsividade --- */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .slogan {
+                font-size: 1rem;
+            }
+
+            .auth-buttons {
+                flex-direction: column;
+                gap: 1rem;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Bolhas Animadas -->
+    <ul class="circles">
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+    </ul>
+
+    <!-- Conteúdo Principal -->
+    <div class="container">
+        <h1 class="logo">LuxMeet</h1>
+        <p class="slogan">Where Elite Connections Begin</p>
+        
+        <div class="auth-buttons">
+            <button id="open-login" class="btn btn-primary">Login</button>
+            <button id="open-cadastro" class="btn btn-secondary">Cadastre-se</button>
+        </div>
+    </div>
+
+    <!-- Modal de Login -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close close-login">&times;</span>
+            <h2 class="form-title">Acesse sua conta</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">E-mail</label>
+                    <input type="email" id="login-email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Senha</label>
+                    <input type="password" id="login-password" class="form-control" required>
+                </div>
+                <button type="submit" class="submit-btn">Entrar</button>
+                <div class="form-footer">
+                    Não tem uma conta? <a href="#" id="switch-to-cadastro">Cadastre-se</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Cadastro -->
+    <div id="cadastro-modal" class="modal">
+        <div class="modal-content">
+            <span class="close close-cadastro">&times;</span>
+            <h2 class="form-title">Crie sua conta</h2>
+            <form id="cadastro-form">
+                <div class="form-group">
+                    <label for="name">Nome Completo</label>
+                    <input type="text" id="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" class="form-control" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="date_of_birth">Data de Nascimento</label>
+                    <input type="date" id="date_of_birth" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">Gênero</label>
+                    <select id="gender" class="form-control" required>
+                        <option value="">Selecione</option>
+                        <option value="male">Masculino</option>
+                        <option value="female">Feminino</option>
+                        <option value="other">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipouser">Tipo de Usuário</label>
+                    <select id="tipouser" class="form-control" required onchange="toggleInterestFields()">
+                        <option value="">Selecione</option>
+                        <option value="sugar_daddy">Sugar Daddy/Mom</option>
+                        <option value="sugar_baby">Sugar Baby</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="income">Renda Mensal (aproximada)</label>
+                    <select id="income" class="form-control">
+                        <option value="">Selecione</option>
+                        <option value="0-5000">Até R$ 5.000</option>
+                        <option value="5000-15000">R$ 5.000 - R$ 15.000</option>
+                        <option value="15000-30000">R$ 15.000 - R$ 30.000</option>
+                        <option value="30000+">Acima de R$ 30.000</option>
+                    </select>
+                </div>
+                <div class="form-group" id="interestFields" style="display: none;">
+                    <label for="interest_in">Interessado(a) em</label>
+                    <select id="interest_in" class="form-control">
+                        <option value="">Selecione</option>
+                        <option value="male">Homens</option>
+                        <option value="female">Mulheres</option>
+                        <option value="both">Ambos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="cidade">Cidade</label>
+                    <input type="text" id="cidade" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="bio">Sobre você</label>
+                    <textarea id="bio" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="profile_photo">Foto de Perfil</label>
+                    <input type="file" id="profile_photo" class="form-control" accept="image/*" required>
+                </div>
+                <button type="submit" class="submit-btn">Cadastrar</button>
+                <div class="form-footer">
+                    Já tem uma conta? <a href="#" id="switch-to-login">Faça login</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-7HOp-Ycvyf3b_03ev__8aJEwAbWSQZY",
+            authDomain: "connectfamilia-312dc.firebaseapp.com",
+            projectId: "connectfamilia-312dc",
+            storageBucket: "connectfamilia-312dc.appspot.com",
+            messagingSenderId: "797817838649",
+            appId: "1:797817838649:web:1aa7c54abd97661f8d81e8",
+            measurementId: "G-QKN9NFXZZQ"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // Função para alternar entre modais
+        document.getElementById('switch-to-cadastro').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('login-modal').style.display = 'none';
+            document.getElementById('cadastro-modal').style.display = 'block';
+        });
+
+        document.getElementById('switch-to-login').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('cadastro-modal').style.display = 'none';
+            document.getElementById('login-modal').style.display = 'block';
+        });
+
+        // Função para exibir/esconder campos de interesse
+        function toggleInterestFields() {
+            const tipouser = document.getElementById('tipouser').value;
+            const interestFields = document.getElementById('interestFields');
+            
+            if (tipouser === 'sugar_baby') {
+                interestFields.style.display = 'block';
+                document.getElementById('interest_in').setAttribute('required', 'true');
+            } else {
+                interestFields.style.display = 'none';
+                document.getElementById('interest_in').removeAttribute('required');
+            }
+        }
+
+        // Funções para abrir/fechar modais
+        document.getElementById('open-login').addEventListener('click', function() {
+            document.getElementById('login-modal').style.display = 'block';
+        });
+
+        document.getElementById('open-cadastro').addEventListener('click', function() {
+            document.getElementById('cadastro-modal').style.display = 'block';
+        });
+
+        document.querySelector('.close-login').addEventListener('click', function() {
+            document.getElementById('login-modal').style.display = 'none';
+        });
+
+        document.querySelector('.close-cadastro').addEventListener('click', function() {
+            document.getElementById('cadastro-modal').style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        });
+
+        // Formulário de Cadastro
+        document.getElementById('cadastro-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const dateOfBirth = document.getElementById('date_of_birth').value;
+            const gender = document.getElementById('gender').value;
+            const tipouser = document.getElementById('tipouser').value;
+            const income = document.getElementById('income').value;
+            const cidade = document.getElementById('cidade').value;
+            const bio = document.getElementById('bio').value;
+            const interestIn = tipouser === 'sugar_baby' ? document.getElementById('interest_in').value : null;
+            const profilePhoto = document.getElementById('profile_photo').files[0];
+
+            // Validação básica
+            if (!profilePhoto) {
+                alert('Por favor, selecione uma foto de perfil');
+                return;
+            }
+
+            // Upload da foto de perfil
+            const storageRef = storage.ref();
+            const profilePhotoRef = storageRef.child(`profile_photos/${email}/${profilePhoto.name}`);
+            
+            profilePhotoRef.put(profilePhoto)
+                .then(snapshot => snapshot.ref.getDownloadURL())
+                .then(photoURL => {
+                    // Criar usuário no Authentication
+                    return auth.createUserWithEmailAndPassword(email, password)
+                        .then(userCredential => {
+                            const user = userCredential.user;
+                            
+                            // Salvar dados no Firestore
+                            return db.collection('users').doc(user.uid).set({
+                                userId: user.uid,
+                                name: name,
+                                email: email,
+                                dateOfBirth: dateOfBirth,
+                                gender: gender,
+                                tipouser: tipouser,
+                                income: income,
+                                cidade: cidade,
+                                bio: bio,
+                                interestIn: interestIn,
+                                profilePhotoURL: photoURL,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        });
+                })
+                .then(() => {
+                    alert('Cadastro realizado com sucesso!');
+                    document.getElementById('cadastro-modal').style.display = 'none';
+                    document.getElementById('cadastro-form').reset();
+                })
+                .catch(error => {
+                    console.error('Erro no cadastro:', error);
+                    alert('Erro no cadastro: ' + error.message);
+                });
+        });
+
+        // Formulário de Login
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    alert('Login realizado com sucesso!');
+                    document.getElementById('login-modal').style.display = 'none';
+                    // Redirecionar para a página principal com o ID do usuário
+                    window.location.href = `homepage.html?userId=${userCredential.user.uid}`;
+                })
+                .catch(error => {
+                    console.error('Erro no login:', error);
+                    alert('Erro no login: ' + error.message);
+                });
+        });
+    </script>
+</body>
+</html>
