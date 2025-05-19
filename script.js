@@ -207,23 +207,6 @@ function updateProfileUI() {
     likesCount
   });
 }
-
-  // Atualiza os elementos da interface
-  document.getElementById('userName').textContent = name;
-  document.getElementById('matchCount').textContent = matches;
-  document.getElementById('viewCount').textContent = views;
-  document.getElementById('likesCount').textContent = likesCount; // Exibe apenas o número
-
-  // Atualiza título do usuário (código mantido igual)
-  const titles = {
-    sugar_daddy: 'Sugar Daddy',
-    sugar_mommy: 'Sugar Mommy',
-    sugar_baby: 'Sugar Baby',
-    member: 'Membro LuxMeet'
-  };
-  document.getElementById('userTitle').textContent = titles[tipouser] || 'Membro';
-}
-
 function updateUserAvatar() {
   const user = firebase.auth().currentUser;
   const avatarElement = document.getElementById('userAvatar');
