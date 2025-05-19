@@ -773,40 +773,62 @@ function startChat(userId) {
  * PERFIL / MODAL UI *
  *********************/
 
-function openProfileModal(profile) {
+function openProfileModal(profileData) {
   const modal = document.getElementById('profileModal');
-  const content = document.getElementById('profileModalContent');
-  
-  content.innerHTML = `
+  if (!modal) {
+    console.error('Elemento profileModal não encontrado no DOM');
+    return;
+  }
+
+  // Preenche o modal com os dados do perfil
+  const modalContent = `
     <div class="lux-profile-modal">
       <div class="lux-profile-modal-header">
-        <img src="${profile.profilePhotoURL || 'https://via.placeholder.com/150'}" 
+        <img src="${profileData.profilePhotoURL || 'https://via.placeholder.com/150'}" 
              class="lux-profile-modal-img" 
-             alt="${profile.name}"
+             alt="${profileData.name || 'Usuário'}"
              onerror="this.src='https://via.placeholder.com/150'">
-        <h2>${profile.name}</h2>
-        <p>${profile.tipouser || 'Membro'} • ${profile.age || ''} anos • ${profile.cidade || ''}</p>
+        <h2>${profileData.name || 'Usuário'}</h2>
+        <p>${profileData.tipouser || 'Membro'} • ${profileData.age || ''} anos • ${profileData.cidade || ''}</p>
       </div>
       <div class="lux-profile-modal-body">
         <h3>Sobre</h3>
-        <p>${profile.bio || 'Nenhuma biografia fornecida.'}</p>
+        <p>${profileData.bio || 'Nenhuma biografia fornecida.'}</p>
         
-        ${profile.interestIn ? `
+        ${profileData.interestIn ? `
         <h3>Interessado em</h3>
-        <p>${profile.interestIn}</p>
+        <p>${profileData.interestIn}</p>
         ` : ''}
       </div>
       <div class="lux-profile-actions">
-        <button class="lux-btn lux-btn-primary" onclick="startChat('${profile.userId || ''}')">
+        <button class="lux-btn lux-btn-primary" onclick="startChat('${profileData.userId || ''}')">
           <i class="fas fa-envelope"></i> Mensagem
         </button>
       </div>
     </div>
   `;
-  
+
+  // Atualiza o modal e exibe
+  modal.innerHTML = `
+    <div class="lux-modal-content">
+      <span class="lux-modal-close">&times;</span>
+      ${modalContent}
+    </div>
+  `;
+
+  // Mostra o modal
   modal.style.display = 'flex';
-  modal.onclick = e => (e.target === modal) && (modal.style.display = 'none');
-  document.querySelector('.lux-modal-close').onclick = () => modal.style.display = 'none';
+
+  // Configura eventos para fechar o modal
+  modal.querySelector('.lux-modal-close').addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
 }
 
 /*******************
@@ -1007,34 +1029,43 @@ async function showLikesModal() {
 
   try {
     const user = firebase.auth().currentUser;
-    if (!user) return;
+    if (!user) {
+      showToast('Você precisa estar logado para ver as curtidas', 'error');
+      return;
+    }
 
-    // Mostrar estado de carregamento
-    const modalContent = likesModal.querySelector('.lux-modal-content');
-    modalContent.innerHTML = '<div class="loading">Carregando curtidas...</div>';
-    
+    // Mostrar loading
+    likesModal.innerHTML = `
+      <div class="lux-modal-content">
+        <div class="loading">Carregando curtidas...</div>
+      </div>
+    `;
     likesModal.style.display = 'flex';
-    document.body.classList.add('lux-modal-open');
 
     // Buscar dados do usuário para obter a lista de curtidas
     const userDoc = await db.collection('users').doc(user.uid).get();
     if (!userDoc.exists) {
-      modalContent.innerHTML = '<div class="no-likes">Nenhum dado de usuário encontrado</div>';
+      likesModal.innerHTML = `
+        <div class="lux-modal-content">
+          <div class="no-likes">Perfil não encontrado</div>
+        </div>
+      `;
       return;
     }
 
     const userData = userDoc.data();
     const likes = userData.likes || [];
 
-    // Se não houver curtidas
     if (likes.length === 0) {
-      modalContent.innerHTML = `
-        <div class="lux-modal-header">
-          <h3>Curtidas</h3>
-          <span class="lux-modal-close">&times;</span>
-        </div>
-        <div class="lux-likes-list">
-          <p class="no-likes-message">Ninguém curtiu seu perfil ainda</p>
+      likesModal.innerHTML = `
+        <div class="lux-modal-content">
+          <div class="lux-modal-header">
+            <h3>Curtidas</h3>
+            <span class="lux-modal-close">&times;</span>
+          </div>
+          <div class="lux-likes-list">
+            <p class="no-likes-message">Ninguém curtiu seu perfil ainda</p>
+          </div>
         </div>
       `;
       return;
@@ -1042,54 +1073,77 @@ async function showLikesModal() {
 
     // Buscar informações dos usuários que curtiram
     const likesPromises = likes.map(userId => 
-      db.collection('users').doc(userId).get().then(doc => ({
-        id: userId,
-        ...doc.data()
-      }))
+      db.collection('users').doc(userId).get()
+        .then(doc => ({
+          id: userId,
+          name: doc.data()?.name || 'Usuário',
+          profilePhotoURL: doc.data()?.profilePhotoURL || 'https://via.placeholder.com/50'
+        }))
+        .catch(() => ({
+          id: userId,
+          name: 'Usuário não encontrado',
+          profilePhotoURL: 'https://via.placeholder.com/50'
+        }))
     );
 
     const usersWhoLiked = await Promise.all(likesPromises);
 
-    // Construir o HTML do modal
-    modalContent.innerHTML = `
-      <div class="lux-modal-header">
-        <h3>${likes.length} ${likes.length === 1 ? 'pessoa curtiu' : 'pessoas curtiram'}</h3>
-        <span class="lux-modal-close">&times;</span>
+    // Construir o modal
+    likesModal.innerHTML = `
+      <div class="lux-modal-content">
+        <div class="lux-modal-header">
+          <h3>${likes.length} ${likes.length === 1 ? 'pessoa curtiu' : 'pessoas curtiram'}</h3>
+          <span class="lux-modal-close">&times;</span>
+        </div>
+        <div class="lux-likes-list"></div>
       </div>
-      <div class="lux-likes-list"></div>
     `;
 
-    const likesList = modalContent.querySelector('.lux-likes-list');
+    const likesList = likesModal.querySelector('.lux-likes-list');
     
     // Adicionar cada usuário à lista
     usersWhoLiked.forEach(user => {
       const likeItem = document.createElement('div');
       likeItem.className = 'lux-like-item';
-      likeItem.dataset.userId = user.id;
-
       likeItem.innerHTML = `
-        <img src="${user.profilePhotoURL || 'https://via.placeholder.com/50'}" 
+        <img src="${user.profilePhotoURL}" 
              alt="${user.name}" 
              class="lux-like-avatar"
              onerror="this.src='https://via.placeholder.com/50'">
-        <span class="lux-like-name">${user.name || 'Usuário'}</span>
+        <span class="lux-like-name" data-userid="${user.id}">${user.name}</span>
       `;
 
-      likeItem.addEventListener('click', () => {
+      // Adicionar evento de clique no nome do usuário
+      likeItem.querySelector('.lux-like-name').addEventListener('click', (e) => {
+        e.stopPropagation();
         viewProfile(user.id);
       });
 
       likesList.appendChild(likeItem);
     });
 
+    // Fechar modal ao clicar no X ou fora
+    likesModal.querySelector('.lux-modal-close').addEventListener('click', () => {
+      likesModal.style.display = 'none';
+    });
+
   } catch (error) {
     console.error('Erro ao carregar curtidas:', error);
-    const modalContent = likesModal.querySelector('.lux-modal-content');
-    if (modalContent) {
-      modalContent.innerHTML = '<div class="error">Erro ao carregar curtidas</div>';
-    }
+    likesModal.innerHTML = `
+      <div class="lux-modal-content">
+        <div class="error">Erro ao carregar curtidas</div>
+      </div>
+    `;
   }
 }
+
+// Fechar modal ao clicar fora
+document.addEventListener('click', (e) => {
+  const likesModal = document.getElementById('likesModal');
+  if (e.target === likesModal) {
+    likesModal.style.display = 'none';
+  }
+});
 
 function handleLikeUserClick(e) {
   // Verifica se o clique/toque foi no nome do usuário
