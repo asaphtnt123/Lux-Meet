@@ -482,67 +482,68 @@
             }
         });
 
-        // Formulário de Cadastro
-        document.getElementById('cadastro-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+       // Formulário de Cadastro
+document.getElementById('cadastro-form').addEventListener('submit', function(e) {
+    e.preventDefault();
 
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const dateOfBirth = document.getElementById('date_of_birth').value;
-            const gender = document.getElementById('gender').value;
-            const tipouser = document.getElementById('tipouser').value;
-            const income = document.getElementById('income').value;
-            const cidade = document.getElementById('cidade').value;
-            const bio = document.getElementById('bio').value;
-            const interestIn = tipouser === 'sugar_baby' ? document.getElementById('interest_in').value : null;
-            const profilePhoto = document.getElementById('profile_photo').files[0];
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const dateOfBirth = document.getElementById('date_of_birth').value;
+    const gender = document.getElementById('gender').value;
+    const tipouser = document.getElementById('tipouser').value;
+    const income = document.getElementById('income').value;
+    const cidade = document.getElementById('cidade').value;
+    const bio = document.getElementById('bio').value;
+    const interestIn = tipouser === 'sugar_baby' ? document.getElementById('interest_in').value : null;
+    const profilePhoto = document.getElementById('profile_photo').files[0];
 
-            // Validação básica
-            if (!profilePhoto) {
-                alert('Por favor, selecione uma foto de perfil');
-                return;
-            }
+    // Validação básica
+    if (!profilePhoto) {
+        alert('Por favor, selecione uma foto de perfil');
+        return;
+    }
 
-            // Upload da foto de perfil
-            const storageRef = storage.ref();
-            const profilePhotoRef = storageRef.child(`profile_photos/${email}/${profilePhoto.name}`);
+    // Primeiro criar o usuário no Authentication
+    auth.createUserWithEmailAndPassword(email, password)
+        .then(userCredential => {
+            const user = userCredential.user;
             
-            profilePhotoRef.put(profilePhoto)
+            // Upload da foto de perfil usando o UID como referência
+            const storageRef = storage.ref();
+            const fileExtension = profilePhoto.name.split('.').pop();
+            const profilePhotoRef = storageRef.child(`profile_photos/${user.uid}/profile.${fileExtension}`);
+            
+            return profilePhotoRef.put(profilePhoto)
                 .then(snapshot => snapshot.ref.getDownloadURL())
                 .then(photoURL => {
-                    // Criar usuário no Authentication
-                    return auth.createUserWithEmailAndPassword(email, password)
-                        .then(userCredential => {
-                            const user = userCredential.user;
-                            
-                            // Salvar dados no Firestore
-                            return db.collection('users').doc(user.uid).set({
-                                userId: user.uid,
-                                name: name,
-                                email: email,
-                                dateOfBirth: dateOfBirth,
-                                gender: gender,
-                                tipouser: tipouser,
-                                income: income,
-                                cidade: cidade,
-                                bio: bio,
-                                interestIn: interestIn,
-                                profilePhotoURL: photoURL,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                        });
-                })
-                .then(() => {
-                    alert('Cadastro realizado com sucesso!');
-                    document.getElementById('cadastro-modal').style.display = 'none';
-                    document.getElementById('cadastro-form').reset();
-                })
-                .catch(error => {
-                    console.error('Erro no cadastro:', error);
-                    alert('Erro no cadastro: ' + error.message);
+                    // Salvar dados no Firestore
+                    return db.collection('users').doc(user.uid).set({
+                        userId: user.uid,
+                        name: name,
+                        email: email,
+                        dateOfBirth: dateOfBirth,
+                        gender: gender,
+                        tipouser: tipouser,
+                        income: income,
+                        cidade: cidade,
+                        bio: bio,
+                        interestIn: interestIn,
+                        profilePhotoURL: photoURL,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 });
+        })
+        .then(() => {
+            alert('Cadastro realizado com sucesso!');
+            document.getElementById('cadastro-modal').style.display = 'none';
+            document.getElementById('cadastro-form').reset();
+        })
+        .catch(error => {
+            console.error('Erro no cadastro:', error);
+            alert('Erro no cadastro: ' + error.message);
         });
+});
 
         // Formulário de Login
         document.getElementById('login-form').addEventListener('submit', function(e) {
