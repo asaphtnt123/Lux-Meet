@@ -137,11 +137,7 @@ function updateProfileUI() {
       profilePhotoURL: ''
     };
   }
-const likesCountElement = document.getElementById('likesCount');
-  if (likesCountElement) {
-    likesCountElement.style.cursor = 'pointer';
-    likesCountElement.title = 'Clique para ver quem curtiu';
-  }
+
   // Extrai dados com fallbacks
   const {
     profilePhotoURL = '',
@@ -152,23 +148,65 @@ const likesCountElement = document.getElementById('likesCount');
     likes = [] // Garante que likes será um array
   } = userData;
 
-  // Calcula o número de curtidas (apenas a quantidade)
+  // Calcula o número de curtidas
   const likesCount = likes.length;
 
+  // Atualiza foto de perfil
+  const avatarElement = document.getElementById('userAvatar');
+  if (avatarElement) {
+    if (profilePhotoURL) {
+      avatarElement.src = `${profilePhotoURL}?timestamp=${Date.now()}`;
+      avatarElement.onerror = function() {
+        this.src = 'https://via.placeholder.com/150';
+      };
+    } else {
+      avatarElement.src = 'https://via.placeholder.com/150';
+    }
+  }
+
+  // Atualiza os elementos da interface
+  const userNameElement = document.getElementById('userName');
+  if (userNameElement) userNameElement.textContent = name;
+
+  const matchCountElement = document.getElementById('matchCount');
+  if (matchCountElement) matchCountElement.textContent = matches;
+
+  const viewCountElement = document.getElementById('viewCount');
+  if (viewCountElement) viewCountElement.textContent = views;
+
+  const likesCountElement = document.getElementById('likesCount');
+  if (likesCountElement) {
+    likesCountElement.textContent = likesCount;
+    // Armazena os IDs dos usuários que curtiram como atributo data
+    likesCountElement.dataset.likes = JSON.stringify(likes);
+    // Adiciona estilo e tooltip
+    likesCountElement.style.cursor = 'pointer';
+    likesCountElement.title = 'Clique para ver quem curtiu';
+  }
+
+  // Atualiza título do usuário
+  const titles = {
+    sugar_daddy: 'Sugar Daddy',
+    sugar_mommy: 'Sugar Mommy',
+    sugar_baby: 'Sugar Baby',
+    member: 'Membro LuxMeet'
+  };
+  
+  const userTitleElement = document.getElementById('userTitle');
+  if (userTitleElement) {
+    userTitleElement.textContent = titles[tipouser] || 'Membro';
+  }
+
+  // Debug (pode remover depois)
   console.log("Dados do usuário:", { 
     profilePhotoURL, 
     name, 
     tipouser, 
     matches, 
     views, 
-    likesCount // Exibe apenas a contagem
+    likesCount
   });
-
-  // Atualiza foto de perfil (código mantido igual)
-  const avatarElement = document.getElementById('userAvatar');
-  if (avatarElement) {
-    // ... (código anterior mantido)
-  }
+}
 
   // Atualiza os elementos da interface
   document.getElementById('userName').textContent = name;
@@ -336,7 +374,8 @@ function setupUI() {
     window.location.href = 'editar-perfil.html';
   });
 
-  document.getElementById('likesCount').addEventListener('click', showLikesModal);
+    document.getElementById('likesCount').addEventListener('click', showLikesModal);
+
 
 
   document.querySelectorAll('.lux-comment-btn').forEach(btn => {
@@ -978,61 +1017,93 @@ function toggleComments(postId) {
 /*************************
  * MODAL DE CURTIDAS *
  *************************/
-// Função para abrir o modal com a lista de quem curtiu
-function showLikesModal() {
+// Função atualizada para mostrar o modal de curtidas
+async function showLikesModal() {
   const likesModal = document.getElementById('likesModal');
   if (!likesModal) return;
 
   try {
-    const likesData = this.dataset.likes;
-    const likes = likesData ? JSON.parse(likesData) : [];
+    const user = firebase.auth().currentUser;
+    if (!user) return;
+
+    // Mostrar estado de carregamento
     const modalContent = likesModal.querySelector('.lux-modal-content');
+    modalContent.innerHTML = '<div class="loading">Carregando curtidas...</div>';
     
     likesModal.style.display = 'flex';
     document.body.classList.add('lux-modal-open');
 
-    requestAnimationFrame(() => {
-      likesModal.style.opacity = '1';
-      modalContent.style.transform = 'translateY(0)';
-      
-      const likesList = likesModal.querySelector('.lux-likes-list');
-      if (likesList) {
-        // Limpa a lista antes de adicionar novos itens
-        likesList.innerHTML = '';
+    // Buscar dados do usuário para obter a lista de curtidas
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    if (!userDoc.exists) {
+      modalContent.innerHTML = '<div class="no-likes">Nenhum dado de usuário encontrado</div>';
+      return;
+    }
 
-        if (likes.length === 0) {
-          likesList.innerHTML = '<p class="no-likes-message">Ninguém curtiu seu perfil ainda</p>';
-        } else {
-          likes.forEach(user => {
-            const likeItem = document.createElement('div');
-            likeItem.className = 'lux-like-item';
-            likeItem.dataset.userId = user.id || '';
+    const userData = userDoc.data();
+    const likes = userData.likes || [];
 
-            likeItem.innerHTML = `
-              <img src="${user.photo || 'placeholder-user.jpg'}" 
-                   alt="${user.name || 'Usuário'}" 
-                   class="lux-like-avatar">
-              <span class="lux-like-name">${user.name || 'Usuário'}</span>
-            `;
+    // Se não houver curtidas
+    if (likes.length === 0) {
+      modalContent.innerHTML = `
+        <div class="lux-modal-header">
+          <h3>Curtidas</h3>
+          <span class="lux-modal-close">&times;</span>
+        </div>
+        <div class="lux-likes-list">
+          <p class="no-likes-message">Ninguém curtiu seu perfil ainda</p>
+        </div>
+      `;
+      return;
+    }
 
-            likeItem.addEventListener('click', function(e) {
-              e.stopPropagation();
-              const userId = this.dataset.userId;
-              if (userId) {
-                openUserProfile(userId);
-              }
-            });
+    // Buscar informações dos usuários que curtiram
+    const likesPromises = likes.map(userId => 
+      db.collection('users').doc(userId).get().then(doc => ({
+        id: userId,
+        ...doc.data()
+      }))
+    );
 
-            likesList.appendChild(likeItem);
-          });
-        }
-      }
+    const usersWhoLiked = await Promise.all(likesPromises);
+
+    // Construir o HTML do modal
+    modalContent.innerHTML = `
+      <div class="lux-modal-header">
+        <h3>${likes.length} ${likes.length === 1 ? 'pessoa curtiu' : 'pessoas curtiram'}</h3>
+        <span class="lux-modal-close">&times;</span>
+      </div>
+      <div class="lux-likes-list"></div>
+    `;
+
+    const likesList = modalContent.querySelector('.lux-likes-list');
+    
+    // Adicionar cada usuário à lista
+    usersWhoLiked.forEach(user => {
+      const likeItem = document.createElement('div');
+      likeItem.className = 'lux-like-item';
+      likeItem.dataset.userId = user.id;
+
+      likeItem.innerHTML = `
+        <img src="${user.profilePhotoURL || 'https://via.placeholder.com/50'}" 
+             alt="${user.name}" 
+             class="lux-like-avatar"
+             onerror="this.src='https://via.placeholder.com/50'">
+        <span class="lux-like-name">${user.name || 'Usuário'}</span>
+      `;
+
+      likeItem.addEventListener('click', () => {
+        viewProfile(user.id);
+      });
+
+      likesList.appendChild(likeItem);
     });
+
   } catch (error) {
     console.error('Erro ao carregar curtidas:', error);
-    const likesList = likesModal.querySelector('.lux-likes-list');
-    if (likesList) {
-      likesList.innerHTML = '<p class="error-message">Erro ao carregar curtidas</p>';
+    const modalContent = likesModal.querySelector('.lux-modal-content');
+    if (modalContent) {
+      modalContent.innerHTML = '<div class="error">Erro ao carregar curtidas</div>';
     }
   }
 }
