@@ -67,6 +67,33 @@ async function loadUserData() {
     document.getElementById('userTitle').textContent = 'Membro';
   }
 }
+
+
+// Monitorar estado de autenticação
+auth.onAuthStateChanged(user => {
+  if (user) {
+    // Carregar dados do usuário do Firestore
+    db.collection('users').doc(user.uid).get()
+      .then(doc => {
+        if (doc.exists) {
+          const userData = doc.data();
+          
+          // Atualizar foto do perfil
+          if (userData.profilePhotoURL) {
+            document.getElementById('userAvatar').src = userData.profilePhotoURL;
+          }
+          
+          // Outras atualizações de UI podem ser feitas aqui
+        }
+      })
+      .catch(error => {
+        console.error("Erro ao carregar dados do usuário:", error);
+      });
+  } else {
+    // Usuário não logado - resetar para placeholder
+    document.getElementById('userAvatar').src = 'https://via.placeholder.com/150';
+  }
+});
 /*************************
  * ATUALIZAÇÃO DE INTERFACE*
  *************************/
@@ -74,12 +101,27 @@ async function uploadProfilePhoto(file) {
   const user = firebase.auth().currentUser;
   if (!user) throw new Error("Usuário não autenticado!");
 
-  // Usa o UID do usuário no caminho (não o e-mail)
+  // Gera um nome de arquivo consistente (evita problemas de cache)
+  const fileExtension = file.name.split('.').pop();
+  const fileName = `profile_${Date.now()}.${fileExtension}`;
+  
   const storageRef = firebase.storage()
-    .ref(`profile_photos/${user.uid}/${file.name}`);
+    .ref(`profile_photos/${user.uid}/${fileName}`);
 
   await storageRef.put(file);
-  return await storageRef.getDownloadURL(); // Retorna a URL pública
+  const downloadURL = await storageRef.getDownloadURL();
+  
+  // Atualiza tanto no Auth quanto no Firestore
+  await user.updateProfile({
+    photoURL: downloadURL
+  });
+  
+  await firebase.firestore().collection('users').doc(user.uid).update({
+    profilePhotoURL: downloadURL,
+    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  
+  return downloadURL;
 }
 /*************************
  * ATUALIZAÇÃO DE INTERFACE*
@@ -144,6 +186,100 @@ const likesCountElement = document.getElementById('likesCount');
   document.getElementById('userTitle').textContent = titles[tipouser] || 'Membro';
 }
 
+function updateUserAvatar() {
+  const user = firebase.auth().currentUser;
+  const avatarElement = document.getElementById('userAvatar');
+  
+  if (user && user.photoURL) {
+    // Adiciona timestamp para evitar cache
+    avatarElement.src = `${user.photoURL}?timestamp=${Date.now()}`;
+  } else {
+    // Tenta obter do Firestore se não estiver no Auth
+    if (user) {
+      firebase.firestore().collection('users').doc(user.uid).get()
+        .then(doc => {
+          if (doc.exists && doc.data().profilePhotoURL) {
+            avatarElement.src = `${doc.data().profilePhotoURL}?timestamp=${Date.now()}`;
+          }
+        });
+    } else {
+      avatarElement.src = 'https://via.placeholder.com/150';
+    }
+  }
+}
+
+// Função para atualizar o perfil do usuário com as curtidas
+async function updateUserProfile() {
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
+  try {
+    // Obter dados do usuário incluindo as curtidas
+    const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      
+      // Atualizar foto do perfil
+      if (userData.profilePhotoURL) {
+        document.getElementById('userAvatar').src = `${userData.profilePhotoURL}?timestamp=${Date.now()}`;
+      }
+      
+      // Atualizar contagem de curtidas (se existir no seu sistema)
+      if (userData.likesCount !== undefined) {
+        document.getElementById('likesCount').textContent = userData.likesCount;
+      }
+      
+      // Atualizar outros dados do perfil conforme necessário
+      if (userData.name) {
+        document.getElementById('userName').textContent = userData.name;
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao carregar dados do usuário:", error);
+  }
+}
+
+// Função para atualizar o perfil do usuário com as curtidas
+async function updateUserProfile() {
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
+  try {
+    // Obter dados do usuário incluindo as curtidas
+    const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      
+      // Atualizar foto do perfil
+      if (userData.profilePhotoURL) {
+        document.getElementById('userAvatar').src = `${userData.profilePhotoURL}?timestamp=${Date.now()}`;
+      }
+      
+      // Atualizar contagem de curtidas (se existir no seu sistema)
+      if (userData.likesCount !== undefined) {
+        document.getElementById('likesCount').textContent = userData.likesCount;
+      }
+      
+      // Atualizar outros dados do perfil conforme necessário
+      if (userData.name) {
+        document.getElementById('userName').textContent = userData.name;
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao carregar dados do usuário:", error);
+  }
+}
+
+// Monitorar estado de autenticação
+firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    updateUserProfile();
+  } else {
+    // Resetar para valores padrão quando não logado
+    document.getElementById('userAvatar').src = 'https://via.placeholder.com/150';
+    document.getElementById('likesCount').textContent = '0';
+  }
+});
 // Função para curtir usuário (atualizada para retornar apenas a contagem)
 async function likeUser(userId) {
   try {
