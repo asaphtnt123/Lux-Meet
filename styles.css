@@ -98,18 +98,6 @@ h1, h2, h3, h4, h5, h6 {
   text-align: center;
 }
 
-.lux-badge {
-  background-color: var(--lux-accent);
-  color: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  margin-left: auto;
-}
 
 .lux-nav-footer {
   margin-top: auto;
@@ -131,118 +119,437 @@ h1, h2, h3, h4, h5, h6 {
 .lux-settings-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
-.lux-modal {
-  position: fixed;
-  z-index: 1000;
+
+/* Estilo para o contador */
+.lux-badge.matches-badge {
+  display: none;
+  background-color: var(--lux-accent);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  text-align: center;
+  line-height: 20px;
+  margin-left: 5px;
 }
+
+/* Animação */
+.pop {
+  transform: scale(1.3);
+  transition: transform 0.2s ease;
+}
+/* Animação para o contador */
+.lux-stat-value.pop {
+  transform: scale(1.2);
+  transition: transform 0.3s ease;
+  color: var(--lux-primary);
+}
+
+/* Voltar ao normal após animação */
+.lux-stat-value {
+  transition: all 0.3s ease;
+}
+/* Estilo para a lista de matches */
+.lux-matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.matches-title {
+  color: var(--lux-secondary);
+  margin-bottom: 1rem;
+}
+
+
 /* Conteúdo Principal */
 .lux-main-content {
   margin-left: 250px;
   flex-grow: 1;
-  padding: 2rem;
   background-color: var(--lux-light-gray);
 }
 
+:root {
+  --lux-primary: #d4af37;
+  --lux-primary-dark: #b5952e;
+  --lux-light: #ffffff;
+  --lux-dark: #1a1a2e;
+  --lux-gray: #a0a0a0;
+  --lux-bg-gradient: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 100%);
+  --lux-glass-bg: rgba(26, 26, 46, 0.85);
+}
+/* Container do header com posicionamento relativo */
+.lux-profile-header-container {
+  position: relative;
+  margin-bottom: 2rem;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Camada de círculos animados (versão premium) */
+.lux-profile-header-bg-circles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Agora fica ATRÁS de tudo */
+  overflow: hidden;
+  border-radius: 16px;
+  pointer-events: none; /* Permite clicar através dos círculos */
+}
+.lux-profile-header-wrapper {
+  position: relative;
+  margin-bottom: 2rem;
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate; /* Cria um novo contexto de empilhamento */
+}
+
+.lux-profile-header-bg-circles .circles li {
+  position: absolute;
+  display: block;
+  list-style: none;
+  width: 20px;
+  height: 20px;
+  background: rgba(212, 175, 55, 0.08); /* Dourado mais suave */
+  animation: animate 25s linear infinite;
+  bottom: -150px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+/* Keyframes atualizada para movimento mais orgânico */
+@keyframes animate {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-1000px) rotate(720deg) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Posicionamento dos círculos (ajustado para header) */
+.lux-profile-header-bg-circles .circles li:nth-child(1) { 
+  left: 15%; width: 60px; height: 60px; 
+  animation-delay: 0s; animation-duration: 18s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(2) { 
+  left: 5%; width: 25px; height: 25px; 
+  animation-delay: 2s; animation-duration: 15s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(3) { 
+  left: 75%; width: 30px; height: 30px; 
+  animation-delay: 4s; animation-duration: 20s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(4) { 
+  left: 35%; width: 50px; height: 50px; 
+  animation-delay: 0s; animation-duration: 22s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(5) { 
+  left: 60%; width: 20px; height: 20px; 
+  animation-delay: 0s; animation-duration: 16s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(6) { 
+  left: 80%; width: 90px; height: 90px; 
+  animation-delay: 3s; animation-duration: 25s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(7) { 
+  left: 30%; width: 120px; height: 120px; 
+  animation-delay: 7s; animation-duration: 30s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(8) { 
+  left: 50%; width: 30px; height: 30px; 
+  animation-delay: 15s; animation-duration: 35s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(9) { 
+  left: 15%; width: 20px; height: 20px; 
+  animation-delay: 2s; animation-duration: 28s; 
+}
+.lux-profile-header-bg-circles .circles li:nth-child(10) { 
+  left: 90%; width: 130px; height: 130px; 
+  animation-delay: 0s; animation-duration: 20s; 
+}
+
+/* Ajuste no header para ficar sobre a animação */
 .lux-profile-header {
+  position: relative; /* Mantém o z-index automático */
+  z-index: 0; /* Garante que o header fique sobre os círculos */
+  /* Restante do seu CSS permanece igual */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--lux-light);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  margin-bottom: 2rem;
+  background: var(--lux-glass-bg);
+  backdrop-filter: blur(12px);
+  padding: 2.5rem;
+  border-radius: 16px;
+border: 3px solid var(--lux-primary);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.06);
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
+  max-height: 500px;
 }
 
+/* Container de informações */
 .lux-profile-info {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 2.5rem;
+  z-index: 2;
 }
 
+/* Avatar Premium */
 .lux-avatar-container {
   position: relative;
+  width: 120px;
+  height: 120px;
 }
 
-.lux-avatar {
-  width: 100px;
-  height: 100px;
+.lux-user-avatar {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--lux-primary);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+.lux-avatar-container:hover .lux-user-avatar {
+  transform: scale(1.03);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+}
+
+/* Status online */
 .lux-online-status {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
-  width: 15px;
-  height: 15px;
+  bottom: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
   background-color: #4CAF50;
   border-radius: 50%;
-  border: 2px solid var(--lux-light);
+  border: 2px solid var(--lux-dark);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.5);
+  z-index: 3;
 }
 
+/* Detalhes do usuário */
 .lux-user-details h1 {
-  font-size: 1.8rem;
+  font-size: 2rem;
   margin-bottom: 0.5rem;
+  color: var(--lux-light);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .lux-user-details p {
-  color: var(--lux-gray);
+  color: var(--lux-primary);
   margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
+/* Estatísticas premium */
 .lux-user-stats {
   display: flex;
-  gap: 2rem;
+  gap: 0.5rem;
 }
 
 .lux-stat {
   text-align: center;
+  position: relative;
+  padding: 0 15px;
+}
+
+.lux-stat:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: -1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 30px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .lux-stat-value {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  color: var(--lux-primary);
+  color: var(--lux-light);
   display: block;
+  line-height: 1;
+  margin-bottom: 5px;
+  transition: color 0.3s ease;
 }
 
 .lux-stat-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--lux-gray);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  font-weight: 500;
 }
 
-.lux-profile-actions {
-  display: flex;
-  gap: 1rem;
+.lux-stat-interactive:hover .lux-stat-value {
+  color: var(--lux-primary);
 }
 
-/* Botões */
+/* Pulsação para curtidas */
+.lux-pulse-animation {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--lux-primary);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 1; }
+  70% { transform: scale(1.3); opacity: 0; }
+  100% { transform: scale(0.95); opacity: 0; }
+}
+
+
+
+/* Botão de recolher/expandir - Versão Premium */
+.lux-collapse-btn {
+    position: absolute;
+    bottom: -8px;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 77px;
+    height: 30px;
+    background: var(--lux-dark);
+    border: 2px solid var(--lux-primary);
+    color: var(--lux-primary);
+    cursor: pointer;
+    display: flex
+;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.lux-collapse-btn:hover {
+  background: var(--lux-primary);
+  color: var(--lux-dark);
+  transform: translateX(-50%) scale(1.1);
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.4);
+}
+
+.lux-collapse-btn i {
+  transition: transform 0.4s ease;
+  font-size: 1.1rem;
+}
+
+/* Estado recolhido - versão simplificada */
+.lux-profile-header.collapsed {
+  max-height: 90px;
+      height: 200px;
+
+  padding: 0.5rem 1.5rem;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+.lux-profile-header.collapsed .lux-profile-info {
+    display: flex;
+    gap: 10rem;
+    width: auto;
+    min-width: 0;
+    flex-direction: row;
+}
+
+/* Avatar menor no modo recolhido */
+.lux-profile-header.collapsed .lux-avatar-container {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+      bottom: 10px;
+}
+
+.lux-profile-header.collapsed .lux-user-avatar {
+  border-width: 1px;
+  width: 60px;
+  height: 60px;
+}
+
+/* Esconde todos os detalhes exceto o nome */
+.lux-profile-header.collapsed .lux-user-details > *:not(#userName) {
+  display: none;
+}
+
+/* Ajuste do nome */
+.lux-profile-header.collapsed #userName {
+  font-size: 2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px; /* Ajuste conforme necessário */
+  margin: 0;
+}
+
+/* Esconde as ações no modo recolhido */
+.lux-profile-header.collapsed .lux-profile-actions {
+  display: none;
+}
+
+/* Mantém o botão de expandir visível */
+.lux-profile-header.collapsed .lux-collapse-btn {
+  width: 36px;
+  height: 36px;
+  bottom: 20px;
+}
+
+/* Ajuste do ícone */
+.lux-profile-header.collapsed .lux-collapse-btn i {
+  font-size: 1rem;
+}
+/* Efeito de transição suave para os elementos internos */
+.lux-profile-header > * > * {
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Botão Primário */
 .lux-btn {
-  padding: 0.8rem 1.5rem;
+  padding: 12px 24px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .lux-btn-primary {
-  background-color: var(--lux-primary);
-  color: var(--lux-secondary);
+  background: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%);
+  color: #1a1a2e;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
 }
 
 .lux-btn-primary:hover {
-  background-color: var(--lux-primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+}
+
+.lux-btn-primary:active {
+  transform: translateY(0);
 }
 
 .lux-btn-secondary {
@@ -267,16 +574,11 @@ h1, h2, h3, h4, h5, h6 {
 /* Seções */
 .lux-content-sections {
   display: flex;
-  flex-direction: column;
+  flex-direction: initial;
   gap: 2rem;
 }
 
-.lux-section {
-  background-color: var(--lux-light);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  padding: 2rem;
-}
+
 
 .lux-section-header {
   display: flex;
@@ -351,54 +653,13 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
-/* Modal */
-.lux-modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  z-index: 1000;
-  justify-content: center;
-  align-items: center;
-}
 
 
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-.lux-modal-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  font-size: 1.5rem;
-  color: var(--lux-gray);
-  cursor: pointer;
-  transition: color 0.3s;
-}
 
-.lux-modal-close:hover {
-  color: var(--lux-secondary);
-}
 
-.lux-modal-header {
-  padding: 2rem 2rem 1rem;
-  border-bottom: 1px solid #eee;
-}
 
-.lux-modal-body {
-  padding: 2rem;
-}
+
 
 /* Loading */
 .lux-loading {
@@ -471,10 +732,7 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: center;
   }
   
-  .lux-profile-actions {
-    width: 100%;
-    flex-direction: column;
-  }
+
   
   .lux-user-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -493,100 +751,342 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* === NOVIDADES / NEWS CARD ===================================== */
-.lux-news-card{
-  background: var(--lux-light);
+
+.lux-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #ddd;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.08);
-  overflow: hidden;
-  margin-bottom: 2rem;
-  transition: transform .3s ease, box-shadow .3s ease;
+  background-color: #fafafa;
+  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.lux-news-card:hover{
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0,0,0,.15);
-}
-
-/* título */
-.lux-news-title{
-  font-family: 'Playfair Display',serif;
-  font-size: 1.4rem;
-  font-weight: 700;
-  padding: 1.2rem 1.5rem .5rem;
-  color: var(--lux-secondary);
+.lux-comment-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
 
 
-/* descrição */
-.lux-news-desc{
-  font-size: .95rem;
-  color: var(--lux-gray);
-  line-height: 1.5;
-  padding: 1rem 1.5rem 1.5rem;
-  border-bottom: 1px solid #eee;
+/* Estilo Base (Mobile) */
+.lux-news-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* área de ações (likes & comentários) */
-.lux-news-actions{
+.lux-news-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: .8rem 1.2rem;
-  background: var(--lux-light-gray);
+  margin-bottom: 12px;
 }
 
-.lux-news-actions .lux-btn{
-  padding: .5rem .9rem;
-  font-size: .85rem;
+
+
+.lux-news-header div {
+  flex: 1;
 }
 
-.lux-news-actions .lux-btn-primary{
-  background: var(--lux-primary);
-  color: var(--lux-secondary);
+.lux-news-author {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
 }
 
-.lux-news-actions .lux-btn-secondary{
-  background: transparent;
-  color: var(--lux-secondary);
-  border: 1px solid var(--lux-secondary);
+.lux-news-date {
+  font-size: 12px;
+  color: #777;
+  display: block;
+  margin-top: 2px;
 }
 
-/* contador de likes / comentários, se precisar */
-.lux-count{
-  font-size: .8rem;
-  color: var(--lux-gray);
-  margin-left: .4rem;
-}
-
-/* ================= COMENTÁRIOS ================= */
-
-.lux-comments {
-  margin-top: 1.5rem;          /* espaço depois das ações */
-  background: var(--lux-light-gray);
+.lux-news-image {
+  width: 100%;
   border-radius: 8px;
-  padding: 1rem;
+  margin-bottom: 12px;
+  max-height: 400px;
+  object-fit: contain;
+  background-color: #f9f9f9;
 }
 
-.lux-existing-comments {
-  max-height: 200px;           /* rolagem se houver muitos comentários */
+.lux-news-title {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: #222;
+}
+
+.lux-news-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #444;
+  margin: 0 0 16px 0;
+  white-space: pre-line;
+}
+
+.lux-news-actions {
+  display: flex;
+  gap: 15px;
+  padding: 10px 0;
+  border-top: 1px solid #eee;
+  margin-top: 15px;
+}
+
+.lux-news-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #666;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.lux-news-actions button:hover {
+  background: #f5f5f5;
+}
+
+.lux-btn-like.active {
+  color: #1877f2;
+}
+
+.lux-btn-dislike.active {
+  color: #f02849;
+}
+
+.lux-comments-container {
+  padding: 10px 0;
+  border-top: 1px solid #eee;
+  margin-top: 10px;
+}
+
+.lux-comments-list {
+  max-height: 300px;
   overflow-y: auto;
-  margin-bottom: 1rem;
+  margin-bottom: 10px;
 }
 
 .lux-comment-form {
   display: flex;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
 .lux-comment-input {
   flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 18px;
+  resize: none;
+  height: 40px;
+  max-height: 100px;
+  font-size: 14px;
 }
 
-.lux-comment-btn {
-  flex-shrink: 0;
+.lux-btn-comment-submit {
+  padding: 0 15px;
+  height: 40px;
+  font-size: 14px;
 }
+
+/* Estilo para Telas Médias (Tablets) */
+@media (min-width: 768px) {
+  .lux-news-card {
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 14px;
+  }
+
+  .lux-news-avatar {
+    width: 56px;
+    height: 56px;
+    margin-right: 16px;
+  }
+
+  .lux-news-author {
+    font-size: 17px;
+  }
+
+  .lux-news-date {
+    font-size: 13px;
+  }
+
+  .lux-news-title {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  .lux-news-text {
+    font-size: 16px;
+    margin-bottom: 18px;
+  }
+
+  .lux-news-actions {
+    gap: 20px;
+    padding: 12px 0;
+  }
+
+  .lux-news-actions button {
+    font-size: 15px;
+    padding: 8px 16px;
+    gap: 8px;
+  }
+
+  .lux-comment-input {
+    font-size: 15px;
+  }
+}
+
+/* Estilo para Telas Grandes (Desktop) */
+@media (min-width: 992px) {
+  .lux-news-card {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 24px;
+    margin-bottom: 30px;
+  }
+
+  .lux-news-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .lux-news-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .lux-news-author {
+    font-size: 18px;
+  }
+
+  .lux-news-date {
+    font-size: 14px;
+  }
+
+  .lux-news-image {
+    max-height: 500px;
+  }
+
+  .lux-news-title {
+    font-size: 22px;
+  }
+
+  .lux-news-text {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .lux-news-actions {
+    gap: 25px;
+  }
+
+  .lux-news-actions button {
+    font-size: 16px;
+  }
+
+  .lux-comment-form {
+    gap: 12px;
+  }
+
+  .lux-comment-input {
+    font-size: 16px;
+  }
+
+  .lux-btn-comment-submit {
+    font-size: 15px;
+  }
+}
+
+/* Estilo para Telas Extra Grandes */
+@media (min-width: 1200px) {
+  .lux-news-card {
+    max-width: 850px;
+    padding: 28px;
+  }
+
+  .lux-news-header {
+    margin-bottom: 16px;
+  }
+
+  .lux-news-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .lux-news-title {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+}
+
+/* Efeitos de hover apenas para dispositivos com mouse */
+@media (hover: hover) and (pointer: fine) {
+  .lux-news-actions button:hover {
+    transform: translateY(-1px);
+  }
+
+  .clickable-author:hover {
+    opacity: 0.9;
+  }
+}
+
+/* Estilo para Modo Escuro */
+@media (prefers-color-scheme: dark) {
+  .lux-news-card {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+
+  .lux-news-author, .lux-news-title {
+    color: #f0f0f0;
+  }
+
+  .lux-news-text, .lux-news-date {
+    color: #ccc;
+  }
+
+  .lux-news-actions {
+    border-top-color: #444;
+  }
+
+  .lux-news-actions button {
+    color: #aaa;
+  }
+
+  .lux-news-actions button:hover {
+    background: #3a3a3a;
+  }
+
+  .lux-comments-container {
+    border-top-color: #444;
+  }
+
+  .lux-comment-input {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #f0f0f0;
+  }
+}
+
 /* ==================== RESPONSIVIDADE MOBILE ==================== */
 
 @media (max-width: 768px) {
@@ -650,15 +1150,9 @@ h1, h2, h3, h4, h5, h6 {
   .lux-main-content {
     margin-left: 0;
     margin-bottom: 60px; /* espaço para a navbar inferior */
-    padding: 1rem;
   }
   
-  /* Header do perfil - empilha elementos */
-  .lux-profile-header {
-    flex-direction: column;
-    padding: 1rem;
-    text-align: center;
-  }
+
   
   .lux-profile-info {
     flex-direction: column;
@@ -683,10 +1177,7 @@ h1, h2, h3, h4, h5, h6 {
   
   
   
-  /* Seções - ajuste de padding */
-  .lux-section {
-    padding: 1rem;
-  }
+ 
   
   /* News cards - ajustes específicos */
   .lux-news-card {
@@ -706,20 +1197,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.6rem;
   }
   
-  /* Comentários - ajuste de tamanho */
-  .lux-comments {
-    padding: 0.8rem;
-  }
-  
-  .lux-comment-form {
-    flex-direction: column;
-  }
-  
-  .lux-comment-input {
-    margin-bottom: 0.5rem;
-  }
 }
-
 /* Ajustes adicionais para telas muito pequenas */
 @media (max-width: 480px) {
   .lux-avatar {
@@ -728,7 +1206,7 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .lux-user-details h1 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
   
   .lux-stat-value {
@@ -816,28 +1294,19 @@ h1, h2, h3, h4, h5, h6 {
     max-width: 1200px;
     margin: 0.5rem auto;
   }
-}/* Avatar no cabeçalho do post */
+}
+
 .lux-news-avatar {
-  width: 40px; /* Tamanho reduzido */
+  width: 40px;
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--lux-primary);
   margin-right: 10px;
+  border: 2px solid var(--lux-light-gray);
+  background-color: #f5f5f5;
+  transition: opacity 0.3s ease;
 }
 
-/* Avatar nos comentários */
-.lux-comment-avatar {
-  width: 32px; /* Tamanho ainda menor */
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid var(--lux-primary);
-  margin-right: 8px;
-  align-self: flex-start; /* Alinha ao topo do comentário */
-}
-
-/* Container do cabeçalho do post */
 .lux-news-header {
   display: flex;
   align-items: center;
@@ -846,58 +1315,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 8px 8px 0 0;
 }
 
-/* Container de comentário */
-.lux-comment {
-  display: flex;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.lux-comment-content {
-  flex: 1;
-}
-
-.lux-comment-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.lux-comment-author {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.lux-comment-time {
-  font-size: 0.8rem;
-  color: var(--lux-gray);
-}
-
-.lux-comment-text {
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-.lux-news-avatar:hover {
-  transform: scale(1.1);
-  transition: transform 0.2s ease;
-}
-@media (max-width: 768px) {
-  .lux-news-avatar {
-    width: 36px;
-    height: 36px;
-  }
   
-  .lux-comment-avatar {
-    width: 28px;
-    height: 28px;
-  }
-}
-.lux-news-avatar {
-  border: 2px solid var(--lux-primary);
-  box-shadow: 0 0 0 1px var(--lux-secondary);
-}
-
 
 /* Filtros */
 .lux-filter-controls {
@@ -990,27 +1408,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #ff5252;
 }
 
-#userAvatar {
-  /* Dimensões e forma */
-  width: 120px;
-  height: 120px;
-  border-radius: 50%; /* Torna circular */
-  object-fit: cover; /* Garante que a imagem cubra todo o espaço sem distorcer */
-  
-  /* Borda e efeitos */
-  border: 3px solid #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  
-  /* Transição suave para hover */
-  transition: all 0.3s ease-in-out;
-  
-  /* Posicionamento (ajuste conforme necessário) */
-  display: block;
-  margin: 0 auto 15px auto;
-  
-  /* Fundo de fallback */
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}
+
 
 /* Efeitos de hover */
 #userAvatar:hover {
@@ -1027,15 +1425,6 @@ h1, h2, h3, h4, h5, h6 {
   padding: 20px;
 }
 
-/* Versão mobile */
-@media (max-width: 768px) {
-  #userAvatar {
-    width: 90px;
-    height: 90px;
-    border-width: 2px;
-    margin-bottom: 10px;
-  }
-}
 
 /* Efeito para quando é VIP (adicione a classe .vip ao elemento) */
 #userAvatar.vip {
@@ -1069,12 +1458,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 14px;
 }
 
-/* Adicione um loader enquanto a imagem carrega */
-.lux-user-card-img[data-src] {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
+
 
 @keyframes shimmer {
   to {
@@ -1116,38 +1500,11 @@ h1, h2, h3, h4, h5, h6 {
   transform: scale(1.1);
 }
 
-/* Estilo do Modal de Curtidas */
-.lux-likes-list {
-  max-height: 300px;
-  overflow-y: auto;
-  margin-top: 15px;
-}
 
-.lux-like-item {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-}
 
-.lux-like-item img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: 10px;
-  object-fit: cover;
-}
 
-.lux-like-item:hover {
-  background-color: #f5f5f5;
-}
-.lux-like-user {
-  cursor: pointer;
-  color: #3f51b5;
-  transition: all 0.2s;
-  padding: 5px 8px;
-  border-radius: 4px;
-}
+
+
 
 
 @keyframes modalOpen {
@@ -1171,7 +1528,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .lux-like-user {
-  cursor: pointer;
   color: #3f51b5;
   padding: 8px;
   margin-left: 10px;
@@ -1184,89 +1540,134 @@ h1, h2, h3, h4, h5, h6 {
 
 .lux-like-user:active {
   background-color: #e0e0e0; /* Feedback visual ao tocar */
-}/* Modal (substitua a versão existente) */
+}
+
+
+/* Estilos para o modal de informações */
 .lux-modal {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  z-index: 1000;
-  display: none;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
   justify-content: center;
   align-items: center;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px); /* Para Safari */
+  z-index: 10000;
 }
 
 .lux-modal-content {
-  background: var(--lux-light);
-  border-radius: 12px;
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  transform: translateZ(0); /* Fix para hardware acceleration */
-  will-change: transform;
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Lista de curtidas (mantenha apenas esta versão) */
-.lux-likes-list {
-  max-height: 300px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+  position: relative;
 }
 
-.lux-like-item {
+.lux-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.lux-chat-info-section {
+  margin: 20px 0;
+}
+
+.lux-chat-participants {
+  margin-top: 10px;
+}
+
+.lux-chat-participant {
   display: flex;
   align-items: center;
-  padding: 12px 15px;
-  border-bottom: 1px solid var(--lux-light-gray);
-  -webkit-tap-highlight-color: transparent;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
 }
 
-.lux-like-item img {
+.lux-participant-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
   margin-right: 10px;
   object-fit: cover;
-  border: 2px solid var(--lux-primary);
 }
 
-.lux-like-user {
-  color: var(--lux-secondary);
-  padding: 8px;
-  border-radius: 6px;
-  transition: all 0.2s;
+.lux-participant-name {
   font-weight: 500;
 }
 
-.lux-like-user:active, 
-.lux-like-user:hover {
-  background-color: rgba(255, 215, 0, 0.1);
-}/* Estilos para os itens de curtidas */
-.lux-like-item {
-  cursor: pointer;
-  transition: background-color 0.2s;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 8px;
+.lux-participant-you {
+  color: #666;
+  font-size: 12px;
+  margin-left: 5px;
 }
 
+
+.lux-options-list {
+  list-style: none;
+  padding: 5px 0;
+  margin: 0;
+}
+
+
+
+
+/* Estilos para a grade de mídias */
+.lux-media-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-top: 15px;
+}
+
+.lux-media-item {
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.lux-media-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.lux-media-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+.lux-no-media {
+  text-align: center;
+  color: #666;
+  padding: 20px 0;
+}
+
+.lux-error {
+  color: #e74c3c;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.lux-likes-list {
+  max-height: 300px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px; /* Evita que o scrollbar sobreponha o conteúdo */
+}
+
+
+ 
+.lux-like-user:hover {
+  background-color: rgba(255, 215, 0, 0.1);
+}
 .lux-like-item:hover {
   background-color: rgba(255, 215, 0, 0.1);
 }
@@ -1274,7 +1675,6 @@ h1, h2, h3, h4, h5, h6 {
 .lux-like-name {
   color: var(--lux-secondary);
   font-weight: 600;
-  pointer-events: none; /* O evento será tratado pelo item pai */
 }
 
 .lux-like-avatar {
@@ -1283,33 +1683,8 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
   object-fit: cover;
   margin-right: 10px;
-  pointer-events: none; /* O evento será tratado pelo item pai */
 }
 
-/* Estilos para o modal de curtidas */
-#likesModal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.lux-modal-content {
-  background: white;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 400px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 20px;
-  position: relative;
-}
 
 .lux-modal-header {
   display: flex;
@@ -1323,37 +1698,14 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 1.2rem;
 }
 
-.lux-modal-close {
-  font-size: 1.5rem;
-  cursor: pointer;
-}
 
-.lux-likes-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 
-.lux-like-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
 
-.lux-like-item:hover {
-  background: #f5f5f5;
-}
 
-.lux-like-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
+
+
+
+
 
 .loading, .no-likes, .error {
   padding: 20px;
@@ -1362,7 +1714,6 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Estilos para o modal de curtidas */
 #likesModal {
-  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -1374,67 +1725,19 @@ h1, h2, h3, h4, h5, h6 {
   z-index: 1000;
 }
 
-.lux-modal-content {
-  background: white;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 400px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 20px;
-  position: relative;
-}
 
-.lux-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
 
-.lux-modal-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
 
-.lux-modal-close {
-  font-size: 1.5rem;
-  cursor: pointer;
-  background: none;
-  border: none;
-}
 
-.lux-likes-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 
-.lux-like-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 5px;
-  transition: background 0.2s;
-}
 
-.lux-like-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
 
-.lux-like-name {
-  cursor: pointer;
-  color: #3498db;
-  text-decoration: underline;
-}
 
-.lux-like-name:hover {
-  color: #2980b9;
-}
+
+
+
+
+
 
 .loading, .no-likes, .error {
   padding: 20px;
@@ -1489,7 +1792,6 @@ h1, h2, h3, h4, h5, h6 {
 .lux-profile-actions {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
 }
 
 .lux-modal-close {
@@ -1500,4 +1802,2173 @@ h1, h2, h3, h4, h5, h6 {
   cursor: pointer;
   background: none;
   border: none;
+}
+
+.btn-limpar {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.empty, .error {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.empty i, .error i {
+  font-size: 2em;
+  margin-bottom: 10px;
+}
+
+.empty button, .error button {
+  margin-top: 10px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lux-filter-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.lux-select, .lux-input {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.lux-age-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lux-age-filter input {
+  width: 70px;
+}
+
+.lux-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.lux-checkbox input {
+  width: 18px;
+  height: 18px;
+}
+.lux-no-results {
+  text-align: center;
+  padding: 2rem;
+  color: var(--lux-gray);
+}
+
+.lux-no-results i {
+  font-size: 2rem;
+  color: var(--lux-primary);
+  margin-bottom: 1rem;
+}
+
+.lux-no-results h3 {
+  margin-bottom: 0.5rem;
+}
+
+.lux-loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.lux-loading i {
+  font-size: 2rem;
+  color: var(--lux-primary);
+  margin-bottom: 1rem;
+  animation: fa-spin 2s infinite linear;
+}
+
+.matches-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--lux-light-gray);
+}
+
+.lux-matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.lux-match-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.lux-match-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.match-photo-container {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.lux-match-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.lux-match-card:hover .lux-match-photo {
+  transform: scale(1.05);
+}
+
+.vip-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--lux-primary);
+  color: var(--lux-secondary);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.match-info {
+  padding: 1.2rem;
+}
+
+.match-info h4 {
+  margin-bottom: 0.5rem;
+  color: var(--lux-secondary);
+}
+
+.match-info p {
+  color: var(--lux-gray);
+  margin-bottom: 1rem;
+}
+
+.match-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Estilo base (mobile-first) */
+.lux-post-form {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.lux-input, .lux-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #f9f9f9;
+}
+
+.lux-input:focus, .lux-textarea:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  background-color: #ffffff;
+}
+
+.lux-input {
+  height: 48px;
+}
+
+.lux-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Input de arquivo */
+.file-input-container {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.file-input-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  background-color: #f0f4f8;
+  border-radius: 8px;
+  border: 1px dashed #c1d5e8;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.file-input-label:hover {
+  background-color: #e6eef7;
+  border-color: #4a90e2;
+}
+
+.file-input-label i {
+  margin-right: 8px;
+  color: #4a90e2;
+}
+
+.file-input-label span {
+  color: #555;
+  font-size: 14px;
+}
+
+#newsImage {
+  display: none;
+}
+
+/* Preview da imagem */
+.image-preview {
+  margin-top: 12px;
+  display: none;
+  text-align: center;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.remove-image {
+  display: inline-block;
+  margin-top: 8px;
+  color: #e74c3c;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.remove-image:hover {
+  text-decoration: underline;
+}
+
+/* Botão de publicar */
+#newsPostBtn {
+  width: 100%;
+  padding: 14px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#newsPostBtn:hover {
+  background-color: #3a7bc8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#newsPostBtn:active {
+  transform: translateY(0);
+}
+
+#newsPostBtn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+#newsPostBtn i {
+  font-size: 18px;
+}
+
+/* Responsividade - Tablet (768px+) */
+@media (min-width: 768px) {
+  .lux-post-form {
+    padding: 24px;
+    margin-bottom: 30px;
+  }
+  
+  .lux-input, .lux-textarea {
+    font-size: 15px;
+    padding: 14px 18px;
+  }
+  
+  .lux-textarea {
+    min-height: 120px;
+  }
+  
+  #newsPostBtn {
+    padding: 16px;
+    font-size: 17px;
+  }
+  
+  .file-input-label {
+    padding: 14px 18px;
+  }
+}
+
+/* Responsividade - Desktop Pequeno (992px+) */
+@media (min-width: 992px) {
+  .lux-post-form {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 28px;
+  }
+  
+  .lux-input, .lux-textarea {
+    font-size: 16px;
+    padding: 16px 20px;
+  }
+  
+  .lux-textarea {
+    min-height: 140px;
+  }
+  
+  #newsPostBtn {
+    padding: 18px;
+    font-size: 18px;
+  }
+  
+  .image-preview img {
+    max-height: 250px;
+  }
+}
+
+/* Responsividade - Desktop Grande (1200px+) */
+@media (min-width: 1200px) {
+  .lux-post-form {
+    padding: 32px;
+    border-radius: 14px;
+  }
+  
+  .lux-input, .lux-textarea {
+    margin-bottom: 16px;
+  }
+  
+  .file-input-label {
+    font-size: 15px;
+  }
+  
+  .file-input-label span {
+    font-size: 15px;
+  }
+  
+  .remove-image {
+    font-size: 14px;
+  }
+}
+
+/* Efeitos de foco melhorados para desktop */
+@media (hover: hover) and (pointer: fine) {
+  .lux-input:hover, .lux-textarea:hover {
+    border-color: #b3d1f0;
+  }
+  
+  .file-input-label:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  }
+  
+  .remove-image:hover {
+    color: #c0392b;
+  }
+}
+
+/* Adicione ao seu arquivo CSS */
+.clickable-author {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-author:hover {
+  opacity: 0.8;
+}
+
+.lux-news-author:hover {
+  text-decoration: underline;
+  color: #4a90e2;
+}
+
+
+
+/* Sidebar de Conversas */
+.lux-conversations-sidebar {
+  width: 380px;
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Cabeçalho da Sidebar */
+.lux-conversations-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lux-conversations-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.lux-conversations-title h2 {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.lux-conversations-title i {
+  color: #d4af37;
+}
+
+/* Botão Nova Conversa */
+.lux-new-chat-btn {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d4af37;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.lux-new-chat-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  transform: scale(1.05);
+}
+
+/* Barra de Busca */
+.lux-search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lux-search-icon {
+  position: absolute;
+  left: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.lux-search-input {
+  width: 100%;
+  padding: 10px 15px 10px 40px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.lux-search-input:focus {
+  outline: none;
+  border-color: rgba(212, 175, 55, 0.5);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lux-search-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lux-search-clear:hover {
+  color: #ffffff;
+}
+
+/* Lista de conversas */
+.lux-conversations-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 16px;
+          background-color: azure;
+
+
+}
+.lux-floating-chatbox {
+  position: fixed;
+  bottom: 20px;
+      background-color: azure;
+
+  right: 20px;
+  width: 350px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  overflow: hidden;
+}
+
+@media (max-width: 500px) {
+  .lux-floating-chatbox {
+    width: 85%;
+    right: 4.5%;
+
+    bottom: 10px;
+    max-height: 90vh;
+  }
+}
+.lux-conversation-item {
+  display: flex;
+  padding: 12px 20px;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.lux-conversation-item:hover {
+  background: #f0f7ff;
+}
+
+.lux-conversation-item.active {
+  background: #e6f0fa;
+}
+
+.lux-conversation-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 3px;
+  background: #4a90e2;
+  border-radius: 0 3px 3px 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.lux-conversation-item.active::after {
+  opacity: 1;
+}
+
+.lux-conversation-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 15px;
+  border: 2px solid #e0e0e0;
+}
+
+.lux-conversation-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lux-conversation-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lux-conversation-preview {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lux-conversation-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 10px;
+}
+
+.lux-conversation-time {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+}
+
+.lux-conversation-badge {
+  background: #ff4757;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.lux-conversations-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.lux-conversations-empty i {
+  font-size: 40px;
+  color: #e0e0e0;
+  margin-bottom: 15px;
+}
+
+.lux-conversations-empty p {
+  margin: 10px 0 20px;
+}
+
+/* Área principal do chat */
+.lux-chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Estado Vazio do Chat */
+.lux-chat-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(15, 12, 41, 0.8) 0%, rgba(26, 26, 46, 0.8) 100%);
+}
+
+.lux-chat-empty-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.lux-chat-empty-content i {
+  font-size: 60px;
+  color: rgba(212, 175, 55, 0.3);
+  margin-bottom: 20px;
+}
+
+.lux-chat-empty-content h3 {
+  color: #ffffff;
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.lux-chat-empty-content p {
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 20px;
+}
+
+/* Chat ativo */
+.lux-active-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+
+.lux-back-to-conversations {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #555;
+  margin-right: 15px;
+  cursor: pointer;
+  display: none;
+}
+
+.lux-chat-partner {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+/* Container de informações do parceiro - estilo luxuoso */
+.lux-chat-partner-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 16px;
+    margin-left: 20px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.lux-chat-partner-info:hover {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Avatar do parceiro */
+.lux-chat-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #d4af37;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.3);
+    transition: all 0.3s ease;
+}
+
+.lux-chat-partner-info:hover .lux-chat-avatar {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.5);
+}
+
+/* Textos */
+.lux-chat-partner-info h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.lux-chat-status {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    position: relative;
+    padding-left: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Indicador de status */
+.lux-chat-status::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4caf50; /* Verde para online */
+}
+
+/* Status offline */
+.lux-chat-status.offline::before {
+    background: #f44336; /* Vermelho para offline */
+}
+
+/* Status away */
+.lux-chat-status.away::before {
+    background: #ffc107; /* Amarelo para away */
+}
+
+
+/* Container de mensagens */
+.lux-messages-container {
+  flex: 1;
+  overflow-y: auto;
+  background: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+      height: 300px;
+
+}
+
+.lux-messages-date {
+  text-align: center;
+  margin: 10px 0;
+  position: relative;
+}
+
+.lux-messages-date span {
+  background: #e0e0e0;
+  color: #777;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.lux-messages-date::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e0e0e0;
+  z-index: 0;
+}
+
+/* Mensagens individuais */
+.lux-message {
+  display: flex;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.lux-message.sent {
+  justify-content: flex-end;
+}
+
+.lux-message.received {
+  justify-content: flex-start;
+}
+
+.lux-message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+  align-self: flex-end;
+  display: none;
+}
+
+.lux-message.received .lux-message-avatar {
+  display: block;
+}
+
+.lux-message-content {
+  max-width: 70%;
+  min-width: 120px;
+}
+
+.lux-message-sender {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  margin-left: 8px;
+}
+
+.lux-message-bubble {
+  padding: 12px 16px;
+  border-radius: 18px;
+  position: relative;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.lux-message.sent .lux-message-bubble {
+  background: #4a90e2;
+  color: white;
+  border-top-right-radius: 4px;
+}
+
+.lux-message.received .lux-message-bubble {
+  background: #ffffff;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  border-top-left-radius: 4px;
+}
+
+.lux-message-time {
+  display: block;
+  font-size: 10px;
+  margin-top: 4px;
+  text-align: right;
+  opacity: 0.8;
+}
+
+.lux-message.sent .lux-message-time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.lux-message.received .lux-message-time {
+  color: #999;
+}
+
+/* Compositor de mensagens */
+.lux-message-composer {
+  padding: 15px 20px;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.lux-composer-tools {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.lux-composer-tool {
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 18px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.lux-composer-tool:hover {
+  color: #4a90e2;
+}
+
+.lux-message-input-container {
+  display: flex;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 24px;
+  padding: 8px 15px;
+}
+
+.lux-message-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  resize: none;
+  font-size: 14px;
+  max-height: 120px;
+  padding: 5px 0;
+  outline: none;
+}
+
+.lux-emoji-picker {
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 18px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.lux-send-message-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lux-send-message-btn:hover {
+  background: #3a7bc8;
+}
+
+.lux-send-message-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+  .lux-conversations-sidebar {
+    width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .lux-messages-container {
+    flex-direction: column;
+    height: 400px;
+            width: 100%;
+        background-color: #f0f0f0;
+
+
+  }
+  
+  .lux-conversations-sidebar {
+    border-radius: 12px;
+    width: 100%;
+    
+    border-right: none;
+    border-bottom: 1px solid #f0f0f0;
+    flex: none;
+    height: auto;
+  }
+  
+  .lux-active-chat {
+    display: none;
+  }
+  
+  .lux-active-chat.active {
+    display: flex;
+  }
+  
+  .lux-back-to-conversations {
+    display: block;
+  }
+}
+
+/* Modo escuro */
+@media (prefers-color-scheme: dark) {
+  .lux-messages-container {
+    background: #252525;
+  }
+  
+  .lux-conversations-sidebar {
+    background: #2d2d2d;
+    border-color: #444;
+  }
+  
+  .lux-conversations-header {
+    background: #333;
+    border-color: #444;
+  }
+  
+  .lux-conversations-title h2 {
+    color: #f0f0f0;
+  }
+  
+  .lux-search-input {
+    background: #3a3a3a;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+  
+  .lux-conversation-item:hover {
+    background: #3a3a3a;
+  }
+  
+  .lux-conversation-item.active {
+    background: #1a3a5a;
+  }
+  
+  .lux-conversation-name {
+    color: #f0f0f0;
+  }
+  
+  .lux-conversation-preview {
+    color: #aaa;
+  }
+  
+ 
+  
+  .lux-chat-partner-info h3 {
+    color: #f0f0f0;
+  }
+  
+  .lux-messages-container {
+    background: #252525;
+  }
+  
+  .lux-message.received .lux-message-bubble {
+    background: #3a3a3a;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+  
+  .lux-message-composer {
+    background: #333;
+    border-color: #444;
+  }
+  
+  .lux-message-input-container {
+    background: #3a3a3a;
+  }
+  
+  .lux-message-input {
+    color: #f0f0f0;
+  }
+}
+/* Chatbox Modal Styles */
+.lux-chatbox-modal {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 350px;
+  max-height: 70vh;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.lux-chatbox-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.lux-chatbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background-color: #4a90e2;
+  color: white;
+}
+
+.lux-chatbox-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lux-chatbox-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.lux-chatbox-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.lux-chatbox-status {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.lux-chatbox-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.lux-chatbox-messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  background-color: #f5f7fa;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lux-chatbox-message {
+  max-width: 80%;
+  padding: 10px 15px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.lux-chatbox-message.sent {
+  align-self: flex-end;
+  background-color: #4a90e2;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.lux-chatbox-message.received {
+  align-self: flex-start;
+  background-color: white;
+  color: #333;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.lux-chatbox-message-time {
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.lux-chatbox-message.received .lux-chatbox-message-time {
+  color: rgba(0,0,0,0.4);
+}
+
+.lux-chatbox-input-container {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #eee;
+  background-color: white;
+}
+
+.lux-chatbox-tools {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.lux-chatbox-tool-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 18px;
+  cursor: pointer;
+  position: relative;
+  padding: 5px;
+  margin-right: 5px;
+}
+
+.lux-chatbox-tool-btn:hover {
+  color: #4a90e2;
+}
+
+.lux-chatbox-input-container textarea {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 10px 15px;
+  resize: none;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  max-height: 100px;
+}
+
+.lux-chatbox-send-btn {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  margin-left: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Estilos para mensagens com mídia */
+.lux-chatbox-media-message {
+  max-width: 250px;
+  margin: 5px 0;
+}
+
+.lux-chatbox-media-container {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.lux-chatbox-media {
+  max-width: 100%;
+  max-height: 200px;
+  display: block;
+  border-radius: 10px;
+}
+
+.lux-chatbox-file-message {
+  background: #f5f7fa;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  max-width: 250px;
+}
+
+.lux-chatbox-file-icon {
+  font-size: 24px;
+  margin-right: 10px;
+  color: #4a90e2;
+}
+
+.lux-chatbox-file-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.lux-chatbox-file-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: bold;
+}
+
+.lux-chatbox-file-size {
+  font-size: 12px;
+  color: #666;
+}
+
+.lux-chatbox-download-btn {
+  margin-left: 10px;
+  color: #4a90e2;
+}
+
+/* Preview de imagem antes de enviar */
+.lux-chatbox-preview-container {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.lux-chatbox-preview-image {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 8px;
+}
+
+.lux-chatbox-preview-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+/* Visualizador de mídia */
+.lux-media-viewer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.9);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lux-media-viewer-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.lux-media-viewer-image {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.lux-media-viewer-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  color: white;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+/* Responsividade */
+@media (max-width: 480px) {
+  .lux-chatbox-modal {
+    width: 100%;
+    max-height: 80vh;
+    bottom: 0;
+    right: 0;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+.lux-chatbox-preview-container {
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.lux-chatbox-preview-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 4px;
+}
+
+.lux-chatbox-preview-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0,0,0,0.5);
+  border: none;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.lux-file-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Estilos para a área de pré-visualização */
+.lux-attachments-preview {
+  display: none;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.lux-preview-item {
+  position: relative;
+  display: inline-block;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+.lux-preview-image {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.lux-preview-file {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  max-width: 200px;
+}
+
+.lux-preview-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lux-file-icon {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.lux-file-info {
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.lux-file-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+
+/* Estilo para o container de pré-visualização */
+#attachmentsPreview {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  display: none;
+}
+
+/* Estilo para os itens de pré-visualização */
+.lux-preview-item {
+  position: relative;
+  display: inline-block;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  vertical-align: top;
+}
+
+.lux-preview-image {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  display: block;
+}
+
+.lux-preview-file {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  max-width: 200px;
+}
+
+.lux-preview-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.lux-message-image {
+  margin-top: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 100%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.lux-message-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  object-fit: cover;
+  max-height: 300px;
+}
+
+/* Responsivo: ajusta altura em telas menores */
+@media (max-width: 480px) {
+  .lux-message-image img {
+    max-height: 200px;
+  }
+}
+
+
+
+/* Container do cabeçalho do chat - versão luxuosa */
+.lux-chat-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    z-index: 100;
+    min-height: 72px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Container dos botões de ação - versão premium */
+.lux-chat-actions {
+    margin-left: auto; /* Alinhamento à direita */
+    display: flex;
+    gap: 12px;
+    position: relative;
+    align-items: center;
+}
+
+/* Botões de ação - estilo luxuoso */
+.lux-chat-action-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #d4af37; /* Dourado */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    font-size: 18px;
+}
+
+
+
+
+
+.lux-back-btn {
+    margin-right: auto;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #d4af37;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.lux-back-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(212, 175, 55, 0.2);
+}
+
+/* Animação para fechar o chat */
+@keyframes fadeOut {
+  from { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+  to { 
+    opacity: 0; 
+    transform: translateY(20px);
+  }
+}
+
+/* Estilo para quando o chat está aberto */
+.lux-floating-chatbox {
+  transition: all 0.3s ease;
+}
+
+.lux-chat-action-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Efeito de clique */
+.lux-chat-action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+.lux-options-menu {
+    position: fixed;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
+                inset 0 1px 1px rgba(255, 255, 255, 0.06);
+    z-index: 11000;
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+}
+
+.lux-options-menu.active {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+/* Itens do menu */
+.lux-options-list {
+    list-style: none;
+    padding: 6px 0;
+    margin: 0;
+}
+
+.lux-option-item {
+    padding: 12px 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 14px;
+    color: #e6e6e6;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.lux-option-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.lux-option-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 24px;
+    right: 24px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.lux-option-item i {
+    width: 20px;
+    text-align: center;
+    color: #d4af37; /* Dourado luxuoso */
+    font-size: 16px;
+}
+
+/* Efeito de hover mais sofisticado */
+.lux-option-item:hover i {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+}
+
+
+
+/* Transições entre seções */
+.lux-section {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  transition: all 0.4s ease-in-out;
+  z-index: 10;
+  display: none;
+  opacity: 0;
+  transform: translateX(100%);
+  background: var(--bg-color); /* Use sua cor de fundo */
+}
+
+.lux-section.active-section {
+  z-index: 20;
+
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Garanta que apenas uma seção seja visível por vez */
+.lux-section:not(.active-section) {
+  pointer-events: none;
+}
+
+
+
+
+
+.lux-match-card-actions {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 10px;
+}
+
+.lux-match-card-actions .lux-btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+}
+
+.lux-match-card-actions .lux-btn-icon:hover {
+  background: #f5f5f5;
+  color: #333;
+  transform: scale(1.1);
+}
+
+.lux-match-card-actions .lux-btn-icon i {
+  font-size: 16px;
+}
+
+/* Estilo específico para o botão de remover */
+.lux-match-card-actions .remove-btn:hover {
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.1);
+}
+
+
+
+
+
+
+
+
+/* Estilo da aba PERFIL */
+
+.profile-section {
+    display: none; /* Isso é essencial */
+
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilo para quando estiver visível */
+.profile-section.show {
+  display: block;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.profile-header h2 {
+  color: #333;
+  font-size: 28px;
+  margin-bottom: 5px;
+}
+
+.profile-header p {
+  color: #666;
+  font-size: 16px;
+}
+
+.profile-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #444;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.profile-picture {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
+.image-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-upload img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 3px solid #eee;
+}
+
+.btn-change {
+  background: #f0f0f0;
+  color: #333;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.btn-change:hover {
+  background: #e0e0e0;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.btn-save {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.btn-save:hover {
+  background: #45a049;
+}
+
+.btn-cancel {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.btn-cancel:hover {
+  background: #d32f2f;
+}
+
+.profile-footer {
+  margin-top: 30px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn-password {
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.btn-password:hover {
+  background: #0b7dda;
+}
+
+.btn-delete {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.btn-delete:hover {
+  background: #d32f2f;
+}
+
+@media (max-width: 768px) {
+  .profile-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+
+.luxury-modal {
+  display: none;
+  position: fixed;
+  z-index: 10000; /* Valor extremamente alto */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  margin: 10% auto;
+  padding: 25px;
+  width: 90%;
+  max-width: 450px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  position: relative;
+  z-index: 10001;
+}
+
+/* Garanta que todos elementos interativos são clicáveis */
+#currentPassword,
+#confirmPasswordBtn, 
+#cancelPasswordBtn,
+.close-modal {
+  pointer-events: auto;
+  position: relative;
+  z-index: 10002;
+}
+
+/* Reset para elementos que podem estar bloqueando */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+  transform: rotate(30deg);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #e94584;
+}
+
+.close-modal {
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.close-modal:hover {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.modal-body p {
+  margin-bottom: 15px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.luxury-input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.luxury-input:focus {
+  outline: none;
+  border-color: #e94584;
+  box-shadow: 0 0 0 2px rgba(233, 69, 132, 0.3);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.luxury-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.luxury-btn {
+  background: linear-gradient(to right, #e94584, #8a2be2);
+  color: white;
+}
+
+.luxury-btn.cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.luxury-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.luxury-btn:active {
+  transform: translateY(0);
 }

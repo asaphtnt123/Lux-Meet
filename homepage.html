@@ -38,11 +38,11 @@
   <span>Novidades</span>
 </a>
 
-        <a href="#" class="lux-nav-item" data-section="matches">
-          <i class="fas fa-heart"></i>
-          <span>Matches</span>
-          <span class="lux-badge">3</span>
-        </a>
+     <a href="#" class="lux-nav-item" data-section="matches">
+  <i class="fas fa-heart"></i>
+  <span>Matches</span>
+  <span class="lux-badge matches-badge matches-counter" style="display: none;">0</span>
+</a>
         
         <a href="#" class="lux-nav-item" data-section="messages">
           <i class="fas fa-envelope"></i>
@@ -68,19 +68,29 @@
   <!-- Conteúdo Principal -->
   <main class="lux-main-content">
     <!-- Seção do Perfil do Usuário -->
+
+    <div class="lux-profile-header-wrapper">
+  <!-- Círculos de fundo (agora como primeiro elemento) -->
+  <div class="lux-profile-header-bg-circles">
+    <ul class="circles">
+      <li></li><li></li><li></li><li></li><li></li>
+      <li></li><li></li><li></li><li></li><li></li>
+    </ul>
+  </div>
     <header class="lux-profile-header">
+      
       <div class="lux-profile-info">
         <div class="lux-avatar-container">
-<img id="userAvatar" class="lux-user-avatar" src="https://via.placeholder.com/150" alt="Foto do perfil">          <span class="lux-online-status"></span>
+<img id="userAvatar" class="lux-user-avatar" src="https://via.placeholder.com/150" alt="Foto do perfil">
         </div>
         <div class="lux-user-details">
           <h1 id="userName">Carregando...</h1>
           <p id="userTitle">Membro LuxMeet</p>
           <div class="lux-user-stats">
-            <div class="lux-stat">
-              <span class="lux-stat-value" id="matchCount">0</span>
-              <span class="lux-stat-label">Matches</span>
-            </div>
+           <div class="lux-stat">
+  <span class="lux-stat-value" id="matchCount">0</span>
+  <span class="lux-stat-label">Matches</span>
+</div>
             <div class="lux-stat">
               <span class="lux-stat-value" id="viewCount">0</span>
               <span class="lux-stat-label">Visualizações</span>
@@ -102,29 +112,73 @@
           <i class="fas fa-edit"></i> Editar Perfil
         </button>
       </div>
+
+      <button class="lux-collapse-btn" id="toggleHeaderBtn" aria-label="Recolher/Expandir perfil">
+    <i class="fas fa-chevron-up"></i>
+  </button>
     </header>
+    </div>
+
 
     <!-- Seções de Conteúdo -->
     <div class="lux-content-sections">
       <!-- Seção de Descobrir Pessoas -->
-     <section id="discoverSection" class="section">
+     <section id="discoverSection" class="lux-section">
   <div class="lux-section-header">
     <h2>Descobrir Pessoas</h2>
-    <div class="lux-filter-controls">
-      <select id="discoverFilter" class="lux-select" onchange="loadDiscoverUsers()">
-        <option value="all">Todos</option>
-        <option value="sugar_daddy">Sugar Daddies</option>
-        <option value="sugar_mommy">Sugar Mommies</option>
-        <option value="sugar_baby">Sugar Babies</option>
-      </select>
-      <button class="lux-btn lux-btn-icon" onclick="refreshDiscover()">
-        <i class="fas fa-sync-alt"></i>
-      </button>
-    </div>
+  </div>
+
+
+  <div class="lux-filter-container">
+  <select id="filterGender" class="lux-select">
+    <option value="">Todos os gêneros</option>
+    <option value="male">Masculino</option>
+    <option value="female">Feminino</option>
+    <option value="other">Outro</option>
+  </select>
+  
+  <select id="filterUserType" class="lux-select">
+    <option value="">Todos os tipos</option>
+    <option value="sugar_daddy">Sugar Daddy</option>
+    <option value="sugar_mommy">Sugar Mommy</option>
+    <option value="sugar_baby">Sugar Baby</option>
+  </select>
+  
+  <div class="lux-age-filter">
+    <input type="number" id="filterMinAge" placeholder="Idade mínima" min="18" max="99" value="18" class="lux-input">
+    <span>a</span>
+    <input type="number" id="filterMaxAge" placeholder="Idade máxima" min="18" max="99" value="99" class="lux-input">
   </div>
   
+<div class="lux-search-container">
+  <input type="text" 
+         id="filterCity" 
+         placeholder="Digite o nome da cidade..." 
+         class="lux-search-input">
+  <button class="lux-btn lux-btn-icon" onclick="resetCityFilter()">
+    <i class="fas fa-times"></i>
+  </button>
+</div>  
+  <label class="lux-checkbox">
+    <input type="checkbox" id="filterOnlyVip">
+    <span>Usuarios VIPs</span>
+  </label>
+  
+  <button class="lux-btn" onclick="loadDiscoverUsers()">
+    <i class="fas fa-search"></i> Filtrar
+  </button>
+  
+  <button class="lux-btn lux-btn-secondary" onclick="resetFilters()">
+    <i class="fas fa-times"></i> Limpar
+  </button>
+</div>
+
+
+
   <div class="lux-user-grid" id="discoverGrid"></div>
 </section>
+
+<div id="chatModal" class="lux-modal" style="display: none;"></div>
 
       <!-- Seção de Novidades -->
 <section class="lux-section" id="newsSection" style="display:none;">
@@ -132,99 +186,307 @@
     <h2>Novidades</h2>
   </div>
 
-  <!-- Formulário de postagem -->
-  <div class="lux-post-form">
-    <input type="text" id="newsTitle" placeholder="Título" class="lux-input">
-    <textarea id="newsText" rows="3" placeholder="O que há de novo?" class="lux-textarea"></textarea>
+<div class="lux-post-form">
+  <input type="text" id="newsTitle" placeholder="Dê um título ao seu post" class="lux-input">
+  <textarea id="newsText" rows="3" placeholder="Compartilhe suas novidades..." class="lux-textarea"></textarea>
+  
+  <div class="file-input-container">
+    <label for="newsImage" class="file-input-label">
+      <i class="fas fa-camera"></i>
+      <span>Adicionar imagem</span>
+    </label>
     <input type="file" id="newsImage" accept="image/*">
-    <button class="lux-btn lux-btn-primary" id="newsPostBtn">
-      <i class="fas fa-paper-plane"></i> Publicar
-    </button>
   </div>
+  
+  <div class="image-preview">
+    <img id="previewImage" src="#" alt="Pré-visualização da imagem">
+    <span class="remove-image">Remover imagem</span>
+  </div>
+  
+  <button class="lux-btn lux-btn-primary" id="newsPostBtn">
+    <i class="fas fa-paper-plane"></i> Publicar
+  </button>
+</div>
 
   <!-- Feed -->
   <div id="newsFeed" class="lux-news-feed"></div>
+  <div id="posts-container"></div>
+
+
 </section>
 
       <!-- Seção de Matches -->
-      <section class="lux-section" id="matchesSection" style="display: none;">
-        <div class="lux-section-header">
-          <h2>Seus Matches</h2>
-          <button class="lux-btn lux-btn-primary">
-            Ver Todos
-          </button>
-        </div>
-        
-        <div class="lux-matches-container" id="matchesContainer">
-          <!-- Matches serão carregados aqui -->
-        </div>
-      </section>
+<section class="lux-section" id="matchesSection" style="display: none;">
+  <div class="lux-section-header">
+    <h2>Seus Matches</h2>
+    <button class="lux-btn lux-btn-primary">
+      Ver Todos
+    </button>
+  </div>
+  
+  <div class="lux-matches-container" id="matchesContainer">
+    <!-- Matches serão carregados aqui -->
+  </div>
+</section>
 
       <!-- Seção de Mensagens -->
-      <section class="lux-section" id="messagesSection" style="display: none;">
-        <div class="lux-section-header">
-          <h2>Suas Mensagens</h2>
-          <button class="lux-btn lux-btn-primary">
-            Nova Mensagem
+      <!-- messages.html -->
+<section class="lux-section" id="messagesSection" style="display:none;">
+  <div class="lux-messages-container">
+    <!-- Sidebar de conversas -->
+    <aside class="lux-conversations-sidebar">
+      <header class="lux-conversations-header">
+        <div class="lux-conversations-title">
+          <h2><i class="fas fa-comments"></i> Mensagens</h2>
+          <button id="newChatBtn" class="lux-new-chat-btn" aria-label="Nova conversa">
+            <i class="fas fa-plus-circle"></i>
           </button>
         </div>
         
-        <div class="lux-messages-list" id="messagesList">
-          <!-- Mensagens serão carregadas aqui -->
+        <div class="lux-search-container">
+          <i class="fas fa-search lux-search-icon"></i>
+          <input type="text" id="searchContacts" class="lux-search-input" placeholder="Buscar conversas ou pessoas...">
+          <button class="lux-search-clear" aria-label="Limpar busca">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-      </section>
+      </header>
+      
+      <div class="lux-conversations-list" id="chatsList">
+        <!-- Lista de conversas será carregada aqui -->
+        <div class="lux-conversations-empty">
+          <i class="fas fa-comment-slash"></i>
+          <p>Nenhuma conversa encontrada</p>
+          <button id="startFirstChat" class="lux-btn lux-btn-primary">
+            Iniciar uma conversa
+          </button>
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Área de conversa principal -->
+    <main class="lux-chat-main">
+      <div class="lux-chat-empty-state" id="emptyChatState">
+        <div class="lux-chat-empty-content">
+          <i class="fas fa-comment-dots"></i>
+          <h3>Selecione uma conversa</h3>
+          <p>Escolha uma conversa existente ou inicie uma nova</p>
+          <button id="emptyStateNewChat" class="lux-btn lux-btn-primary">
+            <i class="fas fa-plus"></i> Nova conversa
+          </button>
+        </div>
+      </div>
+      
+       <!-- Chat ativo (inicialmente oculto) -->
+      <!-- Chatbox flutuante -->
+<div class="lux-floating-chatbox" id="activeChat" style="display:none;">
+ 
+<div class="lux-chat-header">
+  <button class="lux-back-btn">
+    <i class="fas fa-arrow-left"></i>
+  </button>
+  
+  <div class="lux-chat-partner-info">
+    <img id="chatPartnerAvatar" src="" class="lux-chat-avatar" alt="Foto do usuário">
+    <div>
+      <h3 id="chatPartnerName">Nome do Usuário</h3>
+      <p id="chatPartnerStatus" class="lux-chat-status">Online</p>
+    </div>
+  </div>
+  
+  <div class="lux-chat-actions">
+    <button class="lux-chat-action-btn" aria-label="Informações" id="chatInfoBtn">
+      <i class="fas fa-info-circle"></i>
+    </button>
+    <button class="lux-chat-action-btn" aria-label="Mais opções" id="chatMoreOptionsBtn">
+      <i class="fas fa-ellipsis-v"></i>
+    </button>
+  </div>
+</div>
 
-      <!-- Seção de Perfil -->
-      <section class="lux-section" id="profileSection" style="display: none;">
-        <!-- Conteúdo do perfil será carregado aqui -->
-      </section>
+  <div class="lux-messages-container" id="messagesContainer">
+    <div class="lux-messages-date">
+      <span>HOJE</span>
+    </div>
+  </div>
+  <footer class="lux-message-composer">
+    <div class="lux-composer-tools">
+      <button class="lux-composer-tool" aria-label="Anexar arquivo" onclick="document.getElementById('chatFileInput').click()">
+        <i class="fas fa-paperclip"></i>
+      </button>
+      <button class="lux-composer-tool" aria-label="Enviar imagem" onclick="document.getElementById('chatImageInput').click()">
+        <i class="fas fa-image"></i>
+      </button>
+    </div>
+    <div id="attachmentsPreview"></div>
+    <div class="lux-message-input-container">
+      <textarea id="messageInput" class="lux-message-input" placeholder="Digite sua mensagem..." rows="1"></textarea>
+      <button class="lux-emoji-picker" aria-label="Emojis">
+        <i class="far fa-smile"></i>
+      </button>
+    </div>
+    <button id="sendMessageBtn" class="lux-send-message-btn" aria-label="Enviar mensagem">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+    <input type="file" id="chatImageInput" accept="image/*" style="display:none;" />
+    <input type="file" id="chatFileInput" style="display:none;" />
+  </footer>
+</div>
+    </main>
+  </div>
+</section>
+
+    <div id="profileSection" class="lux-section" style="display:none;" >
+  <div class="profile-header">
+    <h2>Meu Perfil</h2>
+    <p>Gerencie suas informações de cadastro</p>
+  </div>
+  
+  <form id="profileForm" class="profile-form">
+    <div class="form-group profile-picture">
+      <label for="profileImage">Foto de Perfil</label>
+      <div class="image-upload">
+        <img id="profilePreview" src="" alt="Foto de perfil">
+        <input type="file" id="profileImage" accept="image/*">
+        <button type="button" class="btn-change">Alterar Foto</button>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="name">Nome Completo</label>
+      <input type="text" id="name" name="name" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="email">E-mail</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="bio">Bio</label>
+      <input type="text" id="bio" name="bio" placeholder="Inteligente Rico e Aventureiro">
+    </div>
+    
+    <div class="form-group">
+      <label for="city">Cidade</label>
+      <input type="text" id="city" name="city" placeholder="Itapira">
+    </div>
+    
+    <div class="form-group">
+      <label for="dateOfBirth">Data de Nascimento</label>
+      <input type="date" id="dateOfBirth" name="dateOfBirth">
+    </div>
+    
+    <div class="form-group">
+      <label for="gender">Gênero</label>
+      <select id="gender" name="gender">
+        <option value="male">Masculino</option>
+        <option value="female">Feminino</option>
+        <option value="other">Outro</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="income">Faixa de Renda</label>
+      <select id="income" name="income">
+        <option value="0-1000">Até R$ 1.000</option>
+        <option value="1000-3000">R$ 1.000 - R$ 3.000</option>
+        <option value="3000-5000">R$ 3.000 - R$ 5.000</option>
+        <option value="5000-10000">R$ 5.000 - R$ 10.000</option>
+        <option value="10000-15000">R$ 10.000 - R$ 15.000</option>
+        <option value="15000-30000" selected>R$ 15.000 - R$ 30.000</option>
+        <option value="30000+">Acima de R$ 30.000</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="userType">Tipo de Usuário</label>
+      <select id="userType" name="userType" disabled>
+        <option value="sugar_daddy" selected>Sugar Daddy</option>
+        <option value="sugar_baby">Sugar Baby</option>
+      </select>
+    </div>
+    
+    <div class="form-actions">
+      <button type="submit" class="btn-save">Salvar Alterações</button>
+      <button type="button" class="btn-cancel">Cancelar</button>
+    </div>
+    <div class="profile-footer">
+    <button id="changePasswordBtn" class="btn-password">Alterar Senha</button>
+    <button id="deleteAccountBtn" class="btn-delete">Excluir Conta</button>
+  </div>
+  </form>
+  
+  
+</section>
     </div>
   </main>
 
   <!-- Modais -->
- <div id="profileModal" class="lux-modal" style="display: none;">
-  <div class="lux-modal-content">
+
+  <div id="passwordModal" class="luxury-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Alteração de E-mail</h3>
+      <span class="close-modal">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p>Para alterar o e-mail, confirme sua senha atual:</p>
+      <input type="password" id="currentPassword" class="luxury-input" placeholder="Digite sua senha">
+    </div>
+    <div class="modal-footer">
+      <button id="confirmPasswordBtn" class="luxury-btn">Confirmar</button>
+      <button id="cancelPasswordBtn" class="luxury-btn cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+ <div id="passwordModal" class="luxury-modal">
+  <div class="modal-content">
     <span class="lux-modal-close">&times;</span>
     <div id="profileModalContent"></div>
   </div>
 </div>
-
- <div class="lux-news-card">
-  <h3 class="lux-news-title">Título da Postagem</h3>
-
-  <img src="url-da-imagem.jpg" alt="descrição" class="lux-news-img">
-
-  <p class="lux-news-desc">
-    Breve descrição ou texto da postagem. A fonte é discreta e legível,
-    mantendo o aspecto premium.
-  </p>
-
-  <div class="lux-news-card">
-  <h3 class="lux-news-title">{{title}}</h3>
-
-  <img src="{{imageURL}}" class="lux-news-img" alt="imagem">
-
-  <p class="lux-news-desc">{{description}}</p>
-
-  <!-- AÇÕES (likes, dislikes, abrir comentários) -->
-  <div class="lux-news-actions">
-    <!-- botões ... -->
+<!-- Adicione isto no seu arquivo HTML -->
+<div id="chatboxModal" class="lux-chatbox-modal">
+  <div class="lux-chatbox-container">
+    <div class="lux-chatbox-header">
+      <div class="lux-chatbox-user">
+        <img id="chatboxAvatar" src="" alt="Avatar" class="lux-chatbox-avatar">
+        <div>
+          <h3 id="chatboxUserName"></h3>
+          <p id="chatboxUserStatus" class="lux-chatbox-status">Online</p>
+        </div>
+      </div>
+      <button class="lux-chatbox-close">&times;</button>
+    </div>
+    
+    <div class="lux-chatbox-messages" id="chatboxMessages">
+      <!-- Mensagens serão carregadas aqui -->
+    </div>
+    
+    <div class="lux-chatbox-input-container">
+      <div class="lux-chatbox-tools">
+        <button id="chatboxAttachButton" class="lux-chatbox-tool-btn" title="Anexar arquivo">
+          <i class="fas fa-paperclip"></i>
+          <input type="file" id="chatboxFileInput" style="display:none;" accept="*">
+        </button>
+        <button id="chatboxImageButton" class="lux-chatbox-tool-btn" title="Enviar imagem">
+          <i class="fas fa-image"></i>
+          <input type="file" id="chatboxImageInput" style="display:none;" accept="image/*">
+        </button>
+      </div>
+      
+      <textarea id="chatboxMessageInput" placeholder="Digite sua mensagem..." rows="1"></textarea>
+      <button id="chatboxSendButton" class="lux-chatbox-send-btn">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
   </div>
-<div class="lux-comments-container" id="comments-container-${postId}">
-
-  <!-- COMENTÁRIOS -->
-  <form class="lux-comment-form" id="comment-form-${postId}">
-  <input type="text" class="lux-comment-input" placeholder="Escreva um comentário..." required>
-  <button type="submit" class="lux-comment-submit">
-    <i class="fas fa-paper-plane"></i>
-  </button>
-</form>
-</div>
 </div>
 
-<div id="profileModal" class="lux-modal" style="display: none;">
-  <!-- O conteúdo será preenchido pelo JavaScript -->
-</div>
+
 <!-- Modal de Curtidas -->
 <div id="likesModal" class="lux-modal" style="display: none;">
   <div class="lux-modal-content" style="max-width: 400px;">
@@ -242,6 +504,10 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-  <script src="script.js"></script>
+  
+
+  
+ 
+<script src="script.js"></script>
 </body>
 </html>

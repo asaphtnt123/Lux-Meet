@@ -1,0 +1,380 @@
+/* Estilo base para a seção de mensagens */
+.lux-messages-section {
+  display: flex;
+  height: calc(100vh - 60px);
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Lista de conversas */
+.lux-chats-sidebar {
+  width: 350px;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lux-chats-header {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lux-chats-search {
+  padding: 0 16px 16px;
+}
+
+.lux-chats-search input {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.lux-chats-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.lux-chat-item {
+  display: flex;
+  padding: 12px 16px;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.lux-chat-item:hover {
+  background: #f9f9f9;
+}
+
+.lux-chat-item.active {
+  background: #f0f7ff;
+}
+
+.lux-chat-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+}
+
+.lux-chat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lux-chat-info h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lux-chat-preview {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lux-chat-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 8px;
+}
+
+.lux-chat-time {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+}
+
+.lux-chat-badge {
+  background: #4a90e2;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+/* Área de conversa */
+.lux-chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.lux-chat-header {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+}
+
+.lux-chat-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f9f9f9;
+}
+
+.lux-message {
+  display: flex;
+  margin-bottom: 16px;
+}
+
+.lux-message.sent {
+  justify-content: flex-end;
+}
+
+.lux-message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+  align-self: flex-end;
+}
+
+.lux-message-content {
+  max-width: 70%;
+}
+
+.lux-message-sender {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  margin-left: 8px;
+}
+
+.lux-message-bubble {
+  padding: 10px 14px;
+  border-radius: 18px;
+  position: relative;
+  line-height: 1.4;
+}
+
+.lux-message.sent .lux-message-bubble {
+  background: #4a90e2;
+  color: white;
+  border-top-right-radius: 4px;
+}
+
+.lux-message.received .lux-message-bubble {
+  background: #ffffff;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  border-top-left-radius: 4px;
+}
+
+.lux-message-time {
+  display: block;
+  font-size: 10px;
+  margin-top: 4px;
+  text-align: right;
+  opacity: 0.8;
+}
+
+.lux-message.sent .lux-message-time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.lux-message.received .lux-message-time {
+  color: #999;
+}
+
+.lux-chat-input-area {
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+  background: #ffffff;
+}
+
+.lux-chat-input-container {
+  display: flex;
+  gap: 8px;
+}
+
+.lux-chat-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 24px;
+  resize: none;
+  font-size: 14px;
+  max-height: 120px;
+}
+
+.lux-send-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lux-send-button:hover {
+  background: #3a7bc8;
+}
+
+.lux-send-button:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Estados vazios e loading */
+.lux-empty-state, .lux-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+  .lux-chats-sidebar {
+    width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .lux-messages-section {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .lux-chats-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .lux-chat-area {
+    min-height: 60vh;
+  }
+}
+
+/* Modo escuro */
+@media (prefers-color-scheme: dark) {
+  .lux-messages-section {
+    background: #2d2d2d;
+    border-color: #444;
+  }
+  
+  .lux-chats-sidebar {
+    border-color: #444;
+  }
+  
+  .lux-chats-header, .lux-chat-header {
+    border-color: #444;
+    background: #333;
+  }
+  
+  .lux-chat-item {
+    border-color: #444;
+  }
+  
+  .lux-chat-item:hover {
+    background: #3a3a3a;
+  }
+  
+  .lux-chat-item.active {
+    background: #1a3a5a;
+  }
+  
+  .lux-chat-info h4 {
+    color: #f0f0f0;
+  }
+  
+  .lux-chat-preview {
+    color: #aaa;
+  }
+  
+  .lux-chat-time {
+    color: #777;
+  }
+  
+  .lux-chat-messages {
+    background: #252525;
+  }
+  
+  .lux-message.received .lux-message-bubble {
+    background: #3a3a3a;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+  
+  .lux-message-sender {
+    color: #bbb;
+  }
+  
+  .lux-chat-input-area {
+    background: #333;
+    border-color: #444;
+  }
+  
+  .lux-chat-input {
+    background: #3a3a3a;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+}
+
+
+
+.lux-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1000;
+}
+
+.lux-toast.show {
+  opacity: 1;
+}
+
+.lux-toast-success {
+  background: #4CAF50;
+}
+
+.lux-toast-error {
+  background: #F44336;
+}
+
+.lux-toast-warning {
+  background: #FF9800;
+}
+
+
