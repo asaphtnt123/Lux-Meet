@@ -3574,6 +3574,7 @@ border: 3px solid var(--lux-primary);
 
 .lux-section.active-section {
   z-index: 20;
+    margin-top: 478px;
 
   opacity: 1;
   transform: translateX(0);
