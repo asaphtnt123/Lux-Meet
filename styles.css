@@ -23,6 +23,9 @@ body {
   color: var(--lux-dark);
   display: flex;
   min-height: 100vh;
+
+   position: relative;
+  overflow-x: hidden;
 }
 
 /* Tipografia */
@@ -3573,11 +3576,18 @@ border: 3px solid var(--lux-primary);
 }
 
 .lux-section.active-section {
+  position: absolute; /* Mude para absolute */
+  top: 478px; /* Substitua margin-top por top */
+  bottom: 0; /* Prende na base da tela */
+  left: 0;
+  right: 0;
   z-index: 20;
-    margin-top: 478px;
-
   opacity: 1;
   transform: translateX(0);
+  overflow-y: auto; /* Scroll vertical */
+  
+  /* Ajustes adicionais */
+  padding-bottom: 40px; /* Espaço extra no final */
 }
 
 /* Garanta que apenas uma seção seja visível por vez */
@@ -3972,4 +3982,11 @@ body.modal-open {
 
 .luxury-btn:active {
   transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .lux-section.active-section {
+    top: 400px; /* Ajuste menor para telas pequenas */
+    padding-bottom: 20px;
+  }
 }
