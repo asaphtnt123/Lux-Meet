@@ -169,6 +169,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Conteúdo Principal */
 .lux-main-content {
+  margin-left: 250px;
   flex-grow: 1;
   background-color: var(--lux-light-gray);
 }
@@ -681,7 +682,10 @@ border: 3px solid var(--lux-primary);
 
 /* Responsividade */
 @media (max-width: 992px) {
-  
+  .lux-navbar {
+    width: 80px;
+    padding: 1rem 0.5rem;
+  }
   
   .lux-nav-brand {
     text-align: center;
@@ -3571,13 +3575,19 @@ border: 3px solid var(--lux-primary);
   background: var(--bg-color); /* Use sua cor de fundo */
 }
 
-/* Estilos base - para mobile primeiro */
 .lux-section.active-section {
-    position: relative;
-    width: 100%;
-    top: 0;
-    padding: 20px;
-    box-sizing: border-box;
+  position: absolute; /* Mude para absolute */
+  top: 478px; /* Substitua margin-top por top */
+  bottom: 0; /* Prende na base da tela */
+  left: 0;
+  right: 0;
+  z-index: 20;
+  opacity: 1;
+  transform: translateX(0);
+  overflow-y: auto; /* Scroll vertical */
+  
+  /* Ajustes adicionais */
+  padding-bottom: 40px; /* Espaço extra no final */
 }
 
 /* Garanta que apenas uma seção seja visível por vez */
@@ -3974,155 +3984,9 @@ body.modal-open {
   transform: translateY(0);
 }
 
-/* Estilos para desktop */
-@media (min-width: 769px) {
-    .lux-container {
-        display: flex;
-        flex-direction: row;
-        position: relative;
-    }
-    
-    .lux-navbar {
-        width: 250px; /* Largura fixa para a navbar */
-        position: sticky;
-        top: 0;
-        height: 100vh;
-    }
-    
-    .lux-section.active-section {
-        flex: 1;
-        padding: 20px;
-        top: 0;
-    }
-}
-
-.no-matches-luxury {
-  text-align: center;
-  padding: 30px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #f0e6ff 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(255,215,0,0.3);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.05);
-}
-
-.luxury-message {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.8rem;
-  color: #3d2a4b;
-  margin-bottom: 12px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.luxury-subtext {
-  font-family: 'Montserrat', sans-serif;
-  color: #6d5b7b;
-  font-size: 1rem;
-  margin-bottom: 25px;
-  font-weight: 300;
-}
-
-.luxury-cta {
-  display: inline-flex;
-  align-items: center;
-  padding: 12px 28px;
-  background: linear-gradient(to right, #9d50bb, #6e48aa);
-  color: white;
-  border-radius: 30px;
-  text-decoration: none;
-  font-weight: 500;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  box-shadow: 0 4px 15px rgba(157, 80, 187, 0.3);
-  transition: all 0.4s ease;
-}
-
-.luxury-cta:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(157, 80, 187, 0.4);
-  background: linear-gradient(to right, #8e44ad, #5d3a8a);
-}
-
-.luxury-cta i {
-  margin-right: 10px;
-  font-size: 1rem;
-}
-
-
-/* Estilo Luxury para os matches */
-.matches-header-luxury {
-  padding: 20px;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-  margin-bottom: 20px;
-}
-
-.matches-header-luxury h3 {
-  color: #8e44ad;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.matches-header-luxury .fa-heart {
-  color: #e74c3c;
-}
-
-.luxury-badge {
-  background: linear-gradient(45deg, #9b59b6, #e74c3c);
-  color: white;
-  padding: 3px 12px;
-  border-radius: 20px;
-  font-size: 0.9em;
-  font-weight: 600;
-}
-
-.matches-grid-luxury {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  padding: 0 20px;
-}
-
-.luxury-match-card {
-  border-radius: 12px;
-  overflow: hidden;
-  background: white;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.luxury-match-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-/* Skeleton Loading */
-.match-skeleton-luxury {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-}
-
-.skeleton-avatar {
-  width: 100%;
-  height: 200px;
-  background: #f0f0f0;
-  border-radius: 8px;
-  margin-bottom: 15px;
-}
-
-.skeleton-line {
-  height: 12px;
-  background: #f0f0f0;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-.skeleton-line.small {
-  width: 60%;
+@media (max-width: 768px) {
+  .lux-section.active-section {
+    top: 400px; /* Ajuste menor para telas pequenas */
+    padding-bottom: 20px;
+  }
 }
