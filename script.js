@@ -969,7 +969,6 @@ async function loadNewsPosts() {
   }
 }
 
-
 function showSection(section) {
   // Primeiro: Esconder todas as seções completamente
   document.querySelectorAll('.lux-section').forEach(sec => {
@@ -1830,129 +1829,62 @@ function updateMatchesCounter(count) {
     setTimeout(() => statsCounter.classList.remove('pop'), 300);
   }
 }
+
+// Função para carregar matches e atualizar contagem
 async function loadMatches() {
   const container = document.getElementById('matchesContainer');
   if (!container) return;
 
-  // Mostrar loading state premium
-  container.innerHTML = `
-    <div class="loading-luxury">
-      <i class="fas fa-spinner fa-spin"></i>
-      <p>Buscando suas conexões premium...</p>
-    </div>
-  `;
+  // Mostrar loading
+  container.innerHTML = '<div class="loading">Carregando matches...</div>';
 
-  // Verificação robusta do estado de autenticação
-  await new Promise((resolve) => {
-    const unsubscribe = firebase.auth().onAuthStateChanged(async (user) => {
-      try {
-        if (!user) {
-          container.innerHTML = `
-            <div class="no-matches-luxury">
-              <p class="luxury-message">Conecte-se para acessar suas conexões exclusivas</p>
-              <a href="#" class="luxury-cta" onclick="showAuthModal()">
-                <i class="fas fa-sign-in-alt"></i> Entrar
-              </a>
-            </div>
-          `;
-          unsubscribe();
-          resolve();
-          return;
+  try {
+    const user = firebase.auth().currentUser;
+    if (!user) return;
+
+    // Buscar dados do usuário
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    if (!userDoc.exists) return;
+
+    const userData = userDoc.data();
+    const matchesIds = userData.matches || [];
+    const matchesCount = matchesIds.length;
+
+    // Atualizar contador (número total)
+    updateMatchesCounter(matchesCount);
+
+    if (matchesCount === 0) {
+      container.innerHTML = '<div class="no-matches">Nenhum match encontrado</div>';
+      return;
+    }
+
+    // Exibir matches
+    container.innerHTML = `
+      <h3>Seus Matches (${matchesCount})</h3>
+      <div class="matches-grid" id="matchesGrid"></div>
+    `;
+
+    // Preencher com cards de match
+    const grid = document.getElementById('matchesGrid');
+    matchesIds.forEach(matchId => {
+      db.collection('users').doc(matchId).get().then(doc => {
+        if (doc.exists) {
+          grid.appendChild(createMatchCard(doc.data()));
         }
-
-        console.log('Usuário autenticado:', user.uid); // Debug
-
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        if (!userDoc.exists) {
-          container.innerHTML = `
-            <div class="no-matches-luxury">
-              <p class="luxury-message">Complete seu perfil para começar</p>
-              <a href="#" class="luxury-cta" data-section="profile">
-                <i class="fas fa-user-edit"></i> Completar Perfil
-              </a>
-            </div>
-          `;
-          unsubscribe();
-          resolve();
-          return;
-        }
-
-        const userData = userDoc.data();
-        const matchesIds = userData.matches || [];
-        const matchesCount = matchesIds.length;
-
-        updateMatchesCounter(matchesCount);
-
-        if (matchesCount === 0) {
-          container.innerHTML = `
-            <div class="no-matches-luxury">
-              <p class="luxury-message">Sua galeria de conexões está vazia</p>
-              <p class="luxury-subtext">Comece a explorar para encontrar matches exclusivos</p>
-              <a href="#" class="luxury-cta" data-section="discover">
-                <i class="fas fa-gem"></i> Explorar Diamantes
-              </a>
-            </div>
-          `;
-          unsubscribe();
-          resolve();
-          return;
-        }
-
-        // Exibir matches com header premium
-        container.innerHTML = `
-          <div class="matches-header-luxury">
-            <h3><i class="fas fa-heart"></i> Suas Conexões <span class="luxury-badge">${matchesCount}</span></h3>
-          </div>
-          <div class="matches-grid-luxury" id="matchesGrid"></div>
-        `;
-
-        // Carregar matches
-        const grid = document.getElementById('matchesGrid');
-        const matchesSnapshots = await Promise.all(
-          matchesIds.map(matchId => db.collection('users').doc(matchId).get())
-        );
-
-        grid.innerHTML = '';
-        matchesSnapshots.forEach(doc => {
-          if (doc.exists) {
-            const matchCard = createMatchCard(doc.data());
-            matchCard.classList.add('luxury-match-card');
-            grid.appendChild(matchCard);
-          }
-        });
-
-      } catch (error) {
-        console.error("Erro ao carregar matches:", error);
-        container.innerHTML = `
-          <div class="error-luxury">
-            <i class="fas fa-exclamation-circle"></i>
-            <p>Erro ao carregar conexões</p>
-            <button class="luxury-cta" onclick="loadMatches()">
-              <i class="fas fa-sync-alt"></i> Tentar novamente
-            </button>
-          </div>
-        `;
-      } finally {
-        unsubscribe();
-        resolve();
-      }
+      });
     });
-  });
+
+  } catch (error) {
+    console.error("Erro ao carregar matches:", error);
+    container.innerHTML = '<div class="error">Erro ao carregar matches</div>';
+  }
 }
+
 
 // Chame updateMatchesCount quando o usuário logar
 firebase.auth().onAuthStateChanged(user => {
   if (user) {
     updateMatchesCounter();
-  }
-});
-
-firebase.auth().onAuthStateChanged((user) => {
-  console.log('Debug - Estado de autenticação:', user ? 'Autenticado' : 'Não autenticado');
-  if (user) {
-    console.log('Debug - UID do usuário:', user.uid);
-    console.log('Debug - Tempo desde último login:', 
-                (new Date() - new Date(user.metadata.lastSignInTime)) + 'ms');
   }
 });
 
@@ -2470,8 +2402,6 @@ async function loadMessages() {
     `;
   }
 }
-
-
 function createChatElement(chat) {
   const chatElement = document.createElement('div');
   chatElement.className = `lux-conversation ${chat.unread ? 'lux-conversation-unread' : ''}`;
