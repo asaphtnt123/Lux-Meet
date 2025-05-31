@@ -17,6 +17,8 @@
 </head>
 <body>
   <!-- Navbar Premium -->
+   <div class="lux-container">
+
   <nav class="lux-navbar">
     <div class="lux-nav-container">
       <div class="lux-nav-brand">
@@ -264,75 +266,7 @@
       </div>
     </aside>
     
-    <!-- Área de conversa principal -->
-    <main class="lux-chat-main">
-      <div class="lux-chat-empty-state" id="emptyChatState">
-        <div class="lux-chat-empty-content">
-          <i class="fas fa-comment-dots"></i>
-          <h3>Selecione uma conversa</h3>
-          <p>Escolha uma conversa existente ou inicie uma nova</p>
-          <button id="emptyStateNewChat" class="lux-btn lux-btn-primary">
-            <i class="fas fa-plus"></i> Nova conversa
-          </button>
-        </div>
-      </div>
-      
-       <!-- Chat ativo (inicialmente oculto) -->
-      <!-- Chatbox flutuante -->
-<div class="lux-floating-chatbox" id="activeChat" style="display:none;">
- 
-<div class="lux-chat-header">
-  <button class="lux-back-btn">
-    <i class="fas fa-arrow-left"></i>
-  </button>
-  
-  <div class="lux-chat-partner-info">
-    <img id="chatPartnerAvatar" src="" class="lux-chat-avatar" alt="Foto do usuário">
-    <div>
-      <h3 id="chatPartnerName">Nome do Usuário</h3>
-      <p id="chatPartnerStatus" class="lux-chat-status">Online</p>
-    </div>
-  </div>
-  
-  <div class="lux-chat-actions">
-    <button class="lux-chat-action-btn" aria-label="Informações" id="chatInfoBtn">
-      <i class="fas fa-info-circle"></i>
-    </button>
-    <button class="lux-chat-action-btn" aria-label="Mais opções" id="chatMoreOptionsBtn">
-      <i class="fas fa-ellipsis-v"></i>
-    </button>
-  </div>
-</div>
-
-  <div class="lux-messages-container" id="messagesContainer">
-    <div class="lux-messages-date">
-      <span>HOJE</span>
-    </div>
-  </div>
-  <footer class="lux-message-composer">
-    <div class="lux-composer-tools">
-      <button class="lux-composer-tool" aria-label="Anexar arquivo" onclick="document.getElementById('chatFileInput').click()">
-        <i class="fas fa-paperclip"></i>
-      </button>
-      <button class="lux-composer-tool" aria-label="Enviar imagem" onclick="document.getElementById('chatImageInput').click()">
-        <i class="fas fa-image"></i>
-      </button>
-    </div>
-    <div id="attachmentsPreview"></div>
-    <div class="lux-message-input-container">
-      <textarea id="messageInput" class="lux-message-input" placeholder="Digite sua mensagem..." rows="1"></textarea>
-      <button class="lux-emoji-picker" aria-label="Emojis">
-        <i class="far fa-smile"></i>
-      </button>
-    </div>
-    <button id="sendMessageBtn" class="lux-send-message-btn" aria-label="Enviar mensagem">
-      <i class="fas fa-paper-plane"></i>
-    </button>
-    <input type="file" id="chatImageInput" accept="image/*" style="display:none;" />
-    <input type="file" id="chatFileInput" style="display:none;" />
-  </footer>
-</div>
-    </main>
+    
   </div>
 </section>
 
@@ -424,6 +358,75 @@
 
   <!-- Modais -->
 
+ <!-- Chat ativo (inicialmente oculto) -->
+      <!-- Chatbox flutuante -->
+<div class="lux-floating-chatbox" id="activeChat" style="display:none;">
+ 
+<div class="lux-chat-header">
+  <button class="lux-back-btn">
+    <i class="fas fa-arrow-left"></i>
+  </button>
+  
+  <div class="lux-chat-partner-info">
+    <img id="chatPartnerAvatar" src="" class="lux-chat-avatar" alt="Foto do usuário">
+    <div>
+      <h3 id="chatPartnerName">Nome do Usuário</h3>
+      <p id="chatPartnerStatus" class="lux-chat-status">Online</p>
+    </div>
+  </div>
+  
+  <div class="lux-chat-actions">
+    <button class="lux-chat-action-btn" aria-label="Informações" id="chatInfoBtn">
+      <i class="fas fa-info-circle"></i>
+    </button>
+    <button class="lux-chat-action-btn" aria-label="Mais opções" id="chatMoreOptionsBtn">
+      <i class="fas fa-ellipsis-v"></i>
+    </button>
+  </div>
+</div>
+
+  <div class="lux-messages-container" id="messagesContainer">
+    <div class="lux-messages-date">
+      <span>HOJE</span>
+    </div>
+  </div>
+  <footer class="lux-message-composer">
+    <div class="lux-composer-tools">
+      <button class="lux-composer-tool" aria-label="Anexar arquivo" onclick="document.getElementById('chatFileInput').click()">
+        <i class="fas fa-paperclip"></i>
+      </button>
+      <button class="lux-composer-tool" aria-label="Enviar imagem" onclick="document.getElementById('chatImageInput').click()">
+        <i class="fas fa-image"></i>
+      </button>
+    </div>
+    <div id="attachmentsPreview"></div>
+    <div class="lux-message-input-container">
+      <textarea id="messageInput" class="lux-message-input" placeholder="Digite sua mensagem..." rows="1"></textarea>
+      <button class="lux-emoji-picker" aria-label="Emojis">
+        <i class="far fa-smile"></i>
+      </button>
+    </div>
+    <button id="sendMessageBtn" class="lux-send-message-btn" aria-label="Enviar mensagem">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+    <input type="file" id="chatImageInput" accept="image/*" style="display:none;" />
+    <input type="file" id="chatFileInput" style="display:none;" />
+  </footer>
+</div>
+  <!-- Profile Modal -->
+<div id="profileModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>Perfil do Usuário</h2>
+    <div id="profileContent">
+      <!-- Conteúdo do perfil será carregado aqui -->
+    </div>
+  </div>
+</div>
+
+
+
+
   <div id="passwordModal" class="luxury-modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -497,7 +500,7 @@
     </div>
   </div>
 </div>
-
+</div>
 
   <!-- Scripts -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>

@@ -2776,7 +2776,25 @@ function openChatModal(chatData) {
     if (input) input.focus();
   }, 100);
 }
+// Adicione isso junto com as outras variáveis de modal no início
+const profileModal = document.getElementById("profileModal");
+const profileBtn = document.getElementById("profileBtn"); // Certifique-se que este botão existe
 
+// Se o botão de perfil existir, adicione o event listener
+if (profileBtn) {
+  profileBtn.onclick = function() {
+    profileModal.style.display = "block";
+    // Aqui você pode adicionar código para carregar as informações do perfil
+  };
+}
+
+// Fechar o modal quando clicar no X
+const profileClose = profileModal.querySelector(".close");
+if (profileClose) {
+  profileClose.onclick = function() {
+    profileModal.style.display = "none";
+  };
+}
 
 async function startChatWithUser(otherUserId) {
   try {

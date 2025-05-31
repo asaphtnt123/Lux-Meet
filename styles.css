@@ -169,7 +169,6 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Conteúdo Principal */
 .lux-main-content {
-  margin-left: 250px;
   flex-grow: 1;
   background-color: var(--lux-light-gray);
 }
@@ -205,7 +204,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 .lux-profile-header-wrapper {
   position: relative;
-  margin-bottom: 2rem;
   border-radius: 16px;
   overflow: hidden;
   isolation: isolate; /* Cria um novo contexto de empilhamento */
@@ -2230,7 +2228,7 @@ border: 3px solid var(--lux-primary);
 
 /* Sidebar de Conversas */
 .lux-conversations-sidebar {
-  width: 380px;
+  width: 100%;
   background: rgba(26, 26, 46, 0.8);
   backdrop-filter: blur(12px);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -2624,8 +2622,7 @@ border: 3px solid var(--lux-primary);
   background: #f9f9f9;
   display: flex;
   flex-direction: column;
-  padding: 15px;
-      height: 300px;
+      height: auto;
 
 }
 
@@ -2813,7 +2810,7 @@ border: 3px solid var(--lux-primary);
 /* Responsividade */
 @media (max-width: 992px) {
   .lux-conversations-sidebar {
-    width: 300px;
+    width: 100%;
   }
 }
 
@@ -3575,20 +3572,15 @@ border: 3px solid var(--lux-primary);
   background: var(--bg-color); /* Use sua cor de fundo */
 }
 
+
+/* Estilos base - para mobile primeiro */
 .lux-section.active-section {
-  position: absolute; /* Mude para absolute */
-  top: 478px; /* Substitua margin-top por top */
-  bottom: 0; /* Prende na base da tela */
-  left: 0;
-  right: 0;
-  z-index: 20;
-  opacity: 1;
-  transform: translateX(0);
-  overflow-y: auto; /* Scroll vertical */
-  
-  /* Ajustes adicionais */
-  padding-bottom: 40px; /* Espaço extra no final */
+    position: relative;
+    width: 100%;
+    top: 0;
+    box-sizing: border-box;
 }
+
 
 /* Garanta que apenas uma seção seja visível por vez */
 .lux-section:not(.active-section) {
@@ -3984,9 +3976,23 @@ body.modal-open {
   transform: translateY(0);
 }
 
-@media (max-width: 768px) {
-  .lux-section.active-section {
-    top: 400px; /* Ajuste menor para telas pequenas */
-    padding-bottom: 20px;
-  }
+/* Estilos para desktop */
+@media (min-width: 769px) {
+    .lux-container {
+        display: flex;
+        flex-direction: row;
+        position: relative;
+    }
+    
+    .lux-navbar {
+        width: 250px; /* Largura fixa para a navbar */
+        position: sticky;
+        top: 0;
+        height: 100vh;
+    }
+    
+    .lux-section.active-section {
+        flex: 1;
+        top: 0;
+    }
 }
