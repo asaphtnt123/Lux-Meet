@@ -158,7 +158,7 @@
         }
 
         .modal-content {
-            background-color: #111;
+            background-color: #6d6767;
             margin: 5% auto;
             padding: 2rem;
             border: 1px solid #FFD700;
@@ -205,7 +205,7 @@
         .form-control {
             width: 100%;
             padding: 0.8rem;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgb(69, 64, 64);
             border: 1px solid rgba(255, 215, 0, 0.3);
             border-radius: 5px;
             color: #fff;
@@ -286,6 +286,293 @@
                 width: 95%;
             }
         }
+
+        /* Estilos para os modais personalizados */
+.custom-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.custom-modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 400px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  animation: modalopen 0.3s;
+}
+
+@keyframes modalopen {
+  from {opacity: 0; transform: translateY(-20px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+.custom-close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.custom-close:hover {
+  color: #333;
+}
+
+.custom-modal-footer {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.custom-modal-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.custom-modal-button:hover {
+  background-color: #45a049;
+}
+/* Atualize os estilos dos modais personalizados */
+.custom-modal-content {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #FFD700;
+}
+
+.custom-close {
+  color: #FFD700;
+}
+
+.custom-close:hover {
+  color: #ffcc00;
+}
+
+.custom-modal-button {
+  background-color: #FFD700;
+  color: #000;
+}
+
+.custom-modal-button:hover {
+  background-color: #ffcc00;
+}
+
+
+/* Estilos Luxuosos para os Modais */
+.lux-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+}
+
+.lux-modal-content {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  margin: 10% auto;
+  padding: 30px;
+  border: 1px solid #FFD700;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+  animation: modalFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.lux-modal-header {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.lux-close {
+  color: #FFD700;
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: rgba(0, 0, 0, 0.7);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #FFD700;
+}
+
+.lux-close:hover {
+  transform: rotate(90deg);
+  color: #fff;
+  background: #FFD700;
+}
+
+.lux-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+
+.success-icon {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 2px solid #4CAF50;
+}
+
+.error-icon {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border: 2px solid #f44336;
+}
+
+.lux-modal-body {
+  text-align: center;
+  padding: 0 20px;
+}
+
+.lux-modal-body h3 {
+  color: #FFD700;
+  margin-bottom: 15px;
+  font-size: 24px;
+}
+
+.lux-modal-body p {
+  color: #e0e0e0;
+  line-height: 1.6;
+}
+
+.lux-modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.lux-btn {
+  padding: 12px 25px;
+  background: linear-gradient(to right, #FFD700, #FFC000);
+  color: #000;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.lux-btn.secondary {
+  background: transparent;
+  color: #FFD700;
+  border: 1px solid #FFD700;
+}
+
+.lux-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.lux-btn:active {
+  transform: translateY(0);
+}
+
+/* Adicione o Font Awesome para os ícones */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+
+/* Estilos do Loading Premium */
+.lux-loading-container {
+  display: none;
+  position: fixed;
+  z-index: 30000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  justify-content: center;
+  align-items: center;
+}
+
+.lux-loading-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border: 1px solid #FFD700;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+}
+
+.lux-loading-spinner {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 30px;
+}
+
+.lux-spinner-circle {
+  width: 100%;
+  height: 100%;
+  border: 3px solid rgba(255, 215, 0, 0.1);
+  border-radius: 50%;
+}
+
+.lux-spinner-gold {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-top-color: #FFD700;
+  border-radius: 50%;
+  animation: luxSpin 1.5s linear infinite;
+}
+
+@keyframes luxSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.lux-loading-content h3 {
+  color: #FFD700;
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+}
+
+.lux-loading-content p {
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+
     </style>
 </head>
 <body>
@@ -413,6 +700,97 @@
             </form>
         </div>
     </div>
+
+
+   <!-- Modal de Sucesso no Login -->
+<div id="login-success-modal" class="lux-modal">
+  <div class="lux-modal-content">
+    <div class="lux-modal-header">
+      <span class="lux-close">&times;</span>
+      <div class="lux-icon success-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+    </div>
+    <div class="lux-modal-body">
+      <h3>Bem-vindo à Elite</h3>
+      <p>Seu login foi realizado com sucesso. Prepare-se para experiências exclusivas.</p>
+    </div>
+    <div class="lux-modal-footer">
+      <button id="login-success-btn" class="lux-btn">Explorar Conexões</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Premium -->
+<div id="lux-loading" class="lux-loading-container">
+  <div class="lux-loading-content">
+    <div class="lux-loading-spinner">
+      <div class="lux-spinner-circle"></div>
+      <div class="lux-spinner-gold"></div>
+    </div>
+    <h3>Processando seu cadastro exclusivo</h3>
+    <p>Estamos preparando tudo para sua experiência premium...</p>
+  </div>
+</div>
+
+
+<!-- Modal de Sucesso no Cadastro -->
+<div id="signup-success-modal" class="lux-modal">
+  <div class="lux-modal-content">
+    <div class="lux-modal-header">
+      <span class="lux-close">&times;</span>
+      <div class="lux-icon success-icon">
+        <i class="fas fa-gem"></i>
+      </div>
+    </div>
+    <div class="lux-modal-body">
+      <h3>Cadastro Concluído</h3>
+      <p>Parabéns! Você agora faz parte da nossa comunidade exclusiva. Seu perfil está sendo preparado com cuidado.</p>
+    </div>
+    <div class="lux-modal-footer">
+      <button id="signup-success-btn" class="lux-btn">Começar Jornada</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Erro no Cadastro (Email em uso) -->
+<div id="signup-error-modal" class="lux-modal">
+  <div class="lux-modal-content">
+    <div class="lux-modal-header">
+      <span class="lux-close">&times;</span>
+      <div class="lux-icon error-icon">
+        <i class="fas fa-exclamation-circle"></i>
+      </div>
+    </div>
+    <div class="lux-modal-body">
+      <h3>Endereço Exclusivo Já em Uso</h3>
+      <p>Este e-mail já está associado a uma conta premium. Por favor, utilize outro endereço ou recupere seu acesso.</p>
+    </div>
+    <div class="lux-modal-footer">
+      <button id="signup-error-btn" class="lux-btn">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Erro no Login -->
+<div id="login-error-modal" class="lux-modal">
+  <div class="lux-modal-content">
+    <div class="lux-modal-header">
+      <span class="lux-close">&times;</span>
+      <div class="lux-icon error-icon">
+        <i class="fas fa-lock"></i>
+      </div>
+    </div>
+    <div class="lux-modal-body">
+      <h3>Acesso Não Autorizado</h3>
+      <p id="login-error-message">Credenciais inválidas. Por favor, verifique seus dados ou solicite assistência.</p>
+    </div>
+    <div class="lux-modal-footer">
+      <button id="login-error-btn" class="lux-btn">Tentar Novamente</button>
+      <button class="lux-btn secondary">Ajuda Premium</button>
+    </div>
+  </div>
+</div>
 <script type="module" src="script.js"></script>
 
     <script>
@@ -483,9 +861,12 @@
             }
         });
 
-       // Formulário de Cadastro
-document.getElementById('cadastro-form').addEventListener('submit', function(e) {
+    document.getElementById('cadastro-form').addEventListener('submit', function(e) {
     e.preventDefault();
+
+    // Mostra o loading
+    const loading = document.getElementById('lux-loading');
+    loading.style.display = 'flex';
 
     const name = document.getElementById('name').value;
     const email = document.getElementById('email').value;
@@ -501,6 +882,7 @@ document.getElementById('cadastro-form').addEventListener('submit', function(e) 
 
     // Validação básica
     if (!profilePhoto) {
+        loading.style.display = 'none'; // Esconde o loading se houver erro
         alert('Por favor, selecione uma foto de perfil');
         return;
     }
@@ -536,35 +918,91 @@ document.getElementById('cadastro-form').addEventListener('submit', function(e) 
                 });
         })
         .then(() => {
-            alert('Cadastro realizado com sucesso!');
-            document.getElementById('cadastro-modal').style.display = 'none';
-            document.getElementById('cadastro-form').reset();
+            loading.style.display = 'none'; // Esconde o loading
+            const successModal = document.getElementById('signup-success-modal');
+            successModal.style.display = 'block';
+            
+            document.getElementById('signup-success-btn').onclick = function() {
+                successModal.style.display = 'none';
+                document.getElementById('cadastro-modal').style.display = 'none';
+                document.getElementById('cadastro-form').reset();
+            };
+            
+            successModal.querySelector('.lux-close').onclick = function() {
+                successModal.style.display = 'none';
+                document.getElementById('cadastro-modal').style.display = 'none';
+                document.getElementById('cadastro-form').reset();
+            };
         })
         .catch(error => {
-            console.error('Erro no cadastro:', error);
-            alert('Erro no cadastro: ' + error.message);
+            loading.style.display = 'none'; // Esconde o loading em caso de erro
+            
+            if (error.code === 'auth/email-already-in-use') {
+                const errorModal = document.getElementById('signup-error-modal');
+                errorModal.style.display = 'block';
+                
+                document.getElementById('signup-error-btn').onclick = function() {
+                    errorModal.style.display = 'none';
+                };
+                
+                errorModal.querySelector('.lux-close').onclick = function() {
+                    errorModal.style.display = 'none';
+                };
+            } else {
+                const errorModal = document.getElementById('login-error-modal');
+                document.getElementById('login-error-message').textContent = 
+                    'Erro: ' + error.message.replace('Firebase: ', '');
+                errorModal.style.display = 'block';
+                
+                document.getElementById('login-error-btn').onclick = function() {
+                    errorModal.style.display = 'none';
+                };
+                
+                errorModal.querySelector('.lux-close').onclick = function() {
+                    errorModal.style.display = 'none';
+                };
+            }
         });
 });
 
-        // Formulário de Login
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+      // Formulário de Login
+document.getElementById('login-form').addEventListener('submit', function(e) {
+    e.preventDefault();
 
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
 
-            auth.signInWithEmailAndPassword(email, password)
-                .then(userCredential => {
-                    alert('Login realizado com sucesso!');
-                    document.getElementById('login-modal').style.display = 'none';
-                    // Redirecionar para a página principal com o ID do usuário
-                    window.location.href = `homepage.html?userId=${userCredential.user.uid}`;
-                })
-                .catch(error => {
-                    console.error('Erro no login:', error);
-                    alert('Erro no login: ' + error.message);
-                });
-        });
+    auth.signInWithEmailAndPassword(email, password)
+        .then(userCredential => {
+        const successModal = document.getElementById('login-success-modal');
+        successModal.style.display = 'block';
+        
+        document.getElementById('login-success-btn').onclick = function() {
+            successModal.style.display = 'none';
+            window.location.href = `homepage.html?userId=${userCredential.user.uid}`;
+        };
+        
+        successModal.querySelector('.lux-close').onclick = function() {
+            successModal.style.display = 'none';
+            window.location.href = `homepage.html?userId=${userCredential.user.uid}`;
+        };
+    })
+    .catch(error => {
+        const errorModal = document.getElementById('login-error-modal');
+        document.getElementById('login-error-message').textContent = 
+            'Erro: ' + error.message.replace('Firebase: ', '');
+        errorModal.style.display = 'block';
+        
+        document.getElementById('login-error-btn').onclick = function() {
+            errorModal.style.display = 'none';
+        };
+        
+        errorModal.querySelector('.lux-close').onclick = function() {
+            errorModal.style.display = 'none';
+        };
+    });
+});
+
     </script>
 </body>
 </html>

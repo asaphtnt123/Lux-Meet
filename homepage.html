@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LuxMeet - Encontros Premium</title>
@@ -8,14 +9,18 @@
   
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+ 
+
   <!-- CSS -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
   <!-- Navbar Premium -->
    <div class="lux-container">
 
@@ -85,9 +90,22 @@
         <div class="lux-avatar-container">
 <img id="userAvatar" class="lux-user-avatar" src="https://via.placeholder.com/150" alt="Foto do perfil">
         </div>
+        <div class="gift-icon">
+  <i class="fas fa-gift"></i>
+  <span id="gift-badge" class="gift-badge"></span>
+</div>
+   <!-- Botão da Loja -->
+<button id="openGiftShopBtn" class="lux-btn lux-btn-shop">
+  <i class="fas fa-gifts"></i> Loja de Presentes
+</button>
+
         <div class="lux-user-details">
           <h1 id="userName">Carregando...</h1>
           <p id="userTitle">Membro LuxMeet</p>
+          <div class="user-balance-container">
+  <i class="fas fa-coins"></i>
+  <span class="user-balance">Carregando...</span>
+</div>
           <div class="lux-user-stats">
            <div class="lux-stat">
   <span class="lux-stat-value" id="matchCount">0</span>
@@ -121,11 +139,24 @@
     </header>
     </div>
 
-
-    <!-- Seções de Conteúdo -->
-    <div class="lux-content-sections">
+    <div class="lux-content-sections"></div>
       <!-- Seção de Descobrir Pessoas -->
      <section id="discoverSection" class="lux-section">
+
+    <!-- Seções de Conteúdo -->
+<div class="exclusive-users-section">
+    <div class="exclusive-header">
+        <i class="diamond-icon fas fa-gem"></i>
+        <h3>Usuários Exclusivos</h3>
+        <i class="diamond-icon fas fa-gem"></i>
+    </div>
+    <div class="exclusive-profiles-scroll" id="exclusive-profiles-container">
+        <!-- Os perfis serão carregados dinamicamente -->
+        <div class="loading-profiles">
+            <i class="fas fa-spinner fa-spin"></i> Carregando usuários exclusivos...
+        </div>
+    </div>
+</div>
   <div class="lux-section-header">
     <h2>Descobrir Pessoas</h2>
   </div>
@@ -359,7 +390,7 @@
   <!-- Modais -->
 
  <!-- Chat ativo (inicialmente oculto) -->
-      <!-- Chatbox flutuante -->
+       <!-- Chatbox flutuante -->
 <div class="lux-floating-chatbox" id="activeChat" style="display:none;">
  
 <div class="lux-chat-header">
@@ -401,18 +432,33 @@
     </div>
     <div id="attachmentsPreview"></div>
     <div class="lux-message-input-container">
-      <textarea id="messageInput" class="lux-message-input" placeholder="Digite sua mensagem..." rows="1"></textarea>
-      <button class="lux-emoji-picker" aria-label="Emojis">
-        <i class="far fa-smile"></i>
-      </button>
-    </div>
+  <textarea id="messageInput" class="lux-message-input" placeholder="Digite sua mensagem..." rows="1"></textarea>
+<button id="emojiBtn">😊</button>
+    
+</div>
+
+
     <button id="sendMessageBtn" class="lux-send-message-btn" aria-label="Enviar mensagem">
       <i class="fas fa-paper-plane"></i>
     </button>
     <input type="file" id="chatImageInput" accept="image/*" style="display:none;" />
     <input type="file" id="chatFileInput" style="display:none;" />
   </footer>
+  <!-- Adicione isso dentro do lux-floating-chatbox, antes do fechamento da div -->
+<div class="lux-emoji-picker-container" id="emojiPicker">
+  <div class="lux-emoji-picker-header">
+    <input type="text" id="emojiSearch" placeholder="Buscar emoji..." class="lux-emoji-picker-search">
+  </div>
+  <div class="lux-emoji-picker-body" id="emojiGrid">
+    <!-- Emojis serão inseridos aqui via JavaScript -->
+  </div>
+  <div class="lux-emoji-picker-footer">
+    Selecione um emoji para enviar
+  </div>
 </div>
+</div>
+
+
   <!-- Profile Modal -->
 <div id="profileModal" class="modal">
   <div class="modal-content">
@@ -426,6 +472,170 @@
 
 
 
+
+<div id="giftModal" class="lux-gift-modal">
+  <div class="lux-gift-modal-content">
+    <span class="lux-gift-close">&times;</span>
+    <h2 class="lux-gift-title"><i class="fas fa-gem"></i> Presentes Exclusivos</h2>
+    
+    <div class="lux-gift-categories">
+      <button class="lux-gift-category active" data-category="all">Todos</button>
+      <button class="lux-gift-category" data-category="jewelry">Joias</button>
+      <button class="lux-gift-category" data-category="experiences">Experiências</button>
+      <button class="lux-gift-category" data-category="fashion">Moda</button>
+      <button class="lux-gift-category" data-category="digital">Digitais</button>
+    </div>
+    
+    <div class="lux-gifts-container">
+      <!-- Presentes serão carregados dinamicamente -->
+      <div class="lux-gifts-loading">
+        <i class="fas fa-spinner fa-spin"></i> Carregando nossa seleção exclusiva...
+      </div>
+    </div>
+    
+
+
+ 
+
+<!-- Seção da Loja (inicialmente oculta) -->
+<div id="giftShopSection" class="lux-gift-shop hidden">
+  <div class="lux-shop-header">
+    <h2><i class="fas fa-store"></i> Loja de Presentes Exclusivos</h2>
+    <button class="lux-close-shop">&times;</button>
+  </div>
+  
+  <div class="lux-gifts-container">
+    <div class="lux-gifts-loading">
+      <i class="fas fa-spinner fa-spin"></i> Carregando nossa seleção exclusiva...
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Ações -->
+<div id="giftActionsModal" class="lux-gift-actions-modal">
+  <div class="lux-gift-actions-content">
+    <span class="lux-actions-close">&times;</span>
+    <h3 id="selectedGiftName"></h3>
+    <img id="selectedGiftImage" src="" alt="" class="lux-selected-gift-image">
+    <p id="selectedGiftPrice" class="lux-gift-price"></p>
+    
+    <div class="lux-gift-actions">
+      <button class="lux-action-btn lux-action-send">
+        <i class="fas fa-paper-plane"></i> Confirmar Envio
+      </button>
+      <button class="lux-action-btn lux-action-cancel">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+    <!-- Modal de ações para presente selecionado -->
+    <div id="giftActionsModal" class="lux-gift-actions-modal">
+  <div class="lux-gift-actions-content">
+    <span class="lux-actions-close">&times;</span>
+    <h3 id="selectedGiftName"></h3>
+    <img id="selectedGiftImage" src="" alt="" class="lux-selected-gift-image">
+    <p id="selectedGiftPrice" class="lux-gift-price"></p>
+    
+    <div class="lux-gift-actions">
+      <button class="lux-action-btn lux-action-send">
+        <i class="fas fa-paper-plane"></i> Enviar Presente
+      </button>
+      <button class="lux-action-btn lux-action-wishlist">
+        <i class="fas fa-heart"></i> Lista de Desejos
+      </button>
+      <button class="lux-action-btn lux-action-custom">
+        <i class="fas fa-magic"></i> Personalizar
+      </button>
+      <button class="lux-action-btn lux-action-schedule">
+        <i class="fas fa-calendar-alt"></i> Agendar Entrega
+      </button>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+
+
+
+
+<section class="my-gifts-section hidden">
+  <div class="section-header">
+    <h2><i class="fas fa-gift"></i> Meus Presentes Recebidos</h2>
+    <div class="gifts-summary">
+      <span class="total-gifts">0 presentes</span>
+      <span class="total-value">Total: R$ 0,00</span>
+    </div>
+  </div>
+  
+  <div class="gifts-filter">
+    <button class="filter-btn active" data-filter="all">Todos</button>
+    <button class="filter-btn" data-filter="jewelry">Joias</button>
+    <button class="filter-btn" data-filter="experiences">Experiências</button>
+    <button class="filter-btn" data-filter="fashion">Moda</button>
+    <button class="filter-btn" data-filter="digital">Digitais</button>
+  </div>
+  
+  <div class="gifts-container">
+    <div class="loading-gifts">
+      <i class="fas fa-spinner fa-spin"></i> Carregando seus presentes...
+    </div>
+  </div>
+</section>
+
+<!-- Modal de Personalização -->
+<div id="customizeGiftModal" class="lux-modal">
+  <div class="lux-modal-content">
+    <span class="lux-modal-close" onclick="document.getElementById('customizeGiftModal').style.display='none'">&times;</span>
+    <h3>Personalizar Presente</h3>
+    
+    <div class="lux-gift-preview">
+      <img id="customGiftImage" src="" alt="" class="lux-gift-image">
+      <h4 id="customizeGiftName"></h4>
+    </div>
+    
+    <form id="customGiftForm">
+      <div class="lux-form-group">
+        <label for="giftMessage">Mensagem:</label>
+        <textarea id="giftMessage" rows="3" placeholder="Escreva uma mensagem especial..."></textarea>
+      </div>
+      
+      <div class="lux-form-group">
+        <label class="lux-checkbox">
+          <input type="checkbox" id="giftPublic">
+          <span>Tornar presente público</span>
+        </label>
+      </div>
+      
+      <button type="submit" class="lux-btn lux-btn-primary">Confirmar Envio</button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de Agendamento -->
+<div id="scheduleGiftModal" class="lux-modal">
+  <div class="lux-modal-content">
+    <span class="lux-modal-close" onclick="document.getElementById('scheduleGiftModal').style.display='none'">&times;</span>
+    <h3>Agendar Entrega</h3>
+    
+    <form id="scheduleGiftForm">
+      <div class="lux-form-group">
+        <label for="deliveryDate">Data de Entrega:</label>
+        <input type="text" id="deliveryDate" placeholder="Selecione uma data" readonly>
+      </div>
+      
+      <div class="lux-form-group">
+        <label for="deliveryMessage">Mensagem:</label>
+        <textarea id="deliveryMessage" rows="3" placeholder="Mensagem para a entrega..."></textarea>
+      </div>
+      
+      <button type="submit" class="lux-btn lux-btn-primary">Agendar Presente</button>
+    </form>
+  </div>
+</div>
 
   <div id="passwordModal" class="luxury-modal">
   <div class="modal-content">
@@ -452,42 +662,7 @@
   </div>
 </div>
 <!-- Adicione isto no seu arquivo HTML -->
-<div id="chatboxModal" class="lux-chatbox-modal">
-  <div class="lux-chatbox-container">
-    <div class="lux-chatbox-header">
-      <div class="lux-chatbox-user">
-        <img id="chatboxAvatar" src="" alt="Avatar" class="lux-chatbox-avatar">
-        <div>
-          <h3 id="chatboxUserName"></h3>
-          <p id="chatboxUserStatus" class="lux-chatbox-status">Online</p>
-        </div>
-      </div>
-      <button class="lux-chatbox-close">&times;</button>
-    </div>
-    
-    <div class="lux-chatbox-messages" id="chatboxMessages">
-      <!-- Mensagens serão carregadas aqui -->
-    </div>
-    
-    <div class="lux-chatbox-input-container">
-      <div class="lux-chatbox-tools">
-        <button id="chatboxAttachButton" class="lux-chatbox-tool-btn" title="Anexar arquivo">
-          <i class="fas fa-paperclip"></i>
-          <input type="file" id="chatboxFileInput" style="display:none;" accept="*">
-        </button>
-        <button id="chatboxImageButton" class="lux-chatbox-tool-btn" title="Enviar imagem">
-          <i class="fas fa-image"></i>
-          <input type="file" id="chatboxImageInput" style="display:none;" accept="image/*">
-        </button>
-      </div>
-      
-      <textarea id="chatboxMessageInput" placeholder="Digite sua mensagem..." rows="1"></textarea>
-      <button id="chatboxSendButton" class="lux-chatbox-send-btn">
-        <i class="fas fa-paper-plane"></i>
-      </button>
-    </div>
-  </div>
-</div>
+
 
 
 <!-- Modal de Curtidas -->
@@ -502,6 +677,90 @@
 </div>
 </div>
 
+
+<!-- Loading para Envio de Imagens -->
+<div id="image-upload-loading" class="lux-upload-loading">
+  <div class="lux-upload-content">
+    <div class="lux-upload-spinner">
+      <div class="lux-spinner-circle"></div>
+      <div class="lux-spinner-gold"></div>
+    </div>
+    <h3>Enviando suas imagens</h3>
+    <p>Processando arquivos premium...</p>
+    <div class="lux-progress-container">
+      <div class="lux-progress-bar" id="upload-progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Visualizador Premium de Imagens -->
+<div id="image-viewer" class="lux-image-viewer">
+  <div class="lux-image-viewer-content">
+    <div class="lux-image-viewer-header">
+      <button class="lux-image-viewer-close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="lux-image-viewer-nav">
+      <button class="lux-image-viewer-prev"><i class="fas fa-chevron-left"></i></button>
+      <button class="lux-image-viewer-next"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <div class="lux-image-container">
+      <img id="viewed-image" src="" alt="Imagem expandida">
+    </div>
+    <div class="lux-image-viewer-footer">
+      <span id="image-viewer-info"></span>
+      <button class="lux-image-viewer-download">
+        <i class="fas fa-download"></i> Download
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Adicione isso no seu HTML -->
+<div id="gifts-section" class="lux-gifts-section">
+  <div class="lux-gifts-header">
+    <h2><i class="fas fa-gem"></i> Seus Presentes Exclusivos</h2>
+    <button class="lux-close-gifts"><i class="fas fa-times"></i></button>
+  </div>
+  
+  <div class="lux-gifts-categories">
+    <div class="lux-category-filter">
+      <button class="lux-filter-btn active" data-category="all">Todos</button>
+      <button class="lux-filter-btn" data-category="jewelry">
+        <i class="fas fa-gem"></i> Joias
+      </button>
+      <button class="lux-filter-btn" data-category="experiences">
+        <i class="fas fa-helicopter"></i> Experiências
+      </button>
+      <button class="lux-filter-btn" data-category="fashion">
+        <i class="fas fa-tshirt"></i> Moda
+      </button>
+      <button class="lux-filter-btn" data-category="digital">
+        <i class="fas fa-gift-card"></i> Digitais
+      </button>
+    </div>
+    
+    <div class="lux-gifts-container">
+
+      
+      <!-- Presentes serão carregados aqui dinamicamente -->
+      <div class="lux-gifts-loading">
+        <i class="fas fa-spinner fa-spin"></i> Carregando seus presentes...
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="giftsSection" class="lux-section">
+  <div class="lux-section-header">
+    <h2>Presentes Recebidos</h2>
+    <span id="giftBadge" class="lux-badge" style="display: none;">Novo</span>
+  </div>
+  <div id="giftsContainer">
+    <!-- Presentes serão carregados aqui -->
+  </div>
+</div>
   <!-- Scripts -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -510,7 +769,13 @@
   
 
   
- 
+<!-- Emoji Button CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
 <script src="script.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/emoji-button.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/index.min.js"></script>
+
 </body>
 </html>

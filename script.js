@@ -1,3 +1,5 @@
+const imageViewer = setupImageViewer();
+
 
 // Adicione no início do seu arquivo, antes de qualquer função
 const defaultAvatar = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23CCCCCC"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
@@ -6,6 +8,11 @@ const defaultAvatar = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
 const pendingAttachments = {
   images: [],
   files: []
+};
+// Configuração do file input (adicione após as outras variáveis globais)
+const fileInputs = {
+  image: document.getElementById('chatImageInput'),
+  file: document.getElementById('chatFileInput')
 };
 
 // Configuração do Firebase
@@ -43,7 +50,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     console.log('Usuário autenticado:', user.uid); // Debug
+    // Verifica presentes pendentes
+    const hasNewGifts = await checkForNewGifts(user.uid);
     
+    if (hasNewGifts) {
+      // Atualiza a UI para mostrar que há novos presentes
+      updateGiftBadge(hasNewGifts);
+    }
     try {
       currentUser = user;
       await loadUserData();
@@ -1077,44 +1090,141 @@ function renderNewsCard(post) {
   return card;
 }
 
+
+const defaultGiftImage = 'https://via.placeholder.com/100?text=Presente';
 function openProfileModal(profileData) {
   const modal = document.getElementById('profileModal');
-  if (!modal) return;
+  if (!modal) {
+    console.error('Elemento profileModal não encontrado no DOM');
+    return;
+  }
 
-  modal.innerHTML = `
-    <div class="lux-modal-content">
-      <span class="lux-modal-close">&times;</span>
-      <div class="lux-profile-header">
-        <img src="${profileData.profilePhotoURL || defaultAvatar}" 
-             class="lux-profile-avatar"
-             alt="Foto de ${profileData.name}"
-             onerror="this.src='${defaultAvatar.replace(/'/g, "&#039;")}'">
-        <h2>${profileData.name || 'Usuário LuxMeet'}</h2>
-        ${profileData.bio ? `<p class="lux-profile-bio">${profileData.bio}</p>` : ''}
+  // Verifica e processa os interesses
+  const interests = profileData.interests ? 
+    profileData.interests.split(',').map(i => i.trim()) : 
+    [];
+
+  // Processa os gifts recebidos - agora acessando profileData.gifts.received
+  const gifts = (profileData.gifts && Array.isArray(profileData.gifts.received)) ? 
+    profileData.gifts.received.filter(gift => gift && gift.image) : 
+    [];
+  const hasGifts = gifts.length > 0;
+
+  // DEBUG: Verifica os gifts no console
+  console.log('Dados dos gifts recebidos:', gifts);
+
+  // Preenche o modal com os dados do perfil
+  const modalContent = `
+    <div class="lux-profile-modal">
+      <div class="lux-profile-modal-header">
+        <div class="lux-avatar-container">
+          <img src="${profileData.profilePhotoURL || defaultAvatar}" 
+               class="lux-profile-modal-img" 
+               alt="${profileData.name || 'Usuário'}"
+               onerror="this.src='${defaultAvatar}'">
+          ${profileData.selo ? `<span class="lux-badge">${profileData.selo}</span>` : ''}
+        </div>
+        <div class="lux-profile-titles">
+          <h2>${profileData.name || 'Usuário'}</h2>
+          <div class="lux-profile-meta">
+            ${profileData.tipouser ? `<span class="lux-user-type">${profileData.tipouser}</span>` : ''}
+            ${profileData.age ? `<span><i class="fas fa-birthday-cake"></i> ${profileData.age} anos</span>` : ''}
+            ${profileData.cidade ? `<span><i class="fas fa-map-marker-alt"></i> ${profileData.cidade}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      
+      <div class="lux-profile-modal-body">
+        ${profileData.bio ? `
+        <div class="lux-profile-section">
+          <h3><i class="fas fa-quote-left"></i> Sobre</h3>
+          <p>${profileData.bio}</p>
+        </div>` : ''}
+        
+        ${profileData.interestIn ? `
+        <div class="lux-profile-section">
+          <h3><i class="fas fa-heart"></i> Interessado em</h3>
+          <p>${profileData.interestIn}</p>
+        </div>` : ''}
+        
+        ${interests.length > 0 ? `
+        <div class="lux-profile-section">
+          <h3><i class="fas fa-tags"></i> Interesses</h3>
+          <div class="lux-interests">
+            ${interests.map(i => `<span class="lux-interest-tag">${i}</span>`).join('')}
+          </div>
+        </div>` : ''}
       </div>
       
       <div class="lux-profile-actions">
-        <button class="lux-btn lux-btn-primary" onclick="openChatbox('${profileData.userId}')">
-          <i class="fas fa-envelope"></i> Mensagem
+        <button class="lux-btn lux-btn-message" onclick="startChatWithUser('${profileData.userId || profileData.id}')">
+          <i class="fas fa-paper-plane"></i> Mensagem
+        </button>
+        <button class="lux-btn lux-btn-gift" onclick="openGiftModal('${profileData.userId || profileData.id}')">
+          <i class="fas fa-gift"></i> Presentear
+        </button>
+        <button class="lux-btn lux-btn-date" onclick="proposeDate('${profileData.userId || profileData.id}')">
+          <i class="fas fa-calendar-star"></i> Encontro
+        </button>
+        ${profileData.wishlistUrl ? `
+        <button class="lux-btn lux-btn-wishlist" onclick="window.open('${profileData.wishlistUrl}', '_blank')">
+          <i class="fas fa-heart"></i> Lista de Desejos
+        </button>` : ''}
+        <button class="lux-btn lux-btn-allowance" onclick="showAllowanceOptions('${profileData.userId || profileData.id}')">
+          <i class="fas fa-hand-holding-usd"></i> Apoio
         </button>
       </div>
+      
+      ${hasGifts ? `
+      <div class="lux-profile-gifts">
+        <h3><i class="fas fa-gifts"></i> Presentes Recebidos (${gifts.length})</h3>
+        <div class="lux-gifts-container">
+          ${gifts.map(gift => `
+            <div class="lux-gift-item" title="${gift.name || 'Presente'} (${formatCurrency(gift.price || 0)})">
+              <img src="${gift.image}" alt="${gift.name || 'Presente'}" class="lux-gift-image" 
+                   onerror="this.src='${defaultGiftImage || defaultAvatar}'">
+              ${gift.category ? `<span class="lux-gift-category">${gift.category}</span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
     </div>
   `;
 
-  modal.style.display = 'block';
-  
-  // Fecha o modal ao clicar no X
-  modal.querySelector('.lux-modal-close').addEventListener('click', () => {
-    modal.style.display = 'none';
-  });
+  // Resto do código permanece igual...
+  // Atualiza o modal e exibe
+  modal.innerHTML = `
+    <div class="lux-modal-content">
+      <span class="lux-modal-close">&times;</span>
+      ${modalContent}
+    </div>
+  `;
 
-  // Fecha o modal ao clicar fora
-  window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.style.display = 'none';
-    }
+  // Mostra o modal
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Configura eventos para fechar o modal
+  const closeModal = () => {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  };
+
+  modal.querySelector('.lux-modal-close').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => e.target === modal && closeModal());
+  
+  document.addEventListener('keydown', function handleEsc(e) {
+    if (e.key === 'Escape') closeModal();
+    document.removeEventListener('keydown', handleEsc);
   });
 }
+
+function formatCurrency(value) {
+  return typeof value === 'number' ? 
+    value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 
+    value || 'R$ 0,00';
+}
+
 async function loadUserPosts(userId) {
   const postsGrid = document.getElementById('userPostsGrid');
   if (!postsGrid) return;
@@ -1730,24 +1840,28 @@ async function getUserLikes(userId) {
 }
 
 // Função para visualizar perfil
-// Declare a função viewProfile no escopo global
 
 async function viewProfile(userId) {
-  try {
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (userDoc.exists) {
-      // Abre o modal de perfil com o botão de mensagem que usa o chatbox
-      openProfileModal({
-        ...userDoc.data(),
-        userId: userId  // Garante que o userId está disponível
-      });
-    } else {
-      showToast('Perfil não encontrado', 'error');
+    try {
+        showLoader(); // Mostra um indicador de carregamento
+        
+        const userDoc = await firebase.firestore().collection('users').doc(userId).get();
+        
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            openProfileModal({
+                ...userData,
+                userId: userId
+            });
+        } else {
+            showToast('Perfil não encontrado', 'error');
+        }
+    } catch (error) {
+        console.error("Erro ao visualizar perfil:", error);
+        showToast('Erro ao carregar perfil', 'error');
+    } finally {
+        hideLoader(); // Esconde o indicador de carregamento
     }
-  } catch (error) {
-    console.error("Erro ao visualizar perfil:", error);
-    showToast('Erro ao carregar perfil', 'error');
-  }
 }
 
 
@@ -2295,7 +2409,10 @@ document.head.appendChild(styleElement);
 
 /*****************
  * MENSAGENS MOCK *
+ * 
  *****************/
+
+
 async function loadMessages() {
   const chatsList = document.getElementById('chatsList');
   if (!chatsList) return;
@@ -2402,6 +2519,8 @@ async function loadMessages() {
     `;
   }
 }
+
+
 function createChatElement(chat) {
   const chatElement = document.createElement('div');
   chatElement.className = `lux-conversation ${chat.unread ? 'lux-conversation-unread' : ''}`;
@@ -2424,6 +2543,91 @@ function createChatElement(chat) {
   return chatElement;
 }
 
+
+function renderMessage(message, currentUserId) {
+  const isCurrentUser = message.senderId === currentUserId;
+  const messageElement = document.createElement('div');
+  messageElement.className = `lux-message ${isCurrentUser ? 'lux-message-sent' : 'lux-message-received'}`;
+  
+  // Cabeçalho da mensagem (nome e foto do remetente)
+  if (!isCurrentUser) {
+    messageElement.innerHTML += `
+      <div class="lux-message-header">
+        <img src="${message.senderPhoto || 'https://via.placeholder.com/30'}" 
+             class="lux-message-avatar" 
+             alt="${message.senderName}"
+             onerror="this.src='https://via.placeholder.com/30'">
+        <span class="lux-message-sender">${message.senderName}</span>
+      </div>
+    `;
+  }
+
+  // Corpo da mensagem
+  const messageBody = document.createElement('div');
+  messageBody.className = 'lux-message-body';
+
+  // Conteúdo de texto (se existir)
+  if (message.text) {
+    messageBody.innerHTML += `<p class="lux-message-text">${message.text}</p>`;
+  }
+
+  // Imagens (se existirem)
+  if (message.imageUrls && message.imageUrls.length > 0) {
+    messageBody.innerHTML += `
+      <div class="lux-message-images">
+        ${message.imageUrls.map(url => `
+          <img src="${url}" 
+               class="lux-message-image" 
+               alt="Imagem enviada"
+               loading="lazy">
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // Arquivos (se existirem)
+  if (message.files && message.files.length > 0) {
+    messageBody.innerHTML += `
+      <div class="lux-message-files">
+        ${message.files.map(file => `
+          <a href="${file.url}" 
+             class="lux-message-file" 
+             target="_blank" 
+             download="${file.name}">
+            <i class="fas fa-file-alt"></i>
+            <span>${file.name}</span>
+            <small>${formatFileSize(file.size)}</small>
+          </a>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  messageElement.appendChild(messageBody);
+
+  // Rodapé da mensagem (hora e status)
+  const timeString = formatMessageTime(message.timestamp?.toDate());
+  messageElement.innerHTML += `
+    <div class="lux-message-footer">
+      <span class="lux-message-time">${timeString}</span>
+      ${isCurrentUser ? `
+        <span class="lux-message-status">
+          ${message.read ? '<i class="fas fa-check-double"></i>' : '<i class="fas fa-check"></i>'}
+        </span>
+      ` : ''}
+    </div>
+  `;
+
+  return messageElement;
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
 function formatChatTime(date) {
   if (!date) return '';
   
@@ -2440,85 +2644,347 @@ function formatChatTime(date) {
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   }
 }
-
 async function loadChatMessages(chatId) {
   const messagesContainer = document.getElementById('messagesContainer');
-  messagesContainer.innerHTML = '<div class="lux-loading">Carregando mensagens...</div>';
-  
+  if (!messagesContainer) return;
+
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
   try {
-    const snapshot = await db.collection('chats')
-      .doc(chatId)
-      .collection('messages')
-      .orderBy('timestamp', 'asc')
-      .get();
-    
+    // Mostrar loading enquanto carrega
+    messagesContainer.innerHTML = `
+      <div class="lux-loading-messages">
+        <div class="lux-loading-spinner">
+          <div class="lux-spinner-circle"></div>
+          <div class="lux-spinner-gold"></div>
+        </div>
+        <p>Carregando mensagens premium...</p>
+      </div>
+    `;
+
+    // Carregar de ambas as fontes para garantir compatibilidade
+    const [sharedMessages, userMessages] = await Promise.all([
+      db.collection('chats').doc(chatId)
+        .collection('messages')
+        .where('visibleFor', 'array-contains', user.uid)
+        .orderBy('timestamp', 'asc')
+        .get(),
+      
+      db.collection('users').doc(user.uid)
+        .collection('chats').doc(chatId)
+        .collection('messages')
+        .where('visibleFor', 'array-contains', user.uid)
+        .orderBy('timestamp', 'asc')
+        .get()
+    ]);
+
+    // Combine e ordene as mensagens
+    const allMessages = [
+      ...sharedMessages.docs.map(doc => ({...doc.data(), id: doc.id})),
+      ...userMessages.docs.map(doc => ({...doc.data(), id: doc.id}))
+    ].sort((a, b) => a.timestamp?.seconds - b.timestamp?.seconds);
+
     messagesContainer.innerHTML = '';
-    
-    if (snapshot.empty) {
-      messagesContainer.innerHTML = '<div class="lux-no-messages">Nenhuma mensagem ainda</div>';
-      return;
-    }
-    
-    snapshot.forEach(doc => {
-      const message = doc.data();
-      const messageElement = createMessageElement(message);
+
+    // Renderizar cada mensagem
+    allMessages.forEach(message => {
+      const messageElement = createMessageElement(message, user.uid);
+      messageElement.id = `message-${message.id}`;
+      
+      // Adicionar botão de deletar para mensagens do usuário
+      if (message.senderId === user.uid) {
+        const deleteBtn = document.createElement('div');
+        deleteBtn.className = 'lux-message-delete';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteMessage(chatId, message.id);
+        };
+        messageElement.appendChild(deleteBtn);
+      }
+      
       messagesContainer.appendChild(messageElement);
     });
+
+    // Configurar eventos de clique nas imagens
+    setupImageClickListeners();
     
-    // Rolagem para a última mensagem
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
+    // Rolagem suave para a última mensagem
+    setTimeout(() => {
+      messagesContainer.scrollTo({
+        top: messagesContainer.scrollHeight,
+        behavior: 'smooth'
+      });
+    }, 100);
+
   } catch (error) {
     console.error('Erro ao carregar mensagens:', error);
-    messagesContainer.innerHTML = '<div class="lux-error">Erro ao carregar mensagens</div>';
+    messagesContainer.innerHTML = `
+      <div class="lux-error-messages">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Erro ao carregar mensagens</p>
+        <button class="lux-btn-retry" onclick="loadChatMessages('${chatId}')">
+          Tentar novamente
+        </button>
+      </div>
+    `;
+    showToast('Erro ao carregar mensagens', 'error');
   }
+  setupImageClickListeners();
 }
 
-function createMessageElement(message) {
-  const currentUser = firebase.auth().currentUser;
-  const isCurrentUser = message.senderId === currentUser.uid;
 
+document.addEventListener('DOMContentLoaded', function() {
+  // Configurar o visualizador de imagens quando o DOM estiver pronto
+  imageViewer = setupImageViewer();
+});
+
+function setupImageViewer() {
+  const imageViewerElement = document.getElementById('image-viewer');
+  const viewedImage = document.getElementById('viewed-image');
+  const closeBtn = document.querySelector('.lux-image-viewer-close');
+  const prevBtn = document.querySelector('.lux-image-viewer-prev');
+  const nextBtn = document.querySelector('.lux-image-viewer-next');
+  const downloadBtn = document.querySelector('.lux-image-viewer-download');
+  const imageInfo = document.getElementById('image-viewer-info');
+
+  let currentImages = [];
+  let currentIndex = 0;
+
+  function openViewer(images, index = 0) {
+    if (!images || images.length === 0) return;
+    
+    currentImages = images;
+    currentIndex = index;
+    viewedImage.src = images[index].url;
+    imageInfo.textContent = `Imagem ${index + 1} de ${images.length}`;
+    imageViewerElement.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeViewer() {
+    imageViewerElement.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function showPrev() {
+    if (currentImages.length > 1) {
+      currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
+      updateViewer();
+    }
+  }
+
+  function showNext() {
+    if (currentImages.length > 1) {
+      currentIndex = (currentIndex + 1) % currentImages.length;
+      updateViewer();
+    }
+  }
+
+  function updateViewer() {
+    viewedImage.src = currentImages[currentIndex].url;
+    imageInfo.textContent = `Imagem ${currentIndex + 1} de ${currentImages.length}`;
+    viewedImage.style.opacity = '0';
+    setTimeout(() => {
+      viewedImage.style.opacity = '1';
+    }, 100);
+  }
+
+  function downloadImage() {
+    const link = document.createElement('a');
+    link.href = currentImages[currentIndex].url;
+    link.download = `luxmeet-image-${new Date().getTime()}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Event listeners
+  closeBtn.addEventListener('click', closeViewer);
+  prevBtn.addEventListener('click', showPrev);
+  nextBtn.addEventListener('click', showNext);
+  downloadBtn.addEventListener('click', downloadImage);
+
+  imageViewerElement.addEventListener('click', function(e) {
+    if (e.target === imageViewerElement) {
+      closeViewer();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (imageViewerElement.style.display === 'flex') {
+      if (e.key === 'Escape') closeViewer();
+      if (e.key === 'ArrowLeft') showPrev();
+      if (e.key === 'ArrowRight') showNext();
+    }
+  });
+
+  viewedImage.style.transition = 'opacity 0.3s ease';
+
+  return {
+    openViewer: openViewer,
+    closeViewer: closeViewer
+  };
+}
+
+// Função para configurar os cliques nas imagens das mensagens
+function setupImageClickListeners() {
+  document.querySelectorAll('.lux-message-image').forEach(img => {
+    img.addEventListener('click', function() {
+      const allImages = Array.from(document.querySelectorAll('.lux-message-image'))
+        .map(el => ({ url: el.src, element: el }));
+      
+      const clickedIndex = allImages.findIndex(item => item.element === this);
+      
+      if (imageViewer && imageViewer.openViewer) {
+        imageViewer.openViewer(allImages, clickedIndex);
+      }
+    });
+  });
+}
+
+async function deleteMessage(chatId, messageId) {
+  try {
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error('Usuário não autenticado');
+
+    // Atualizar em todas as localizações possíveis
+    const batch = db.batch();
+    
+    // 1. Formato antigo (chats collection)
+    const sharedMessageRef = db.collection('chats').doc(chatId)
+      .collection('messages').doc(messageId);
+    batch.update(sharedMessageRef, {
+      deletedFor: firebase.firestore.FieldValue.arrayUnion(user.uid),
+      visibleFor: firebase.firestore.FieldValue.arrayRemove(user.uid)
+    });
+    
+    // 2. Formato novo (user chats collection)
+    const userMessageRef = db.collection('users').doc(user.uid)
+      .collection('chats').doc(chatId)
+      .collection('messages').doc(messageId);
+    batch.update(userMessageRef, {
+      deletedFor: firebase.firestore.FieldValue.arrayUnion(user.uid),
+      visibleFor: firebase.firestore.FieldValue.arrayRemove(user.uid)
+    });
+    
+    await batch.commit();
+
+    // Atualização visual
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.innerHTML = `
+        <div class="lux-message-deleted">
+          <i class="fas fa-trash"></i> Mensagem removida
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error("[ERRO]", error);
+    showToast('Erro ao remover mensagem: ' + error.message, 'error');
+  }
+}
+async function deleteMessageForUser(chatId, messageId) {
+  try {
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error('Usuário não autenticado');
+
+    // Atualizar a mensagem para remover o usuário do array visibleFor
+    await db.collection('users').doc(user.uid)
+      .collection('chats').doc(chatId)
+      .collection('messages').doc(messageId)
+      .update({
+        visibleFor: firebase.firestore.FieldValue.arrayRemove(user.uid),
+        deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+    // Atualização visual imediata
+    if (currentChat?.id === chatId) {
+      const messageElement = document.getElementById(`message-${messageId}`);
+      if (messageElement) {
+        messageElement.innerHTML = '<div class="lux-message-deleted">Mensagem removida</div>';
+      }
+    }
+
+    showToast('Mensagem removida');
+  } catch (error) {
+    console.error("[ERRO]", error);
+    showToast('Erro ao remover mensagem: ' + error.message, 'error');
+  }
+}
+// Função para criar elementos de mensagem (atualizada)
+function createMessageElement(message, currentUserId) {
+  const isCurrentUser = message.senderId === currentUserId;
   const messageElement = document.createElement('div');
   messageElement.className = `lux-message ${isCurrentUser ? 'lux-message-sent' : 'lux-message-received'}`;
+  
+  // Cabeçalho para mensagens recebidas
+  if (!isCurrentUser) {
+    messageElement.innerHTML += `
+      <div class="lux-message-header">
+        <img src="${message.senderPhoto || 'https://via.placeholder.com/30'}" 
+             class="lux-message-avatar" 
+             alt="${message.senderName}"
+             onerror="this.src='https://via.placeholder.com/30'">
+        <span class="lux-message-sender">${message.senderName}</span>
+      </div>
+    `;
+  }
 
-  // Começa o conteúdo vazio
-  let messageContent = '';
+  // Corpo da mensagem
+  const messageBody = document.createElement('div');
+  messageBody.className = 'lux-message-body';
 
-  // Texto
+  // Texto da mensagem
   if (message.text) {
-    messageContent += `<div class="lux-message-text">${message.text}</div>`;
+    messageBody.innerHTML += `<p class="lux-message-text">${message.text}</p>`;
   }
 
-  // Imagens
+  // Imagens (se houver)
   if (message.imageUrls && message.imageUrls.length > 0) {
-    message.imageUrls.forEach(url => {
-      messageContent += `
-        <div class="lux-message-image">
-          <img src="${url}" alt="Imagem enviada" loading="lazy" />
-        </div>`;
-    });
+    messageBody.innerHTML += `
+      <div class="lux-message-images">
+        ${message.imageUrls.map(url => `
+          <img src="${url}" 
+               class="lux-message-image" 
+               alt="Imagem enviada"
+               loading="lazy">
+        `).join('')}
+      </div>
+    `;
   }
 
-  // Arquivos
+  // Arquivos (se houver)
   if (message.files && message.files.length > 0) {
-    message.files.forEach(file => {
-      messageContent += `
-        <div class="lux-message-file">
-          <a href="${file.url}" target="_blank">
-            📎 ${file.name || 'Arquivo'}
-          </a> <span class="lux-file-size">(${formatFileSize(file.size)})</span>
-        </div>`;
-    });
+    messageBody.innerHTML += `
+      <div class="lux-message-files">
+        ${message.files.map(file => `
+          <a href="${file.url}" 
+             class="lux-message-file" 
+             target="_blank" 
+             download="${file.name}">
+            <i class="fas fa-file-alt"></i>
+            <span>${file.name}</span>
+            <small>${formatFileSize(file.size)}</small>
+          </a>
+        `).join('')}
+      </div>
+    `;
   }
 
-  messageElement.innerHTML = `
-    ${!isCurrentUser ? `<img src="${message.senderPhoto || 'https://via.placeholder.com/40'}" 
-         class="lux-message-avatar" 
-         alt="Avatar"
-         onerror="this.src='https://via.placeholder.com/40'">` : ''}
-    <div class="lux-message-content">
-      ${messageContent}
-      <div class="lux-message-time">${formatMessageTime(message.timestamp?.toDate())}</div>
+  messageElement.appendChild(messageBody);
+
+  // Rodapé da mensagem
+  const timeString = formatMessageTime(message.timestamp?.toDate());
+  messageElement.innerHTML += `
+    <div class="lux-message-footer">
+      <span class="lux-message-time">${timeString}</span>
+      ${isCurrentUser ? `
+        <span class="lux-message-status">
+          ${message.read ? '<i class="fas fa-check-double"></i>' : '<i class="fas fa-check"></i>'}
+        </span>
+      ` : ''}
     </div>
   `;
 
@@ -2526,205 +2992,52 @@ function createMessageElement(message) {
 }
 
 
-
-
-
-function setupMessageSender(chatId, partnerId) {
-  const messageInput = document.getElementById('messageInput');
-  const sendButton = document.getElementById('sendMessageBtn');
-
-  const sendMessage = async () => {
-    const text = messageInput.value.trim();
-    const hasImages = pendingAttachments.images.length > 0;
-    const hasFiles = pendingAttachments.files.length > 0;
-
-    if (!text && !hasImages && !hasFiles) return;
-
-    try {
-      const currentUser = firebase.auth().currentUser;
-      if (!currentUser) return;
-
-      const uploadPromises = [];
-
-      // Upload de imagens
-      if (hasImages) {
-        pendingAttachments.images.forEach(img => {
-          uploadPromises.push(
-            uploadFile(img.file, `chats/${chatId}/images`)
-              .then(url => ({ type: 'image', url }))
-              .catch(error => {
-                console.error('Erro no upload de imagem:', error);
-                throw error;
-              })
-          );
-        });
-      }
-
-      // Upload de arquivos
-      if (hasFiles) {
-        pendingAttachments.files.forEach(file => {
-          uploadPromises.push(
-            uploadFile(file.file, `chats/${chatId}/files`)
-              .then(url => ({
-                type: 'file',
-                url,
-                name: file.file.name,
-                fileType: file.file.type,
-                size: file.file.size
-              }))
-              .catch(error => {
-                console.error('Erro no upload de arquivo:', error);
-                throw error;
-              })
-          );
-        });
-      }
-
-      const uploadedAttachments = await Promise.all(uploadPromises);
-
-      // Montar objeto da mensagem
-      const messageData = {
-        senderId: currentUser.uid,
-        senderName: currentUser.displayName || 'Usuário',
-        senderPhoto: currentUser.photoURL || '',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        read: false
-      };
-
-      if (text) messageData.text = text;
-
-      const imageUrls = uploadedAttachments
-        .filter(a => a.type === 'image')
-        .map(a => a.url);
-
-      if (imageUrls.length > 0) {
-        messageData.imageUrls = imageUrls;
-        messageData.messageType = 'image';
-      }
-
-      const files = uploadedAttachments
-        .filter(a => a.type === 'file')
-        .map(a => ({
-          url: a.url,
-          name: a.name,
-          type: a.fileType,
-          size: a.size
-        }));
-
-      if (files.length > 0) {
-        messageData.files = files;
-        messageData.messageType = 'file';
-      }
-
-      // Enviar a mensagem
-      await db.collection('chats').doc(chatId).collection('messages').add(messageData);
-
-      // Última mensagem para exibir no resumo do chat
-      const lastMessage = hasImages
-        ? '📷 Imagem'
-        : hasFiles
-        ? `📎 ${files[0].name}`
-        : text.substring(0, 20) + (text.length > 20 ? '...' : '');
-
-      await db.collection('chats').doc(chatId).update({
-        lastMessage,
-        lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
-        [`unreadCount.${partnerId}`]: firebase.firestore.FieldValue.increment(1)
-      });
-
-      // Limpar campos
-      messageInput.value = '';
-      pendingAttachments.images = [];
-      pendingAttachments.files = [];
-      updateAttachmentsPreview();
-
-      await loadChatMessages(chatId);
-    } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-      showToast('Erro ao enviar mensagem', 'error');
-    }
-  };
-
-  sendButton.addEventListener('click', sendMessage);
-  messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-}
+// Função auxiliar para upload de arquivos
 async function uploadFile(file, path) {
-  const storageRef = firebase.storage().ref();
-  const fileRef = storageRef.child(`${path}/${Date.now()}_${file.name}`);
+  try {
+    const storageRef = firebase.storage().ref();
+    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+    const fileRef = storageRef.child(`${path}/${fileName}`);
+    
+    await fileRef.put(file);
+    return await fileRef.getDownloadURL();
+  } catch (error) {
+    console.error('Erro no upload:', error);
+    throw error;
+  }
+}
+
+// Função auxiliar para obter ícone de arquivo
+function getFileIcon(fileType) {
+  if (!fileType) return 'fa-file';
   
-  await fileRef.put(file);
-  const url = await fileRef.getDownloadURL();
-  return url;
+  const icons = {
+    'application/pdf': 'fa-file-pdf',
+    'application/zip': 'fa-file-archive',
+    'application/msword': 'fa-file-word',
+    'application/vnd.ms-excel': 'fa-file-excel',
+    'text/': 'fa-file-alt'
+  };
+  
+  for (const [prefix, icon] of Object.entries(icons)) {
+    if (fileType.startsWith(prefix)) return icon;
+  }
+  
+  return 'fa-file';
 }
 
 
 
 
-/*********************
- * PERFIL / MODAL UI *
- *********************/
 
-function openProfileModal(profileData) {
-  const modal = document.getElementById('profileModal');
-  if (!modal) {
-    console.error('Elemento profileModal não encontrado no DOM');
-    return;
-  }
+function proposeDate(userId) {
+  console.log('Propor encontro para:', userId);
+  // Implemente a lógica de agendamento
+}
 
-  // Preenche o modal com os dados do perfil
-  const modalContent = `
-    <div class="lux-profile-modal">
-      <div class="lux-profile-modal-header">
-        <img src="${profileData.profilePhotoURL || 'https://via.placeholder.com/150'}" 
-             class="lux-profile-modal-img" 
-             alt="${profileData.name || 'Usuário'}"
-             onerror="this.src='https://via.placeholder.com/150'">
-        <h2>${profileData.name || 'Usuário'}</h2>
-        <p>${profileData.tipouser || 'Membro'} • ${profileData.age || ''} anos • ${profileData.cidade || ''}</p>
-      </div>
-      <div class="lux-profile-modal-body">
-        <h3>Sobre</h3>
-        <p>${profileData.bio || 'Nenhuma biografia fornecida.'}</p>
-        
-        ${profileData.interestIn ? `
-        <h3>Interessado em</h3>
-        <p>${profileData.interestIn}</p>
-        ` : ''}
-      </div>
-      <div class="lux-profile-actions">
-        <button class="lux-btn lux-btn-primary" onclick="startChatWithUser('${profileData.userId || profileData.id}')">
-          <i class="fas fa-envelope"></i> Mensagem
-        </button>
-      </div>
-    </div>
-  `;
-
-  // Atualiza o modal e exibe
-  modal.innerHTML = `
-    <div class="lux-modal-content">
-      <span class="lux-modal-close">&times;</span>
-      ${modalContent}
-    </div>
-  `;
-
-  // Mostra o modal
-  modal.style.display = 'flex';
-
-  // Configura eventos para fechar o modal
-  modal.querySelector('.lux-modal-close').addEventListener('click', () => {
-    modal.style.display = 'none';
-  });
-
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.style.display = 'none';
-    }
-  });
+function showAllowanceOptions(userId) {
+  console.log('Mostrar opções de apoio para:', userId);
+  // Implemente a lógica de apoio mensal
 }
 
 
@@ -2841,75 +3154,237 @@ async function startChatWithUser(otherUserId) {
   }
 }
 
-async function openChat(chatId, otherUserId) {
-  try {
-    // Busca dados do outro usuário
-    const userDoc = await db.collection('users').doc(otherUserId).get();
-    if (!userDoc.exists) {
-      console.error('Usuário não encontrado');
+
+function setupMessageSender(chatId, partnerId) {
+  const messageInput = document.getElementById('messageInput');
+  const sendButton = document.getElementById('sendMessageBtn');
+  const emojiBtn = document.getElementById('emojiBtn');
+  
+  // Variável para controlar o estado de envio
+  let isSending = false;
+
+  // Configurar evento do botão de emoji
+  if (emojiBtn) {
+    emojiBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('emojiPicker').classList.toggle('visible');
+    });
+  }
+
+  const sendMessage = async () => {
+    // Se já estiver enviando, não faz nada
+    if (isSending) return;
+    
+    const text = messageInput.value.trim();
+    const hasImages = pendingAttachments.images.length > 0;
+    const hasFiles = pendingAttachments.files.length > 0;
+
+    if (!text && !hasImages && !hasFiles) {
+      showToast('Digite uma mensagem ou adicione um anexo', 'warning');
       return;
     }
 
-    const userData = userDoc.data();
+    try {
+      // Ativar estado de envio
+      isSending = true;
+      sendButton.disabled = true;
+      sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+      
+      // Mostrar loading para imagens (se tiver)
+      if (hasImages) {
+        const uploadLoading = document.getElementById('image-upload-loading');
+        const progressBar = document.getElementById('upload-progress-bar');
+        uploadLoading.style.display = 'flex';
+        progressBar.style.width = '0%';
+      }
 
-    // Preenche informações no cabeçalho do chat flutuante
-    document.getElementById('chatPartnerAvatar').src = userData.profilePhotoURL || 'https://via.placeholder.com/150';
-    document.getElementById('chatPartnerName').textContent = userData.name || 'Usuário';
-    // Status pode ser dinâmico futuramente
-    document.getElementById('chatPartnerStatus').textContent = 'Online';
+      const currentUser = firebase.auth().currentUser;
+      if (!currentUser) {
+        showToast('Você precisa estar logado para enviar mensagens', 'error');
+        return;
+      }
 
-    // Mostra o chat flutuante
-    const activeChat = document.getElementById('activeChat');
-    activeChat.style.display = 'flex';
+      // Array para armazenar todas as promessas de upload
+      const uploadPromises = [];
 
-    // Limpa mensagens anteriores
-    const messagesContainer = document.getElementById('messagesContainer');
-    messagesContainer.innerHTML = `
-      <div class="lux-messages-date">
-        <span>HOJE</span>
-      </div>
-    `;
+      // Processar imagens
+      if (hasImages) {
+        pendingAttachments.images.forEach(img => {
+          const uploadTask = uploadFileWithProgress(
+            img.file, 
+            `chats/${chatId}/images`,
+            (progress) => {
+              const percent = (progress.bytesTransferred / progress.totalBytes) * 100;
+              document.getElementById('upload-progress-bar').style.width = `${percent}%`;
+            }
+          );
+          
+          uploadPromises.push(
+            uploadTask.then(url => ({ type: 'image', url }))
+            .catch(error => {
+              console.error('Erro no upload de imagem:', error);
+              throw error;
+            })
+          );
+        });
+      }
 
-    // Carrega mensagens do Firestore (exemplo simples)
-    const messagesSnapshot = await db.collection('chats').doc(chatId).collection('messages')
-      .orderBy('timestamp')
-      .get();
+      // Processar arquivos
+      if (hasFiles) {
+        pendingAttachments.files.forEach(file => {
+          uploadPromises.push(
+            uploadFile(file.file, `chats/${chatId}/files`)
+              .then(url => ({
+                type: 'file',
+                url,
+                name: file.file.name,
+                fileType: file.file.type,
+                size: file.file.size
+              }))
+              .catch(error => {
+                console.error('Erro no upload de arquivo:', error);
+                throw error;
+              })
+          );
+        });
+      }
 
-    messagesSnapshot.forEach(doc => {
-      const msg = doc.data();
-      const messageDiv = document.createElement('div');
-      messageDiv.className = msg.senderId === firebase.auth().currentUser.uid ? 'lux-message me' : 'lux-message';
-      messageDiv.innerHTML = `
-        <div class="lux-message-bubble">${msg.text || '[Mensagem vazia]'}</div>
-      `;
-      messagesContainer.appendChild(messageDiv);
-    });
+      // Aguardar todos os uploads terminarem
+      const uploadedAttachments = await Promise.all(uploadPromises);
 
-    // Scrolla para a última mensagem
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      // Preparar dados da mensagem
+      const messageData = {
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName || 'Usuário',
+        senderPhoto: currentUser.photoURL || '',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        read: false,
+        receiverId: partnerId,
+        originalSender: currentUser.uid,
+        visibleFor: [currentUser.uid, partnerId],
+        deletedFor: []
+      };
 
-    // Adiciona comportamento ao botão de envio
-    document.getElementById('sendMessageBtn').onclick = async () => {
-      const messageInput = document.getElementById('messageInput');
-      const text = messageInput.value.trim();
-      if (text === '') return;
+      // Adicionar texto se existir
+      if (text) messageData.text = text;
 
-      await db.collection('chats').doc(chatId).collection('messages').add({
-        text,
-        senderId: firebase.auth().currentUser.uid,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      // Adicionar imagens se existirem
+      const imageUrls = uploadedAttachments
+        .filter(a => a.type === 'image')
+        .map(a => a.url);
+
+      if (imageUrls.length > 0) {
+        messageData.imageUrls = imageUrls;
+        messageData.messageType = 'image';
+      }
+
+      // Adicionar arquivos se existirem
+      const files = uploadedAttachments
+        .filter(a => a.type === 'file')
+        .map(a => ({
+          url: a.url,
+          name: a.name,
+          type: a.fileType,
+          size: a.size
+        }));
+
+      if (files.length > 0) {
+        messageData.files = files;
+        messageData.messageType = 'file';
+      }
+
+      // Enviar a mensagem para AMBAS as cópias
+      const batch = db.batch();
+      
+      // Cópia no remetente
+      const senderMessageRef = db.collection('users').doc(currentUser.uid)
+        .collection('chats').doc(chatId)
+        .collection('messages').doc();
+      batch.set(senderMessageRef, messageData);
+      
+      // Cópia no destinatário
+      const receiverMessageRef = db.collection('users').doc(partnerId)
+        .collection('chats').doc(chatId)
+        .collection('messages').doc(senderMessageRef.id);
+      batch.set(receiverMessageRef, messageData);
+      
+      await batch.commit();
+
+      // Atualizar último mensagem no chat
+      const lastMessage = hasImages
+        ? '📷 Imagem'
+        : hasFiles
+        ? `📎 ${files[0].name}`
+        : text.substring(0, 20) + (text.length > 20 ? '...' : '');
+
+      await db.collection('chats').doc(chatId).update({
+        lastMessage,
+        lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+        [`unreadCount.${partnerId}`]: firebase.firestore.FieldValue.increment(1)
       });
 
+      // Limpar campos
       messageInput.value = '';
-      openChat(chatId, otherUserId); // recarrega mensagens (ou use um listener ao invés disso)
-    };
+      pendingAttachments.images = [];
+      pendingAttachments.files = [];
+      updateAttachmentsPreview();
 
-  } catch (error) {
-    console.error('Erro ao abrir chat:', error);
-    showToast('Erro ao abrir o chat', 'error');
-  }
+      // Recarregar mensagens
+      await loadChatMessages(chatId);
+
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      showToast('Erro ao enviar mensagem', 'error');
+    } finally {
+      // Resetar estado de envio
+      isSending = false;
+      sendButton.disabled = false;
+      sendButton.innerHTML = 'Enviar';
+      
+      // Esconder loading de upload
+      document.getElementById('image-upload-loading').style.display = 'none';
+    }
+  };
+
+  // Função para upload com progresso
+  const uploadFileWithProgress = (file, path, onProgress) => {
+    return new Promise((resolve, reject) => {
+      const storageRef = storage.ref();
+      const fileRef = storageRef.child(`${path}/${file.name}`);
+      const uploadTask = fileRef.put(file);
+
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          // Chamar callback de progresso
+          if (onProgress) onProgress(snapshot);
+        },
+        (error) => {
+          reject(error);
+        },
+        () => {
+          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+            resolve(downloadURL);
+          });
+        }
+      );
+    });
+  };
+
+  // Configurar event listeners
+  sendButton.addEventListener('click', sendMessage);
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Configurar auto-ajuste da altura do textarea
+  messageInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+  });
 }
-
 /*******************
  * HELPERS VISUAIS *
  *******************/
@@ -3247,7 +3722,43 @@ function showMessagesSection() {
 
 
 
+async function openChat(chatId, otherUserId) {
+  try {
+    // Busca dados do outro usuário primeiro
+    const userDoc = await db.collection('users').doc(otherUserId).get();
+    if (!userDoc.exists) {
+      console.error('Usuário não encontrado');
+      return;
+    }
 
+    const userData = userDoc.data();
+
+    // Atualiza o currentChat corretamente usando otherUserId
+    currentChat = {
+      id: chatId,
+      partnerId: otherUserId, // Corrigido - usa o parâmetro otherUserId
+      partnerData: userData
+    };
+    
+    // Restante do seu código...
+    document.getElementById('chatPartnerAvatar').src = userData.profilePhotoURL || 'https://via.placeholder.com/150';
+    document.getElementById('chatPartnerName').textContent = userData.name || 'Usuário';
+    document.getElementById('chatPartnerStatus').textContent = 'Online';
+
+    const activeChat = document.getElementById('activeChat');
+    activeChat.style.display = 'flex';
+
+    const messagesContainer = document.getElementById('messagesContainer');
+    messagesContainer.innerHTML = '<div class="lux-messages-date"><span>HOJE</span></div>';
+
+    await loadChatMessages(chatId);
+    setupMessageSender(chatId, otherUserId);
+
+  } catch (error) {
+    console.error('Erro ao abrir chat:', error);
+    showToast('Erro ao abrir o chat', 'error');
+  }
+}
 // Função para abrir o chatbox com um usuário
 async function openChatbox(partnerId) {
   try {
@@ -3311,45 +3822,61 @@ async function openChatbox(partnerId) {
 
 
 
-
-// Configura os listeners para os inputs de arquivo
 function setupFileInputs() {
-  document.getElementById('chatboxImageInput').addEventListener('change', function(e) {
+  // Listener para imagens
+  document.getElementById('chatImageInput').addEventListener('change', function(e) {
     if (e.target.files && e.target.files.length > 0) {
       Array.from(e.target.files).forEach(file => {
-        handleFileSelection(file, 'image');
+        if (file.type.startsWith('image/')) {
+          addAttachment(file, 'image');
+        }
       });
     }
   });
 
-  document.getElementById('chatboxFileInput').addEventListener('change', function(e) {
+  // Listener para arquivos
+  document.getElementById('chatFileInput').addEventListener('change', function(e) {
     if (e.target.files && e.target.files.length > 0) {
       Array.from(e.target.files).forEach(file => {
-        handleFileSelection(file, 'file');
+        if (!file.type.startsWith('image/')) {
+          addAttachment(file, 'file');
+        }
       });
     }
   });
 }
-
-// Função para lidar com a seleção de arquivos
-function handleFileSelection(file, type) {
+function addAttachment(file, type) {
   const maxSize = 5 * 1024 * 1024; // 5MB
+  
   if (file.size > maxSize) {
     showToast('Arquivo muito grande. Tamanho máximo: 5MB', 'error');
     return;
   }
 
-  if (type === 'image') {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      pendingAttachments.images.push({
-        file: file,
-        previewUrl: e.target.result
-      });
-      updateAttachmentsPreview();
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    const attachment = {
+      file: file,
+      preview: type === 'image' ? e.target.result : null,
+      name: file.name,
+      type: file.type,
+      size: file.size
     };
+
+    if (type === 'image') {
+      pendingAttachments.images.push(attachment);
+    } else {
+      pendingAttachments.files.push(attachment);
+    }
+
+    updateAttachmentsPreview();
+  };
+
+  if (type === 'image') {
     reader.readAsDataURL(file);
   } else {
+    // Para arquivos não-imagem, só precisamos das informações básicas
     pendingAttachments.files.push({
       file: file,
       name: file.name,
@@ -3360,50 +3887,47 @@ function handleFileSelection(file, type) {
   }
 }
 
-// Atualiza a pré-visualização dos anexos
 function updateAttachmentsPreview() {
   const previewContainer = document.getElementById('attachmentsPreview');
   previewContainer.innerHTML = '';
-  
-  // Adiciona imagens
+
+  // Adiciona imagens primeiro
   pendingAttachments.images.forEach((img, index) => {
-    const previewItem = document.createElement('div');
-    previewItem.className = 'lux-preview-item';
-    previewItem.innerHTML = `
-      <img src="${img.previewUrl}" class="lux-preview-image">
-      <button class="lux-preview-remove" onclick="removeAttachment(${index}, 'image')">
+    const previewElement = document.createElement('div');
+    previewElement.className = 'lux-attachment-preview';
+    previewElement.innerHTML = `
+      <img src="${img.preview}" class="lux-attachment-image">
+      <button class="lux-remove-attachment" data-index="${index}" data-type="image">
         <i class="fas fa-times"></i>
       </button>
     `;
-    previewContainer.appendChild(previewItem);
+    previewContainer.appendChild(previewElement);
   });
-  
+
   // Adiciona arquivos
   pendingAttachments.files.forEach((file, index) => {
-    const previewItem = document.createElement('div');
-    previewItem.className = 'lux-preview-item';
-    previewItem.innerHTML = `
-      <div class="lux-preview-file">
-        <div class="lux-file-icon">${getFileIcon(file.type)}</div>
-        <div class="lux-file-info">
-          <div class="lux-file-name">${file.name}</div>
-          <div class="lux-file-size">${formatFileSize(file.size)}</div>
-        </div>
-        <button class="lux-preview-remove" onclick="removeAttachment(${index}, 'file')">
+    const previewElement = document.createElement('div');
+    previewElement.className = 'lux-attachment-preview';
+    previewElement.innerHTML = `
+      <div class="lux-file-preview">
+        <i class="fas ${getFileIcon(file.type)}"></i>
+        <span class="lux-file-name">${file.name}</span>
+        <span class="lux-file-size">(${formatFileSize(file.size)})</span>
+        <button class="lux-remove-attachment" data-index="${index}" data-type="file">
           <i class="fas fa-times"></i>
         </button>
       </div>
     `;
-    previewContainer.appendChild(previewItem);
+    previewContainer.appendChild(previewElement);
   });
 
+  // Mostra ou esconde o container conforme necessário
   previewContainer.style.display = 
-    pendingAttachments.images.length > 0 || pendingAttachments.files.length > 0 
+    (pendingAttachments.images.length > 0 || pendingAttachments.files.length > 0) 
       ? 'block' 
       : 'none';
 }
 
-// Remove um anexo específico
 function removeAttachment(index, type) {
   if (type === 'image') {
     pendingAttachments.images.splice(index, 1);
@@ -3412,6 +3936,9 @@ function removeAttachment(index, type) {
   }
   updateAttachmentsPreview();
 }
+
+
+
 // Atualiza a UI do chatbox com os dados do usuário
 function updateChatboxUI(partnerData) {
   document.getElementById('chatboxUserName').textContent = partnerData.name || 'Usuário';
@@ -3477,6 +4004,8 @@ async function loadChatboxMessages(chatId) {
     messagesContainer.innerHTML = '<div class="lux-error">Erro ao carregar mensagens</div>';
   }
 }
+
+
 function createChatboxMessageElement(message) {
   const currentUser = firebase.auth().currentUser;
   const isCurrentUser = message.senderId === currentUser.uid;
@@ -3539,164 +4068,122 @@ function formatChatboxTime(date) {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-// Configura o envio de mensagens no chatbox (com suporte a anexos)
-function setupChatboxMessageSender() {
-  const messageInput = document.getElementById('chatboxMessageInput');
-  const sendButton = document.getElementById('chatboxSendButton');
-  
-  const sendMessage = async () => {
-    const text = messageInput.value.trim();
-    const hasImage = currentUploads.image !== null;
-    const hasFile = currentUploads.file !== null;
-    
-    if (!text && !hasImage && !hasFile) {
-      showToast('Digite uma mensagem ou adicione um anexo', 'warning');
+
+const sendMessage = async () => {
+  const text = messageInput.value.trim();
+  const hasImages = pendingAttachments.images.length > 0;
+  const hasFiles = pendingAttachments.files.length > 0;
+
+  if (!text && !hasImages && !hasFiles) {
+    showToast('Digite uma mensagem ou adicione um anexo', 'warning');
+    return;
+  }
+
+  try {
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) {
+      showToast('Você precisa estar logado para enviar mensagens', 'error');
       return;
     }
-    
-    try {
-      const currentUser = firebase.auth().currentUser;
-      if (!currentUser) {
-        showToast('Você precisa estar logado para enviar mensagens', 'error');
-        return;
-      }
-      
-      let chatId = currentChat.id;
-      
-      // Se não existe um chat, cria um novo
-      if (!chatId) {
-        const lastMessageText = hasImage ? '📷 Imagem' : 
-                              (hasFile ? `📎 ${currentUploads.file.name}` : text);
-        
-        const chatRef = await db.collection('chats').add({
-          participants: [currentUser.uid, currentChat.partnerId],
-          lastMessage: lastMessageText,
-          lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
-          unreadCount: {
-            [currentUser.uid]: 0,
-            [currentChat.partnerId]: 0
-          },
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        chatId = chatRef.id;
-        currentChat.id = chatId;
-      }
-      
-      // Upload de imagem se existir
-      let imageUrl = '';
-      if (hasImage) {
-        imageUrl = await uploadFile(currentUploads.image.file, `chats/${chatId}/images`);
-        removeImagePreview();
-      }
-      
-      // Upload de arquivo se existir
-      let fileUrl = '';
-      let fileData = null;
-      if (hasFile) {
-        fileUrl = await uploadFile(currentUploads.file, `chats/${chatId}/files`);
-        fileData = {
-          url: fileUrl,
-          name: currentUploads.file.name,
-          type: currentUploads.file.type,
-          size: currentUploads.file.size
-        };
-      }
-      
-      // Cria o objeto da mensagem
-      const messageData = {
-        text: text,
-        senderId: currentUser.uid,
-        senderName: currentUser.displayName || 'Usuário',
-        senderPhoto: currentUser.photoURL || '',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        read: false
-      };
-      
-      // Adiciona dados da imagem se existir
-      if (hasImage) {
-        messageData.imageUrl = imageUrl;
-        messageData.messageType = 'image';
-      }
-      
-      // Adiciona dados do arquivo se existir
-      if (hasFile) {
-        messageData.fileUrl = fileData.url;
-        messageData.fileName = fileData.name;
-        messageData.fileType = fileData.type;
-        messageData.fileSize = fileData.size;
-        messageData.messageType = 'file';
-      }
-      
-      // Adiciona a mensagem ao chat
-      await db.collection('chats').doc(chatId).collection('messages').add(messageData);
-      
-      // Atualiza a última mensagem no chat
-      const lastMessageText = hasImage ? '📷 Imagem' : 
-                            (hasFile ? `📎 ${currentUploads.file.name}` : text);
-      
-      await db.collection('chats').doc(chatId).update({
-        lastMessage: lastMessageText,
-        lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
-        [`unreadCount.${currentChat.partnerId}`]: firebase.firestore.FieldValue.increment(1)
+
+    const uploadPromises = [];
+
+    // Processar imagens
+    if (hasImages) {
+      pendingAttachments.images.forEach(img => {
+        uploadPromises.push(
+          uploadFile(img.file, `chats/${chatId}/images`)
+            .then(url => ({ type: 'image', url }))
+        );
       });
-      
-      // Limpa o campo de entrada e anexos
-      messageInput.value = '';
-      currentUploads.image = null;
-      currentUploads.file = null;
-      
-      // Recarrega as mensagens
-      await loadChatboxMessages(chatId);
-      
-      // Rola para a última mensagem
-      const messagesContainer = document.getElementById('chatboxMessages');
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      
-    } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-      showToast('Erro ao enviar mensagem', 'error');
     }
-  };
-  
- async function uploadFile(file, path) {
-  try {
-    const storageRef = firebase.storage().ref();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-    const fileRef = storageRef.child(`${path}/${fileName}`);
-    
-    await fileRef.put(file);
-    return await fileRef.getDownloadURL();
+
+    // Processar arquivos
+    if (hasFiles) {
+      pendingAttachments.files.forEach(file => {
+        uploadPromises.push(
+          uploadFile(file.file, `chats/${chatId}/files`)
+            .then(url => ({
+              type: 'file',
+              url,
+              name: file.file.name,
+              fileType: file.file.type,
+              size: file.file.size
+            }))
+        );
+      });
+    }
+
+    // Aguardar todos os uploads
+    const uploadedAttachments = await Promise.all(uploadPromises);
+
+    // Criar objeto da mensagem
+    const messageData = {
+      senderId: currentUser.uid,
+      senderName: currentUser.displayName || 'Usuário',
+      senderPhoto: currentUser.photoURL || '',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      read: false
+    };
+
+    if (text) messageData.text = text;
+
+    // Adicionar imagens
+    const imageUrls = uploadedAttachments
+      .filter(a => a.type === 'image')
+      .map(a => a.url);
+
+    if (imageUrls.length > 0) {
+      messageData.imageUrls = imageUrls;
+      messageData.messageType = 'image';
+    }
+
+    // Adicionar arquivos
+    const files = uploadedAttachments
+      .filter(a => a.type === 'file')
+      .map(a => ({
+        url: a.url,
+        name: a.name,
+        type: a.fileType,
+        size: a.size
+      }));
+
+    if (files.length > 0) {
+      messageData.files = files;
+      messageData.messageType = files.length > 0 ? 'file' : messageData.messageType;
+    }
+
+    // Enviar mensagem
+    await db.collection('chats').doc(chatId).collection('messages').add(messageData);
+
+    // Atualizar último mensagem no chat
+    const lastMessage = hasImages
+      ? '📷 Imagem'
+      : hasFiles
+      ? `📎 ${files[0].name}`
+      : text.substring(0, 20) + (text.length > 20 ? '...' : '');
+
+    await db.collection('chats').doc(chatId).update({
+      lastMessage,
+      lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+      [`unreadCount.${partnerId}`]: firebase.firestore.FieldValue.increment(1)
+    });
+
+    // Limpar campos
+    messageInput.value = '';
+    pendingAttachments.images = [];
+    pendingAttachments.files = [];
+    updateAttachmentsPreview();
+
+    // Recarregar mensagens
+    await loadChatMessages(chatId);
+
   } catch (error) {
-    console.error('Erro no upload:', error);
-    throw error;
+    console.error('Erro ao enviar mensagem:', error);
+    showToast('Erro ao enviar mensagem: ' + error.message, 'error');
   }
-}
-  
-  // Função para remover pré-visualização de imagem
-  function removeImagePreview() {
-    const preview = document.querySelector('.lux-chatbox-preview-container');
-    if (preview) preview.remove();
-  }
-  
-  // Enviar ao clicar no botão
-  sendButton.addEventListener('click', sendMessage);
-  
-  // Enviar ao pressionar Enter (sem Shift)
-  messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-  
-  // Auto-ajuste da altura do textarea
-  messageInput.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = (this.scrollHeight) + 'px';
-  });
-}
+};
+
 
 // Fechar o chatbox
 function closeChatbox() {
@@ -3747,7 +4234,17 @@ document.addEventListener('DOMContentLoaded', function() {
   setupChatboxButtons();
   setupMediaViewer();
     setupFileInputs();
-
+// Configurar remoção de anexos
+  // Listener para remover anexos
+  document.getElementById('attachmentsPreview').addEventListener('click', function(e) {
+    const removeBtn = e.target.closest('.lux-remove-attachment');
+    if (removeBtn) {
+      const index = parseInt(removeBtn.dataset.index);
+      const type = removeBtn.dataset.type;
+      removeAttachment(index, type);
+    }
+  });
+  
 });
 
 // Configuração dos botões
@@ -3766,18 +4263,8 @@ let pendingAttachments = {
   files: []
 };
 
-// Configura os listeners para os inputs de arquivo
-document.getElementById('chatImageInput').addEventListener('change', function(e) {
-  if (e.target.files && e.target.files.length > 0) {
-    handleFileSelection(e.target.files[0], 'image');
-  }
-});
 
-document.getElementById('chatFileInput').addEventListener('change', function(e) {
-  if (e.target.files && e.target.files.length > 0) {
-    handleFileSelection(e.target.files[0], 'file');
-  }
-});
+
   
   document.getElementById('chatboxSendButton').addEventListener('click', sendChatboxMessage);
   
@@ -4000,16 +4487,32 @@ function closeChatbox() {
   removeImagePreview();
 }
 
-
+// Função para visualizar imagem em tela cheia
 function openMediaViewer(imageUrl) {
-  const modal = document.getElementById('mediaViewerModal');
-  const img = document.getElementById('mediaViewerImage');
-  if (!modal || !img) return;
+  const modal = document.createElement('div');
+  modal.className = 'lux-media-viewer';
+  modal.innerHTML = `
+    <div class="lux-media-viewer-content">
+      <span class="lux-media-viewer-close">&times;</span>
+      <img src="${imageUrl}" class="lux-media-viewer-image">
+    </div>
+  `;
   
-  img.src = imageUrl;
-  modal.style.display = 'flex';
+  document.body.appendChild(modal);
+  
+  // Fechar ao clicar no X ou fora
+  modal.querySelector('.lux-media-viewer-close').addEventListener('click', () => {
+    modal.remove();
+  });
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
 }
 
+// Função para baixar arquivo
 function downloadFile(url, fileName) {
   const link = document.createElement('a');
   link.href = url;
@@ -4020,37 +4523,21 @@ function downloadFile(url, fileName) {
   document.body.removeChild(link);
 }
 
-// Função para obter ícone do arquivo
-function getFileIcon(fileType) {
-  if (!fileType) return '📄';
-  
-  const icons = {
-    'image/': '🖼️',
-    'application/pdf': '📕',
-    'application/zip': '🗜️',
-    'application/msword': '📝',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📝',
-    'text/': '📄'
-  };
-  
-  for (const [prefix, icon] of Object.entries(icons)) {
-    if (fileType.startsWith(prefix)) return icon;
-  }
-  
-  return '📄';
+// Função para formatar hora da mensagem
+function formatMessageTime(date) {
+  if (!date) return '';
+  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-
-
-function downloadFile(url, fileName) {
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName || 'arquivo';
-  link.target = '_blank';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+// Helper para formatar tamanho de arquivo
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i]);
 }
+
 
 function openMediaViewer(imageUrl) {
   const modal = document.getElementById('mediaViewerModal');
@@ -4161,10 +4648,6 @@ function formatFileSize(bytes) {
 }
 
 
-function formatMessageTime(date) {
-  if (!date) return '';
-  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
 
 
 
@@ -4326,6 +4809,8 @@ if (hasFiles) {
 // Configura os listeners quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', function() {
   setupChatActionButtons();
+
+
 });
 
 
@@ -4653,12 +5138,35 @@ document.getElementById('clearChatOption')?.addEventListener('click', () => {
   optionsMenu.remove();
 });
   
-  document.getElementById('deleteChatOption')?.addEventListener('click', () => {
-    if (confirm('Tem certeza que deseja apagar esta conversa?')) {
-      deleteChat(currentChat.id);
+  // No seu showChatMoreOptions, atualize o listener para:
+document.getElementById('deleteChatOption')?.addEventListener('click', async () => {
+  if (!currentChat?.id) {
+    showToast('Nenhuma conversa selecionada', 'error');
+    return;
+  }
+
+  try {
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: "Isso removerá a conversa apenas para você!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, apagar!'
+    });
+
+    if (result.isConfirmed) {
+      await clearChat(currentChat.id);
+      // Atualiza a UI após apagar
+      if (document.getElementById('messagesContainer')) {
+        document.getElementById('messagesContainer').innerHTML = '';
+      }
     }
-    optionsMenu.remove();
-  });
+  } catch (error) {
+    console.error("Erro ao confirmar:", error);
+  }
+});
   
   document.getElementById('blockUserOption')?.addEventListener('click', () => {
     if (confirm('Tem certeza que deseja bloquear este usuário?')) {
@@ -4673,61 +5181,69 @@ document.getElementById('clearChatOption')?.addEventListener('click', () => {
   });
 }
 
-
-
-// Função para limpar o chat (apenas para o usuário atual)
 async function clearChat(chatId) {
   try {
-    // Verifica se o chatId é válido
-    if (!chatId || typeof chatId !== 'string' || chatId.trim() === '') {
-      throw new Error('ID do chat inválido');
+    console.log("[DEBUG] Iniciando clearChat com ID:", chatId);
+    
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error('Usuário não autenticado');
+
+    // Buscar mensagens visíveis para o usuário em AMBAS as localizações
+    const [sharedMessages, userMessages] = await Promise.all([
+      // Mensagens no formato antigo (chats collection)
+      db.collection('chats').doc(chatId)
+        .collection('messages')
+        .where('visibleFor', 'array-contains', user.uid)
+        .get(),
+      
+      // Mensagens no novo formato (user chats collection)
+      db.collection('users').doc(user.uid)
+        .collection('chats').doc(chatId)
+        .collection('messages')
+        .where('visibleFor', 'array-contains', user.uid)
+        .get()
+    ]);
+
+    const totalMessages = sharedMessages.size + userMessages.size;
+    console.log(`[DEBUG] Total de mensagens visíveis: ${totalMessages}`);
+    
+    if (totalMessages === 0) {
+      return showToast('Nenhuma mensagem para limpar');
     }
 
-    const currentUser = firebase.auth().currentUser;
-    if (!currentUser) {
-      throw new Error('Usuário não autenticado');
-    }
-    
-    // Referência ao chat com verificação adicional
-    const chatRef = db.collection('chats').doc(chatId);
-    const chatDoc = await chatRef.get();
-    
-    if (!chatDoc.exists) {
-      throw new Error('Chat não encontrado');
-    }
-
-    // Verifica se o usuário tem permissão para limpar este chat
-    const chatData = chatDoc.data();
-    if (!chatData.participants || !chatData.participants.includes(currentUser.uid)) {
-      throw new Error('Você não tem permissão para limpar este chat');
-    }
-
-    // Marca todas as mensagens como apagadas para este usuário
-    const messagesSnapshot = await chatRef.collection('messages')
-      .where('deletedFor', 'not-in', [[currentUser.uid]])
-      .get();
-    
+    // Marcar todas como deletadas para este usuário
     const batch = db.batch();
-    messagesSnapshot.forEach(doc => {
+    
+    // Processar mensagens do formato antigo
+    sharedMessages.forEach(doc => {
       batch.update(doc.ref, {
-        deletedFor: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+        deletedFor: firebase.firestore.FieldValue.arrayUnion(user.uid),
+        visibleFor: firebase.firestore.FieldValue.arrayRemove(user.uid)
       });
     });
     
+    // Processar mensagens do formato novo
+    userMessages.forEach(doc => {
+      batch.update(doc.ref, {
+        deletedFor: firebase.firestore.FieldValue.arrayUnion(user.uid),
+        visibleFor: firebase.firestore.FieldValue.arrayRemove(user.uid)
+      });
+    });
+
     await batch.commit();
-    showToast('Conversa limpa com sucesso');
-    
-    // Recarrega as mensagens apenas se for o chat atual
-    if (currentChat && currentChat.id === chatId) {
-      loadChatboxMessages(chatId);
+    showToast('Conversa limpa');
+
+    // Atualização visual imediata
+    if (currentChat?.id === chatId) {
+      document.getElementById('messagesContainer').innerHTML = 
+        '<div class="lux-no-messages">Conversa limpa</div>';
     }
-    
+
   } catch (error) {
-    console.error('Erro ao limpar chat:', error);
-    showToast(error.message || 'Erro ao limpar conversa', 'error');
+    console.error("[ERRO]", error);
+    showToast('Erro ao limpar: ' + error.message, 'error');
   }
 }
-
 // Função para apagar completamente o chat
 async function deleteChat(chatId) {
   try {
@@ -5312,3 +5828,2670 @@ async function reauthenticateUser(currentPassword) {
     return false;
   }
 }
+function initEmojiPicker() {
+  // Elementos do DOM
+  const emojiBtn = document.getElementById('emojiBtn');
+  const emojiPicker = document.getElementById('emojiPicker');
+  const emojiGrid = document.getElementById('emojiGrid');
+  const messageInput = document.getElementById('messageInput');
+  const emojiSearch = document.getElementById('emojiSearch');
+
+  // Verificar se elementos existem
+  if (!emojiBtn || !emojiPicker || !emojiGrid || !messageInput) {
+    console.error('Elementos do emoji picker não encontrados!');
+    return;
+  }
+
+  // Limpar campo de busca e garantir que está vazio
+  if (emojiSearch) {
+    emojiSearch.value = '';
+    emojiSearch.placeholder = 'Buscar emoji...';
+  }
+
+  // Preencher o grid de emojis
+  let emojiHTML = '';
+  for (const [category, emojis] of Object.entries(emojiCategories)) {
+    emojiHTML += `<div class="lux-emoji-category-title" data-category="${category.toLowerCase()}">${category}</div>`;
+    emojis.forEach(emoji => {
+      emojiHTML += `<div class="lux-emoji-item" data-emoji="${emoji}">${emoji}</div>`;
+    });
+  }
+  emojiGrid.innerHTML = emojiHTML;
+
+  // Variável para controlar o estado do picker
+  let isPickerOpen = false;
+
+  // Função para mostrar o picker
+  const showPicker = () => {
+    emojiPicker.classList.add('visible');
+    isPickerOpen = true;
+    
+    // Posicionar o picker corretamente
+    positionPicker();
+    
+    // Focar no campo de busca
+    if (emojiSearch) {
+      setTimeout(() => emojiSearch.focus(), 50);
+    }
+  };
+
+  // Função para esconder o picker
+  const hidePicker = () => {
+    emojiPicker.classList.remove('visible');
+    isPickerOpen = false;
+    
+    // Limpar busca quando fechar
+    if (emojiSearch) {
+      emojiSearch.value = '';
+      const event = new Event('input', { bubbles: true });
+      emojiSearch.dispatchEvent(event);
+    }
+  };
+
+  // Função para posicionar o picker corretamente
+  const positionPicker = () => {
+    const btnRect = emojiBtn.getBoundingClientRect();
+    const pickerWidth = emojiPicker.offsetWidth;
+    const pickerHeight = emojiPicker.offsetHeight;
+    
+    // Verificar espaço disponível
+    const spaceRight = window.innerWidth - btnRect.right;
+    const spaceBottom = window.innerHeight - btnRect.top;
+    
+    // Posicionar relativo ao botão
+    if (spaceRight >= pickerWidth) {
+      emojiPicker.style.left = `${btnRect.right}px`;
+      emojiPicker.style.right = 'auto';
+    } else {
+      emojiPicker.style.left = 'auto';
+      emojiPicker.style.right = `${window.innerWidth - btnRect.left}px`;
+    }
+    
+    if (spaceBottom >= pickerHeight) {
+      emojiPicker.style.top = `${btnRect.top}px`;
+      emojiPicker.style.bottom = 'auto';
+    } else {
+      emojiPicker.style.top = 'auto';
+      emojiPicker.style.bottom = `${window.innerHeight - btnRect.bottom}px`;
+    }
+  };
+
+  // Evento de clique no botão de emoji
+  emojiBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isPickerOpen) {
+      hidePicker();
+    } else {
+      showPicker();
+    }
+  });
+
+  // Selecionar emoji
+  emojiGrid.addEventListener('click', (e) => {
+    const emojiItem = e.target.closest('.lux-emoji-item');
+    if (emojiItem) {
+      const emoji = emojiItem.getAttribute('data-emoji');
+      messageInput.value += emoji;
+      messageInput.focus();
+      hidePicker();
+    }
+  });
+
+  // Fechar ao clicar fora
+  document.addEventListener('click', (e) => {
+    if (isPickerOpen && !emojiPicker.contains(e.target) ){
+      hidePicker();
+    }
+  });
+
+  // Fechar com tecla Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isPickerOpen) {
+      hidePicker();
+    }
+  });
+
+  // Busca de emojis
+  if (emojiSearch) {
+    emojiSearch.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase().trim();
+      const allEmojis = emojiGrid.querySelectorAll('.lux-emoji-item');
+      const categories = emojiGrid.querySelectorAll('.lux-emoji-category-title');
+      
+      let hasResults = false;
+      
+      allEmojis.forEach(emojiEl => {
+        const emoji = emojiEl.getAttribute('data-emoji');
+        const emojiName = getEmojiName(emoji).toLowerCase();
+        const isVisible = emojiName.includes(term);
+        emojiEl.style.display = isVisible ? 'block' : 'none';
+        
+        if (isVisible) hasResults = true;
+      });
+
+      // Mostrar/ocultar categorias baseado nos resultados
+      categories.forEach(category => {
+        const categoryName = category.getAttribute('data-category');
+        const emojisInCategory = emojiGrid.querySelectorAll(
+          `.lux-emoji-item[data-category="${categoryName}"]`
+        );
+        
+        const hasVisible = Array.from(emojisInCategory).some(
+          el => el.style.display !== 'none'
+        );
+        
+        category.style.display = hasVisible ? 'block' : 'none';
+      });
+
+      // Mostrar mensagem se não houver resultados
+      const noResults = emojiGrid.querySelector('.no-results') || 
+                       document.createElement('div');
+      if (!hasResults && term) {
+        noResults.className = 'no-results';
+        noResults.textContent = 'Nenhum emoji encontrado';
+        if (!noResults.parentNode) {
+          emojiGrid.appendChild(noResults);
+        }
+      } else if (noResults.parentNode) {
+        noResults.remove();
+      }
+    });
+  }
+
+  // Reposicionar quando a janela for redimensionada
+  window.addEventListener('resize', () => {
+    if (isPickerOpen) {
+      positionPicker();
+    }
+  });
+}
+
+
+
+// Adicione isso ao seu arquivo JavaScript
+const emojiCategories = {
+  "Frequentes": ["😀", "😂", "😍", "🥰", "😎", "🤩", "😊", "🙂", "😉", "😘"],
+  "Pessoas": ["👋", "👍", "👎", "👏", "🙌", "🤝", "👂", "👀", "🧠", "👶"],
+  "Natureza": ["🌞", "🌝", "🌚", "🌍", "🌻", "🌹", "🍎", "🍕", "⚽", "🎮"],
+  "Objetos": ["📱", "💻", "⌚", "📷", "🎧", "📚", "✏️", "🎁", "💡", "🔑"],
+  "Símbolos": ["❤️", "✨", "🔥", "💯", "✅", "❌", "❗", "❓", "➕", "➖"]
+};
+
+
+
+// Função auxiliar para obter nome do emoji (simplificada)
+function getEmojiName(emoji) {
+  const emojiNames = {
+    "😀": "sorriso", "😂": "risada", "😍": "apaixonado", "🥰": "coração no rosto",
+    "😎": "óculos escuros", "🤩": "estrela nos olhos", "😊": "sorriso feliz",
+    "🙂": "sorriso leve", "😉": "piscada", "😘": "beijo",
+    "👋": "acenando", "👍": "joinha", "👎": "polegar para baixo",
+    "👏": "palmas", "🙌": "mãos para cima", "🤝": "aperto de mão",
+    "👂": "orelha", "👀": "olhos", "🧠": "cérebro", "👶": "bebê",
+    "🌞": "sol com rosto", "🌝": "lua cheia com rosto", "🌚": "lua nova com rosto",
+    "🌍": "globo terrestre", "🌻": "girassol", "🌹": "rosa",
+    "🍎": "maçã", "🍕": "pizza", "⚽": "bola de futebol", "🎮": "videogame",
+    "📱": "celular", "💻": "notebook", "⌚": "relógio", "📷": "câmera",
+    "🎧": "fone de ouvido", "📚": "livros", "✏️": "lápis", "🎁": "presente",
+    "💡": "lâmpada", "🔑": "chave", "❤️": "coração", "✨": "brilho",
+    "🔥": "fogo", "💯": "cem pontos", "✅": "marca de verificação", "❌": "xis",
+    "❗": "ponto de exclamação", "❓": "ponto de interrogação", "➕": "mais", "➖": "menos"
+  };
+  
+  return emojiNames[emoji] || emoji;
+}
+
+// Chame esta função quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', initEmojiPicker);
+
+
+
+
+// Certifique-se que o Firebase está inicializado antes deste código
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Verifica se o Firebase está inicializado
+        if (!firebase.apps.length) {
+            console.error("Firebase não está inicializado");
+            showError("Sistema não inicializado");
+            return;
+        }
+
+        await fetchExclusiveUsers();
+    } catch (error) {
+        console.error("Erro inicial:", error);
+        showError("Erro ao carregar");
+    }
+});
+
+async function fetchExclusiveUsers() {
+    try {
+        const container = document.getElementById('exclusive-profiles-container');
+        container.innerHTML = '<div class="loading-profiles"><i class="fas fa-spinner fa-spin"></i> Carregando usuários exclusivos...</div>';
+
+        const usersRef = firebase.firestore().collection('users');
+        const snapshot = await usersRef
+            .where('selo', 'in', ['VIP', 'PREMIUM', 'ELITE', 'DIAMOND', 'GOLD'])
+            .limit(12)
+            .get();
+
+        if (snapshot.empty) {
+            showMessage("Nenhum usuário exclusivo encontrado");
+            return;
+        }
+
+        const exclusiveUsers = processUsers(snapshot);
+        displayExclusiveUsers(exclusiveUsers);
+        
+    } catch (error) {
+        console.error("Erro no fetchExclusiveUsers:", error);
+        showError("Erro ao carregar usuários");
+    }
+}
+
+function processUsers(snapshot) {
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            name: data.name || "Membro Lux",
+            photo: data.profilePhotoURL || getDefaultAvatar(data.selo),
+            selo: data.selo || 'GOLD'
+        };
+    }).sort((a, b) => {
+        const order = {'DIAMOND': 1, 'ELITE': 2, 'PREMIUM': 3, 'VIP': 4, 'GOLD': 5};
+        return order[a.selo] - order[b.selo];
+    });
+}
+function displayExclusiveUsers(users) {
+    const container = document.getElementById('exclusive-profiles-container');
+    container.innerHTML = '';
+
+    users.forEach(user => {
+        const profileDiv = document.createElement('div');
+        profileDiv.className = 'exclusive-profile';
+        profileDiv.innerHTML = createProfileHTML(user);
+        
+        // Modificado para usar viewProfile
+        profileDiv.addEventListener('click', () => {
+            viewProfile(user.id);
+        });
+        
+        container.appendChild(profileDiv);
+    });
+}
+// Funções auxiliares
+function createProfileHTML(user) {
+    const badgeColors = {
+        'VIP': '#ff416c', 
+        'PREMIUM': '#4e54c8',
+        'ELITE': '#11998e',
+        'DIAMOND': '#8e2de2',
+        'GOLD': '#f7971e'
+    };
+
+    return `
+        <div class="profile-image-container">
+            <img src="${user.photo}" alt="${user.name}" class="profile-image"
+                 onerror="this.src='${getDefaultAvatar(user.selo)}'">
+            <span class="profile-badge" style="background: ${badgeColors[user.selo] || '#f7971e'}">
+                ${user.selo}
+            </span>
+            <div class="profile-name-tooltip">${user.name}</div>
+        </div>
+    `;
+}
+
+function getDefaultAvatar(selo) {
+    const colors = {
+        'DIAMOND': '8e2de2',
+        'ELITE': '11998e',
+        'PREMIUM': '4e54c8',
+        'VIP': 'ff416c',
+        'GOLD': 'f7971e'
+    };
+    return `https://ui-avatars.com/api/?name=LU&background=${colors[selo] || '333'}&color=fff&size=128`;
+}
+
+function navigateToProfile(userId) {
+    window.location.href = `/perfil.html?id=${userId}`;
+}
+
+function showError(message) {
+    const container = document.getElementById('exclusive-profiles-container');
+    container.innerHTML = `<div class="error-message">${message}</div>`;
+}
+
+function showMessage(message) {
+    const container = document.getElementById('exclusive-profiles-container');
+    container.innerHTML = `<div class="info-message">${message}</div>`;
+}
+
+
+// Adicione esta função após carregar os usuários
+function setupScrollIndicator() {
+    const container = document.querySelector('.exclusive-profiles-scroll');
+    const track = document.createElement('div');
+    track.className = 'exclusive-scroll-track';
+    const thumb = document.createElement('div');
+    thumb.className = 'exclusive-scroll-thumb';
+    track.appendChild(thumb);
+    container.after(track);
+    
+    // Só mostra a track se houver overflow
+    if (container.scrollWidth > container.clientWidth) {
+        track.style.display = 'block';
+        
+        // Atualiza a posição do thumb
+        container.addEventListener('scroll', () => {
+            const scrollable = container.scrollWidth - container.clientWidth;
+            const scrolled = container.scrollLeft;
+            const thumbWidth = Math.max(50, (container.clientWidth / container.scrollWidth) * 100);
+            thumb.style.width = `${thumbWidth}px`;
+            thumb.style.left = `${(scrolled / scrollable) * (100 - thumbWidth)}%`;
+        });
+    }
+}
+
+// Chame esta função depois de carregar os usuários
+document.addEventListener('DOMContentLoaded', () => {
+    fetchExclusiveUsers().then(() => {
+        setupScrollIndicator();
+        
+        // Adiciona navegação por setas (opcional)
+        const container = document.querySelector('.exclusive-profiles-scroll');
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            container.scrollLeft += e.deltaY;
+        });
+    });
+});
+
+
+
+
+// Variáveis globais
+let selectedGift = null;
+let selectedUserId = null;
+
+// Funções de ação para os presentes
+
+
+
+
+let luxuryGifts = [];
+async function fetchAvailableGifts() {
+  try {
+    const snapshot = await firebase.firestore().collection('gifts')
+      .where('available', '==', true) // Note que é boolean, não string
+      .get();
+
+    if (snapshot.empty) {
+      console.warn('Nenhum presente encontrado no Firestore. Verifique:');
+      console.warn('1. Se "available" é boolean (não string)');
+      console.warn('2. Se as regras de segurança permitem leitura');
+      return getDefaultGifts();
+    }
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.nome || data.name || 'Presente sem nome', // Note "nome" em vez de "name"
+        price: data.price || 0,
+        image: data.image || defaultGiftImage,
+        category: data.category || 'other',
+        available: true
+      };
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar presentes:', error);
+    return getDefaultGifts();
+  }
+}
+// Carregar presentes
+async function loadGifts(category = 'all') {
+  const container = document.querySelector('#giftModal .lux-gifts-container');
+  container.innerHTML = '<div class="lux-gifts-loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+
+  try {
+    const gifts = await fetchAvailableGifts();
+    luxuryGifts = gifts;
+    
+    const filteredGifts = category === 'all' 
+      ? gifts 
+      : gifts.filter(gift => gift.category === category);
+
+    displayGiftsInModal(filteredGifts);
+  } catch (error) {
+    console.error('Erro ao carregar presentes:', error);
+    container.innerHTML = '<div class="lux-no-gifts">Erro ao carregar presentes</div>';
+  }
+}
+
+function displayGiftsInModal(gifts) {
+  const container = document.querySelector('#giftModal .lux-gifts-container');
+  
+  if (gifts.length === 0) {
+    container.innerHTML = '<div class="lux-no-gifts">Nenhum presente nesta categoria</div>';
+    return;
+  }
+
+  container.innerHTML = gifts.map(gift => `
+    <div class="lux-gift-card" data-id="${gift.id}">
+      <img src="${gift.image}" alt="${gift.name}" class="lux-gift-image" 
+           onerror="this.src='${defaultGiftImage}'">
+      <div class="lux-gift-info">
+        <h3 class="lux-gift-name">${gift.name}</h3>
+        <p class="lux-gift-price">${formatCurrency(gift.price)}</p>
+      </div>
+    </div>
+  `).join('');
+
+  setupGiftCardEvents(); // Configura os eventos corretamente
+}
+
+// Função para fechar todos os modais
+function closeAllModals() {
+  document.getElementById('giftModal').style.display = 'none';
+  document.getElementById('giftActionsModal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+function closeGiftModal() {
+  document.getElementById('giftModal').style.display = 'none';
+  document.body.style.overflow = 'auto'; // Restaura o scroll da página
+}
+
+function getSafeImageUrl(url) {
+  try {
+    if (!url || !url.startsWith('http')) {
+      return defaultGiftImage; // Use uma imagem padrão definida globalmente
+    }
+    return url;
+  } catch {
+    return defaultGiftImage;
+  }
+}
+
+
+
+async function fetchAvailableGifts() {
+  try {
+    // Verifica se o Firebase está inicializado
+    if (!firebase.apps.length) {
+      throw new Error('Firebase não inicializado');
+    }
+
+    const snapshot = await firebase.firestore().collection('gifts')
+      .where('available', '==', true)
+      .get();
+
+    if (snapshot.empty) {
+      console.warn('Nenhum presente encontrado no Firestore. Usando fallback.');
+      return getDefaultGifts(); // Retorna presentes padrão
+    }
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      name: doc.data().name || 'Presente sem nome',
+      price: doc.data().price || 0,
+      image: doc.data().image || defaultGiftImage,
+      category: doc.data().category || 'other',
+      available: true
+    }));
+
+  } catch (error) {
+    console.error('Erro ao buscar presentes:', error);
+    return getDefaultGifts(); // Retorna presentes padrão em caso de erro
+  }
+}
+
+// Função de fallback com presentes padrão
+function getDefaultGifts() {
+  return [
+    {
+      id: '1',
+      name: 'Relógio de Luxo',
+      price: 12000,
+      image: 'https://via.placeholder.com/300?text=Relógio+Luxo',
+      category: 'jewelry',
+      available: true
+    },
+    {
+      id: '2',
+      name: 'Jantar Romântico',
+      price: 800,
+      image: 'https://via.placeholder.com/300?text=Jantar+Romântico',
+      category: 'experiences',
+      available: true
+    },
+    {
+      id: '3',
+      name: 'Bolsa Designer',
+      price: 3500,
+      image: 'https://via.placeholder.com/300?text=Bolsa+Designer',
+      category: 'fashion',
+      available: true
+    },
+    {
+      id: '4',
+      name: 'Assinatura Premium',
+      price: 200,
+      image: 'https://via.placeholder.com/300?text=Assinatura+Premium',
+      category: 'digital',
+      available: true
+    }
+  ];
+}
+
+function setupGiftCardEvents() {
+  document.querySelectorAll('.lux-gift-card').forEach(card => {
+    card.addEventListener('click', function() {
+      const giftId = this.getAttribute('data-id');
+      const gift = luxuryGifts.find(g => g.id === giftId);
+      
+      if (gift) {
+        showGiftActions(gift);
+      } else {
+        console.error('Presente não encontrado:', giftId);
+      }
+    });
+  });
+}
+
+// Variáveis globais
+let selectedGiftForSending = null;
+
+// Função para abrir o modal de envio de presentes
+function openGiftModal(userId) {
+  selectedUserId = userId;
+  const modal = document.getElementById('giftModal');
+  
+  // Esconde outros modais
+  document.getElementById('giftActionsModal').style.display = 'none';
+  
+  // Configura o modal
+  document.querySelectorAll('.lux-gift-category').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.querySelector('.lux-gift-category[data-category="all"]').classList.add('active');
+  
+  // Abre o modal principal
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  
+  // Carrega os presentes
+  loadGifts();
+  
+  // Configura eventos específicos
+  setupGiftModalEvents();
+}
+
+
+// Configura eventos do modal de presentes
+function setupGiftModalEvents() {
+  const modal = document.getElementById('giftModal');
+  
+  // Fechar modal
+  modal.querySelector('.lux-gift-close').addEventListener('click', closeGiftModal);
+  
+  // Previne a propagação do clique dentro do conteúdo
+  modal.querySelector('.lux-gift-modal-content').addEventListener('click', e => {
+    e.stopPropagation();
+  });
+  
+  // Filtros por categoria
+  document.querySelectorAll('.lux-gift-category').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.lux-gift-category').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      loadGifts(this.dataset.category);
+    });
+  });
+}
+
+// Função modificada para exibir ações do presente
+function setupGiftCardEvents() {
+  document.querySelectorAll('.lux-gift-card').forEach(card => {
+    card.addEventListener('click', function(e) {
+      // Previne que o evento chegue ao modal principal
+      e.stopPropagation();
+      
+      const giftId = this.getAttribute('data-id');
+      const gift = luxuryGifts.find(g => g.id === giftId);
+      
+      if (gift) {
+        selectedGiftForSending = gift;
+        showGiftActions(gift);
+      }
+    });
+  });
+}
+
+// Função para mostrar ações do presente
+function showGiftActions(gift) {
+  const actionsModal = document.getElementById('giftActionsModal');
+  
+  // Preenche os dados
+  document.getElementById('selectedGiftName').textContent = gift.name;
+  document.getElementById('selectedGiftImage').src = gift.image;
+  document.getElementById('selectedGiftPrice').textContent = formatCurrency(gift.price);
+  
+  // Configura botões de ação
+  document.querySelector('.lux-action-send').onclick = () => {
+    if (selectedUserId) {
+      sendGiftToUser(selectedUserId, gift);
+    } else {
+      showToast('Selecione um destinatário primeiro', 'error');
+    }
+  };
+  
+  // Mostra o modal de ações
+  actionsModal.style.display = 'block';
+  
+  // Configura fechamento
+  document.querySelector('.lux-actions-close').onclick = () => {
+    actionsModal.style.display = 'none';
+  };
+}
+
+// Função para fechar todos os modais
+function closeAllModals() {
+  document.getElementById('giftModal').style.display = 'none';
+  document.getElementById('giftActionsModal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+function setupActionButtons(userId, gift) {
+  // Botão Enviar
+  document.querySelector('.lux-action-send').onclick = () => {
+    sendGiftToUser(userId, gift);
+  };
+  
+  // Botão Lista de Desejos
+  document.querySelector('.lux-action-wishlist').onclick = () => {
+    addToWishlist(gift);
+  };
+  
+  // Botão Personalizar
+  document.querySelector('.lux-action-custom').onclick = () => {
+    customizeGift(gift);
+  };
+  
+  // Botão Agendar
+  document.querySelector('.lux-action-schedule').onclick = () => {
+    scheduleGiftDelivery(userId, gift);
+  };
+}
+
+function closeGiftActionsModal() {
+  document.getElementById('giftActionsModal').style.display = 'none';
+}
+async function sendGiftToUser(userId, gift) {
+  try {
+     const currentUser = firebase.auth().currentUser;
+    if (!currentUser) throw new Error('Usuário não autenticado');
+
+    showLoading('Enviando presente...');
+      const userDoc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
+    const userName = userDoc.data()?.name || 'Anônimo';
+
+    if (!currentUser) {
+      showToast('Faça login para enviar presentes', 'error');
+      return;
+    }
+
+    // Verifica saldo (se aplicável)
+    if (gift.price > 0) {
+      const userDoc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
+      const balance = userDoc.data()?.balance || 0;
+      
+      if (balance < gift.price) {
+        showToast('Saldo insuficiente para enviar este presente', 'error');
+        return;
+      }
+    }
+
+    // Cria a transação
+    const transactionRef = firebase.firestore().collection('transactions').doc();
+    const giftData = {
+      giftId: `gift_${transactionRef.id}`,
+      transactionId: transactionRef.id,
+      name: gift.name,
+      price: gift.price,
+      image: gift.image,
+      category: gift.category,
+      date: new Date().toISOString(),
+      status: 'completed',
+      type: 'received',
+      fromUserId: currentUser.uid,
+      fromUserName: userName, // Adiciona o nome aqui
+
+      toUserId: userId
+    };
+
+    // Batch write para atomicidade
+    const batch = firebase.firestore().batch();
+    
+    // 1. Adiciona à coleção de transações
+    batch.set(transactionRef, giftData);
+    
+    // 2. Atualiza o usuário receptor
+    const receiverRef = firebase.firestore().collection('users').doc(userId);
+    batch.update(receiverRef, {
+      'gifts.received': firebase.firestore.FieldValue.arrayUnion(giftData)
+    });
+    
+    // 3. Atualiza o usuário remetente (se for presente pago)
+    if (gift.price > 0) {
+      const senderRef = firebase.firestore().collection('users').doc(currentUser.uid);
+      batch.update(senderRef, {
+        'gifts.sent': firebase.firestore.FieldValue.arrayUnion(giftData),
+        'balance': firebase.firestore.FieldValue.increment(-gift.price)
+      });
+    }
+    
+    await batch.commit();
+
+    showToast(`Presente enviado com sucesso!`, 'success');
+    closeGiftActionsModal();
+    closeGiftModal();
+    
+    // Atualiza o saldo na UI (se for presente pago)
+    if (gift.price > 0) {
+      await updateUserBalanceUI();
+    }
+
+  } catch (error) {
+    console.error('Erro ao enviar presente:', error);
+    showToast(`Erro: ${error.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Função para atualizar o saldo do usuário
+async function updateUserBalanceUI() {
+  const balanceElement = document.querySelector('.user-balance');
+  const balanceContainer = document.querySelector('.user-balance-container');
+  
+  if (!balanceElement) {
+    console.warn('Elemento do saldo não encontrado na página');
+    return;
+  }
+
+  try {
+    // Mostra estado de carregamento
+    balanceElement.textContent = 'Carregando...';
+    balanceContainer.classList.add('loading');
+
+    const user = firebase.auth().currentUser;
+    
+    if (!user) {
+      balanceElement.textContent = 'Não logado';
+      balanceContainer.classList.remove('loading');
+      return;
+    }
+
+    // Busca os dados do usuário
+    const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+    
+    if (!userDoc.exists) {
+      balanceElement.textContent = 'Erro: perfil não encontrado';
+      balanceContainer.classList.remove('loading');
+      return;
+    }
+
+    const balance = userDoc.data()?.balance || 0;
+    
+    // Atualiza a UI
+    balanceElement.textContent = formatCurrency(balance);
+    balanceContainer.classList.remove('loading');
+    
+    // Atualiza o título com o valor completo
+    balanceElement.title = `Saldo disponível: ${formatCurrency(balance)}`;
+    
+  } catch (error) {
+    console.error('Erro ao carregar saldo:', error);
+    balanceElement.textContent = 'Erro ao carregar';
+    balanceContainer.classList.remove('loading');
+  }
+}
+
+// Observador de estado de autenticação
+function setupAuthObserver() {
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+      // Usuário logado - atualiza o saldo
+      updateUserBalanceUI();
+      
+      // Configura listener em tempo real para o saldo
+      setupBalanceListener(user.uid);
+    } else {
+      // Usuário não logado - reseta a UI
+      const balanceElement = document.querySelector('.user-balance');
+      if (balanceElement) {
+        balanceElement.textContent = 'Faça login';
+      }
+    }
+  });
+}
+
+// Listener em tempo real para o saldo
+function setupBalanceListener(userId) {
+  // Remove listener anterior se existir
+  if (window.balanceListener) {
+    window.balanceListener();
+  }
+
+  // Cria novo listener
+  window.balanceListener = firebase.firestore()
+    .collection('users')
+    .doc(userId)
+    .onSnapshot(doc => {
+      if (doc.exists) {
+        const balance = doc.data()?.balance || 0;
+        const balanceElement = document.querySelector('.user-balance');
+        if (balanceElement) {
+          balanceElement.textContent = formatCurrency(balance);
+          balanceElement.title = `Saldo disponível: ${formatCurrency(balance)}`;
+        }
+      }
+    }, error => {
+      console.error('Erro no listener do saldo:', error);
+    });
+}
+
+// Quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
+  // Inicializa o Firebase se ainda não estiver inicializado
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  
+  // Configura o observador de autenticação
+  setupAuthObserver();
+  
+  // Atualiza imediatamente (caso o usuário já esteja logado)
+  updateUserBalanceUI();
+});
+// Função auxiliar para verificar saldo
+async function checkUserBalance(giftPrice) {
+  const user = firebase.auth().currentUser;
+  if (!user) return false;
+  
+  const doc = await firebase.firestore().collection('users').doc(user.uid).get();
+  const balance = doc.data()?.balance || 0;
+  return balance >= giftPrice;
+}
+
+function formatCurrency(value) {
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
+}
+/**
+ * Função de serviço para enviar presente ao Firestore
+ * Retorna { success: boolean, message?: string }
+ */
+async function sendGiftToFirestore(senderId, receiverId, giftData) {
+  const db = firebase.firestore();
+  
+  try {
+    // Verifica se os usuários existem
+    const userCheck = await Promise.all([
+      db.collection('users').doc(senderId).get(),
+      db.collection('users').doc(receiverId).get()
+    ]);
+
+    if (!userCheck[0].exists || !userCheck[1].exists) {
+      return { success: false, message: 'Usuário não encontrado' };
+    }
+
+    // Prepara os dados para envio
+    const giftForSender = {
+      ...giftData,
+      type: 'sent',
+      toUserId: receiverId
+    };
+
+    const giftForReceiver = {
+      ...giftData,
+      type: 'received',
+      fromUserId: senderId
+    };
+
+    // Executa como transação atômica
+    await db.runTransaction(async (transaction) => {
+      // Atualiza o documento do remetente
+      transaction.update(db.collection('users').doc(senderId), {
+        'gifts.sent': firebase.firestore.FieldValue.arrayUnion(giftForSender)
+      });
+
+      // Atualiza o documento do destinatário
+      transaction.update(db.collection('users').doc(receiverId), {
+        'gifts.received': firebase.firestore.FieldValue.arrayUnion(giftForReceiver)
+      });
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Erro no Firestore:', error);
+    return { 
+      success: false, 
+      message: error.message || 'Erro ao comunicar com o servidor' 
+    };
+  }
+}
+
+
+
+
+
+
+function setupGiftEventListeners() {
+  // Remove listeners antigos para evitar duplicação
+  const sendBtn = document.querySelector('.lux-action-send');
+  if (sendBtn) {
+    sendBtn.replaceWith(sendBtn.cloneNode(true));
+    document.querySelector('.lux-action-send').addEventListener('click', handleSendGift);
+  }
+}
+
+// Função principal para enviar presentes
+async function handleSendGift() {
+  // Verifica se tudo está definido
+  if (!selectedGift || !selectedUserId) {
+    showToast('Selecione um presente e um destinatário', 'error');
+    return;
+  }
+
+  try {
+    showLoading('Enviando presente...');
+    
+    // Prepara os dados do presente
+    const giftData = {
+      id: firebase.firestore().collection('gifts').doc().id,
+      name: selectedGift.name,
+      price: selectedGift.price,
+      image: selectedGift.image,
+      category: selectedGift.category,
+      date: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    // Envia para o Firestore
+    const success = await saveGiftToFirestore(
+      firebase.auth().currentUser.uid,
+      selectedUserId,
+      giftData
+    );
+
+    if (success) {
+      showToast('Presente enviado com sucesso!', 'success');
+      closeGiftActionsModal();
+      closeGiftModal();
+    } else {
+      showToast('Erro ao enviar presente', 'error');
+    }
+  } catch (error) {
+    console.error('Erro no envio:', error);
+    showToast('Erro: ' + error.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+
+
+// Função para enviar presente (renomeada para evitar conflito)
+async function sendUserGift() {
+  try {
+    showLoading('Enviando presente...');
+    
+    if (!selectedGift || !selectedUserId) {
+      throw new Error('Nenhum presente ou usuário selecionado');
+    }
+
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const giftData = {
+      giftId: firebase.firestore().collection('gifts').doc().id,
+      name: selectedGift.name,
+      price: selectedGift.price,
+      image: selectedGift.image,
+      date: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    // Chama a função de serviço renomeada
+    const success = await saveGiftToUser(
+      currentUser.uid,
+      selectedUserId,
+      giftData
+    );
+
+    if (success) {
+      showToast('Presente enviado com sucesso!', 'success');
+      closeModal('giftActionsModal');
+      closeModal('giftModal');
+    }
+  } catch (error) {
+    console.error('Erro ao enviar presente:', error);
+    showToast(error.message || 'Erro ao enviar presente', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Função genérica para fechar modais
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.style.display = 'none';
+}
+
+// Configuração do event listener (deve ser chamada quando o modal é aberto)
+function setupGiftButton() {
+  const sendBtn = document.querySelector('.lux-action-send');
+  if (sendBtn) {
+    sendBtn.onclick = sendUserGift; // Usa atribuição direta para evitar duplicação
+  }
+}
+
+async function saveGiftToFirestore(senderId, receiverId, giftData) {
+  const db = firebase.firestore();
+  
+  try {
+    await db.runTransaction(async (transaction) => {
+      // Referências aos documentos
+      const senderRef = db.collection('users').doc(senderId);
+      const receiverRef = db.collection('users').doc(receiverId);
+      
+      // Obtém os dados atuais
+      const senderDoc = await transaction.get(senderRef);
+      const receiverDoc = await transaction.get(receiverRef);
+
+      // Prepara os dados para atualização
+      const senderUpdate = {
+        'gifts.sent': [...(senderDoc.data()?.gifts?.sent || []), {
+          ...giftData,
+          toUserId: receiverId,
+          type: 'sent'
+        }]
+      };
+
+      const receiverUpdate = {
+        'gifts.received': [...(receiverDoc.data()?.gifts?.received || []), {
+          ...giftData,
+          fromUserId: senderId,
+          type: 'received'
+        }]
+      };
+
+      // Aplica as atualizações
+      transaction.update(senderRef, senderUpdate);
+      transaction.update(receiverRef, receiverUpdate);
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Erro no Firestore:', {
+      message: error.message,
+      stack: error.stack,
+      senderId,
+      receiverId,
+      giftData
+    });
+    throw error;
+  }
+}
+async function cleanDuplicateGifts() {
+  const db = firebase.firestore();
+  const users = await db.collection('users').get();
+  const batch = db.batch();
+
+  users.docs.forEach(userDoc => {
+    const userData = userDoc.data();
+    if (userData.gifts) {
+      const cleanSent = removeDuplicates(userData.gifts.sent || [], 'transactionId');
+      const cleanReceived = removeDuplicates(userData.gifts.received || [], 'transactionId');
+      
+      batch.update(userDoc.ref, {
+        'gifts.sent': cleanSent,
+        'gifts.received': cleanReceived
+      });
+    }
+  });
+
+  await batch.commit();
+  console.log('Dados limpos com sucesso!');
+
+  function removeDuplicates(array, key) {
+    const seen = new Set();
+    return array
+      .filter(item => item[key])
+      .filter(item => {
+        const keyValue = item[key];
+        return seen.has(keyValue) ? false : seen.add(keyValue);
+      })
+      .map(item => {
+        // Padroniza para usar sempre giftId
+        const { id, ...rest } = item;
+        return id && !rest.giftId ? { ...rest, giftId: id } : rest;
+      });
+  }
+}
+let isSendingGift = false;
+
+
+async function sendGift() {
+  if (isSendingGift) return;
+  isSendingGift = true;
+
+  try {
+    showLoading('Enviando presente...');
+    
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) throw new Error('Usuário não autenticado');
+    if (!selectedGift || !selectedUserId) throw new Error('Selecione um presente e destinatário');
+
+    // Gera IDs únicos consistentes
+    const transactionId = firebase.firestore().collection('transactions').doc().id;
+    const giftId = `gift_${transactionId}`;
+    const timestamp = new Date().toISOString();
+
+    // Objeto de presente padronizado
+    const giftData = {
+      transactionId,
+      giftId, // Usando SEMPRE giftId (nunca id)
+      name: selectedGift.name,
+      price: selectedGift.price,
+      image: selectedGift.image,
+      category: selectedGift.category,
+      date: timestamp,
+      status: 'pending',
+      type: 'received', // Será sobrescrito conforme necessário
+      fromUserId: currentUser.uid // Será removido do remetente
+    };
+
+ 
+
+    showToast('Presente enviado com sucesso!', 'success');
+    closeModal('giftActionsModal');
+    closeModal('giftModal');
+  } catch (error) {
+    console.error('Erro no envio:', error);
+    showToast(error.message || 'Erro ao enviar presente', 'error');
+  } finally {
+    isSendingGift = false;
+    hideLoading();
+  }
+}
+
+
+async function saveGiftsSeparately(senderId, receiverId, sentGift, receivedGift) {
+  const db = firebase.firestore();
+  
+  try {
+    await db.runTransaction(async (transaction) => {
+      // Verifica se a transação já existe
+      const transactionRef = db.collection('giftTransactions').doc(sentGift.transactionId);
+      if ((await transaction.get(transactionRef)).exists) {
+        throw new Error('Esta transação já foi processada');
+      }
+
+      // Referências aos documentos
+      const senderRef = db.collection('users').doc(senderId);
+      const receiverRef = db.collection('users').doc(receiverId);
+
+      // Atualiza APENAS o array 'sent' do remetente
+      transaction.update(senderRef, {
+        'gifts.sent': firebase.firestore.FieldValue.arrayUnion(sentGift)
+      });
+
+      // Atualiza APENAS o array 'received' do destinatário
+      transaction.update(receiverRef, {
+        'gifts.received': firebase.firestore.FieldValue.arrayUnion(receivedGift)
+      });
+
+      // Registra a transação
+      transaction.set(transactionRef, {
+        processedAt: new Date().toISOString(),
+        senderId,
+        receiverId,
+        giftId: sentGift.giftId
+      });
+    });
+  } catch (error) {
+    console.error('Erro no Firestore:', {
+      error: error.message,
+      senderId,
+      receiverId,
+      sentGift,
+      receivedGift
+    });
+    throw error;
+  }
+}
+async function saveGiftTransaction(senderId, receiverId, giftData) {
+  const db = firebase.firestore();
+  
+  try {
+    await db.runTransaction(async (transaction) => {
+      // Verifica se a transação já existe
+      const transactionRef = db.collection('giftTransactions').doc(giftData.transactionId);
+      if ((await transaction.get(transactionRef)).exists) {
+        throw new Error('Esta transação já foi processada');
+      }
+
+      // Referências aos usuários
+      const senderRef = db.collection('users').doc(senderId);
+      const receiverRef = db.collection('users').doc(receiverId);
+
+      // Cria objetos com estrutura consistente
+      const senderGift = {
+        ...giftData,
+        type: 'sent',
+        toUserId: receiverId
+      };
+
+      const receiverGift = {
+        ...giftData,
+        type: 'received',
+        fromUserId: senderId
+      };
+
+      // Executa as operações
+      transaction.set(transactionRef, {
+        processedAt: new Date().toISOString(),
+        senderId,
+        receiverId
+      });
+
+      transaction.update(senderRef, {
+        'gifts.sent': firebase.firestore.FieldValue.arrayUnion(senderGift)
+      });
+
+      transaction.update(receiverRef, {
+        'gifts.received': firebase.firestore.FieldValue.arrayUnion(receiverGift)
+      });
+    });
+  } catch (error) {
+    console.error('Erro no Firestore:', error);
+    throw error;
+  }
+}
+async function executeGiftTransaction(senderId, receiverId, giftData) {
+  const db = firebase.firestore();
+  const batch = db.batch();
+  
+  // Referências aos documentos
+  const senderRef = db.collection('users').doc(senderId);
+  const receiverRef = db.collection('users').doc(receiverId);
+  const transactionRef = db.collection('giftTransactions').doc(giftData.transactionId);
+
+  // Objetos com estrutura idêntica (exceto pelos campos type/to/from)
+  const senderGift = {
+    ...giftData,
+    type: 'sent',
+    toUserId: receiverId
+  };
+
+  const receiverGift = {
+    ...giftData,
+    type: 'received',
+    fromUserId: senderId
+  };
+
+  // Garante que todos os campos sejam iguais exceto os específicos
+  delete senderGift.toUserId;
+  delete receiverGift.fromUserId;
+
+  // Operações em lote
+  batch.set(transactionRef, {
+    ...giftData,
+    processedAt: new Date().toISOString(),
+    senderId,
+    receiverId
+  });
+
+  batch.update(senderRef, {
+    'gifts.sent': firebase.firestore.FieldValue.arrayUnion(senderGift)
+  });
+
+  batch.update(receiverRef, {
+    'gifts.received': firebase.firestore.FieldValue.arrayUnion(receiverGift)
+  });
+
+  await batch.commit();
+}
+
+// Funções para controle de modais
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto'; // Restaura o scroll da página
+  }
+}
+
+function closeAllModals() {
+  // Fecha todos os modais que tenham a classe 'lux-modal'
+  document.querySelectorAll('.lux-modal').forEach(modal => {
+    modal.style.display = 'none';
+  });
+  document.body.style.overflow = 'auto';
+}
+
+// Função para mostrar loading
+function showLoading(message) {
+  const loadingDiv = document.createElement('div');
+  loadingDiv.id = 'lux-loading-overlay';
+  loadingDiv.innerHTML = `
+    <div class="lux-loading-content">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>${message}</p>
+    </div>
+  `;
+  document.body.appendChild(loadingDiv);
+}
+
+// Função para esconder loading
+function hideLoading() {
+  const loading = document.getElementById('lux-loading-overlay');
+  if (loading) loading.remove();
+}
+
+function closeAllGiftModals() {
+  document.querySelectorAll('.gift-modal').forEach(modal => {
+    modal.style.display = 'none';
+  });
+  document.body.style.overflow = 'auto';
+}
+
+// Função para limpar duplicatas existentes (executar uma vez)
+async function cleanExistingDuplicates() {
+  const db = firebase.firestore();
+  const users = await db.collection('users').get();
+
+  const batch = db.batch();
+  const transactionBatch = db.batch();
+
+  users.forEach(userDoc => {
+    const userData = userDoc.data();
+    if (userData.gifts) {
+      // Processa presentes enviados
+      const uniqueSent = removeDuplicates(userData.gifts.sent, 'transactionId');
+      // Processa presentes recebidos
+      const uniqueReceived = removeDuplicates(userData.gifts.received, 'transactionId');
+      
+      if (uniqueSent.length !== userData.gifts.sent?.length || 
+          uniqueReceived.length !== userData.gifts.received?.length) {
+        batch.update(userDoc.ref, {
+          'gifts.sent': uniqueSent,
+          'gifts.received': uniqueReceived
+        });
+      }
+    }
+  });
+
+  await batch.commit();
+  console.log('Duplicatas removidas com sucesso!');
+
+  function removeDuplicates(array, key) {
+    if (!array) return [];
+    const seen = new Set();
+    return array.filter(item => {
+      const value = item[key];
+      return seen.has(value) ? false : seen.add(value);
+    });
+  }
+}
+async function sendGiftWithVerification(senderId, receiverId, baseGiftData) {
+  const db = firebase.firestore();
+  
+  // Verifica se já existe uma transação com esse ID
+  const transactionRef = db.collection('giftTransactions').doc(baseGiftData.transactionId);
+  const transactionExists = (await transactionRef.get()).exists;
+
+  if (transactionExists) {
+    throw new Error('Esta transação já foi processada');
+  }
+
+  await db.runTransaction(async (transaction) => {
+    // Primeiro marca a transação como processada
+    transaction.set(transactionRef, {
+      processedAt: new Date().toISOString(),
+      senderId,
+      receiverId,
+      giftId: baseGiftData.giftId
+    });
+
+    // Referências aos usuários
+    const senderRef = db.collection('users').doc(senderId);
+    const receiverRef = db.collection('users').doc(receiverId);
+
+    // Dados específicos para cada usuário
+    const senderGift = {
+      ...baseGiftData,
+      type: 'sent',
+      toUserId: receiverId
+    };
+
+    const receiverGift = {
+      ...baseGiftData,
+      type: 'received',
+      fromUserId: senderId
+    };
+
+    // Atualiza os documentos
+    transaction.update(senderRef, {
+      'gifts.sent': firebase.firestore.FieldValue.arrayUnion(senderGift)
+    });
+
+    transaction.update(receiverRef, {
+      'gifts.received': firebase.firestore.FieldValue.arrayUnion(receiverGift)
+    });
+  });
+}
+
+
+async function checkIfGiftExists(senderId, receiverId, giftId) {
+  const db = firebase.firestore();
+  
+  // Verifica no remetente
+  const senderDoc = await db.collection('users').doc(senderId).get();
+  const sentGifts = senderDoc.data()?.gifts?.sent || [];
+  const existsInSent = sentGifts.some(gift => gift.giftId === giftId);
+
+  // Verifica no destinatário
+  const receiverDoc = await db.collection('users').doc(receiverId).get();
+  const receivedGifts = receiverDoc.data()?.gifts?.received || [];
+  const existsInReceived = receivedGifts.some(gift => gift.giftId === giftId);
+
+  return existsInSent || existsInReceived;
+}
+// Ação: Adicionar à lista de desejos
+async function addToWishlist(gift) {
+  try {
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error('Faça login para continuar');
+    
+    await firebase.firestore().collection('users').doc(user.uid).update({
+      wishlist: firebase.firestore.FieldValue.arrayUnion({
+        giftId: gift.id,
+        name: gift.name,
+        image: gift.image,
+        price: gift.price,
+        addedAt: new Date().toISOString()
+      })
+    });
+    
+    showToast('Presente adicionado à sua lista de desejos!', 'success');
+    actionsModal.classList.add('hidden');
+  } catch (error) {
+    console.error('Erro ao adicionar à lista:', error);
+    showToast(error.message, 'error');
+  }
+}
+// Personalizar presente
+function customizeGift(gift) {
+  const modal = document.getElementById('customizeGiftModal');
+  
+  // Preenche os dados
+  document.getElementById('customizeGiftName').textContent = gift.name;
+  document.getElementById('customGiftImage').src = gift.image;
+  
+  // Configura o formulário
+  document.getElementById('customGiftForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const message = document.getElementById('giftMessage').value;
+    const isPublic = document.getElementById('giftPublic').checked;
+    
+    // Adiciona os dados extras ao presente
+    selectedGift.message = message;
+    selectedGift.isPublic = isPublic;
+    
+    // Agora envia com as personalizações
+    await sendGiftToUser(selectedUserId, selectedGift);
+    modal.style.display = 'none';
+  };
+  
+  // Mostra o modal
+  modal.style.display = 'block';
+}
+
+// Agendar entrega
+function scheduleGiftDelivery(userId, gift) {
+  const modal = document.getElementById('scheduleGiftModal');
+  
+  // Inicializa o datepicker (exemplo usando flatpickr)
+  flatpickr("#deliveryDate", {
+    minDate: "today",
+    dateFormat: "d/m/Y",
+    locale: "pt" // Configuração para português
+  });
+  
+  // Configura o formulário
+  document.getElementById('scheduleGiftForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const deliveryDate = document.getElementById('deliveryDate').value;
+    const deliveryMessage = document.getElementById('deliveryMessage').value;
+    
+    // Adiciona os dados de agendamento
+    selectedGift.scheduledDate = deliveryDate;
+    selectedGift.deliveryMessage = deliveryMessage;
+    selectedGift.status = 'scheduled';
+    
+    // Envia o presente agendado
+    await sendGiftToUser(userId, selectedGift);
+    modal.style.display = 'none';
+  };
+  
+  // Mostra o modal
+  modal.style.display = 'block';
+}
+
+// Mostrar loading
+function showLoading(message) {
+  const loadingDiv = document.createElement('div');
+  loadingDiv.id = 'lux-loading';
+  loadingDiv.innerHTML = `
+    <div class="lux-loading-overlay">
+      <div class="lux-loading-content">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>${message}</p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(loadingDiv);
+}
+
+// Esconder loading
+function hideLoading() {
+  const loading = document.getElementById('lux-loading');
+  if (loading) loading.remove();
+}
+
+// Mostrar toast notification
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `lux-toast lux-toast-${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('lux-toast-show');
+  }, 10);
+  
+  setTimeout(() => {
+    toast.classList.remove('lux-toast-show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+async function addToWishlist(userId, giftData) {
+  try {
+    await firebase.firestore()
+      .collection('users')
+      .doc(userId)
+      .update({
+        'gifts.wishlist': firebase.firestore.FieldValue.arrayUnion({
+          ...giftData,
+          giftId: firebase.firestore().collection('gifts').doc().id,
+          addedDate: new Date().toISOString()
+        })
+      });
+    
+    console.log('Presente adicionado à lista de desejos!');
+    return true;
+  } catch (error) {
+    console.error('Erro ao adicionar à lista de desejos:', error);
+    return false;
+  }
+}
+
+async function removeFromWishlist(userId, giftId) {
+  try {
+    const userDoc = await firebase.firestore()
+      .collection('users')
+      .doc(userId)
+      .get();
+    
+    if (!userDoc.exists) {
+      throw new Error('Usuário não encontrado');
+    }
+    
+    const wishlist = userDoc.data().gifts?.wishlist || [];
+    const updatedWishlist = wishlist.filter(gift => gift.giftId !== giftId);
+    
+    await firebase.firestore()
+      .collection('users')
+      .doc(userId)
+      .update({
+        'gifts.wishlist': updatedWishlist
+      });
+    
+    console.log('Presente removido da lista de desejos!');
+    return true;
+  } catch (error) {
+    console.error('Erro ao remover da lista de desejos:', error);
+    return false;
+  }
+}
+
+
+// Variáveis globais
+
+// Elementos DOM
+
+const categoryButtons = document.querySelectorAll('.lux-category-btn');
+const actionsModal = document.getElementById('giftActionsModal');
+const closeActionsBtn = document.querySelector('.lux-actions-close');
+
+
+// Variáveis globais
+let availableGifts = [];
+
+// Elementos DOM
+const giftShopBtn = document.getElementById('openGiftShopBtn');
+const giftShopSection = document.getElementById('giftShopSection');
+const closeShopBtn = document.querySelector('.lux-close-shop');
+const giftsContainer = document.querySelector('#giftShopSection .lux-gifts-container');
+
+// Evento para abrir a loja
+giftShopBtn.addEventListener('click', openGiftShop);
+
+
+// Variável global para os presentes
+let shopGifts = [];
+
+// Função principal para abrir a loja
+function openGiftShop() {
+  console.log("Abrindo loja de presentes...");
+  
+  // Mostra a seção
+  const giftShopSection = document.getElementById('giftShopSection');
+  giftShopSection.classList.remove('hidden');
+  
+  // Carrega os presentes
+  loadShopGifts();
+  
+  // Configura o botão de fechar
+  document.querySelector('.lux-close-shop').onclick = closeGiftShop;
+}
+
+// Função para fechar a loja
+function closeGiftShop() {
+  document.getElementById('giftShopSection').classList.add('hidden');
+}
+
+// Carrega os presentes da loja
+async function loadShopGifts() {
+  const container = document.querySelector('#giftShopSection .lux-gifts-container');
+  
+  try {
+    // Mostra loading
+    container.innerHTML = `
+      <div class="lux-gifts-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Carregando nossa seleção exclusiva...</p>
+      </div>
+    `;
+    
+    // Busca os presentes
+    const gifts = await fetchAvailableGifts();
+    shopGifts = gifts;
+    
+    // Exibe os presentes
+    displayShopGifts(gifts);
+    
+  } catch (error) {
+    console.error("Erro ao carregar loja:", error);
+    container.innerHTML = `
+      <div class="lux-no-gifts">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Erro ao carregar a loja</p>
+      </div>
+    `;
+  }
+}
+
+// Exibe os presentes na loja
+function displayShopGifts(gifts) {
+  const container = document.querySelector('#giftShopSection .lux-gifts-container');
+  
+  if (!gifts || gifts.length === 0) {
+    container.innerHTML = `
+      <div class="lux-no-gifts">
+        <i class="fas fa-gift"></i>
+        <p>Nenhum presente disponível no momento</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Cria uma string HTML com todos os presentes
+  let giftsHTML = '<div class="lux-gifts-grid">';
+  
+  gifts.forEach(gift => {
+    giftsHTML += `
+      <div class="lux-gift-card" data-id="${gift.id}">
+        <div class="lux-gift-image-container">
+          <img src="${gift.image || defaultGiftImage}" 
+               alt="${gift.name}" 
+               class="lux-gift-image"
+               onerror="this.src='${defaultGiftImage}'">
+        </div>
+        <div class="lux-gift-info">
+          <h3>${gift.name}</h3>
+          <p>${formatCurrency(gift.price)}</p>
+        </div>
+      </div>
+    `;
+  });
+
+  giftsHTML += '</div>';
+  
+  // Insere no container de uma só vez
+  container.innerHTML = giftsHTML;
+  
+  // Configura os eventos de clique
+  setupShopGiftCards();
+}
+
+// Configura os eventos dos cartões
+function setupShopGiftCards() {
+  document.querySelectorAll('#giftShopSection .lux-gift-card').forEach(card => {
+    card.addEventListener('click', function() {
+      const giftId = this.getAttribute('data-id');
+      const selectedGift = shopGifts.find(g => g.id === giftId);
+      
+      if (selectedGift) {
+        showGiftActions(selectedGift);
+      }
+    });
+  });
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+  // Configura o botão da loja
+  document.getElementById('openGiftShopBtn').addEventListener('click', openGiftShop);
+  
+  // Verifica se há parâmetros na URL para abrir automaticamente
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('showGiftShop') === 'true') {
+    openGiftShop();
+  }
+});
+
+// Abrir loja
+giftShopBtn.addEventListener('click', () => {
+  giftShopSection.classList.remove('hidden');
+  loadGifts();
+});
+
+// Fechar loja
+closeShopBtn.addEventListener('click', () => {
+  giftShopSection.classList.add('hidden');
+});
+
+// Fechar modal de ações
+closeActionsBtn.addEventListener('click', () => {
+  actionsModal.classList.add('hidden');
+});
+
+// Filtro por categoria
+categoryButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    categoryButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadGifts(btn.dataset.category);
+  });
+});
+
+
+
+async function updateGiftStatus(userId, giftId, newStatus, isReceived = false) {
+  try {
+    const userDoc = await firebase.firestore()
+      .collection('users')
+      .doc(userId)
+      .get();
+    
+    if (!userDoc.exists) {
+      throw new Error('Usuário não encontrado');
+    }
+    
+    const field = isReceived ? 'received' : 'sent';
+    const gifts = userDoc.data().gifts?.[field] || [];
+    const updatedGifts = gifts.map(gift => {
+      if (gift.giftId === giftId) {
+        return { ...gift, status: newStatus };
+      }
+      return gift;
+    });
+    
+    await firebase.firestore()
+      .collection('users')
+      .doc(userId)
+      .update({
+        [`gifts.${field}`]: updatedGifts
+      });
+    
+    console.log(`Status do presente atualizado para ${newStatus}!`);
+    return true;
+  } catch (error) {
+    console.error('Erro ao atualizar status do presente:', error);
+    return false;
+  }
+}
+
+
+
+
+
+
+// Configura filtros de categoria
+document.querySelectorAll('.lux-gift-category').forEach(button => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('.lux-gift-category').forEach(btn => 
+      btn.classList.remove('active'));
+    button.classList.add('active');
+    loadGifts(button.dataset.category);
+  });
+});
+
+// Fecha com ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('giftActionsModal').style.display === 'block') {
+      closeGiftActions();
+    } else {
+      closeGiftModal();
+    }
+  }
+});
+
+
+
+
+
+// Adicione esta função no seu arquivo de autenticação
+async function checkForNewGifts(userId) {
+  try {
+    const giftsSnapshot = await db.collection('gifts')
+      .where('receiverId', '==', userId)
+      .where('status', '==', 'pending')
+      .get();
+
+    return !giftsSnapshot.empty;
+  } catch (error) {
+    console.error("Erro ao verificar presentes:", error);
+    return false;
+  }
+}
+
+
+async function updateGiftsStatus(userId, gifts) {
+  const db = firebase.firestore();
+  const batch = db.batch();
+  const userRef = db.collection('users').doc(userId);
+
+  // Obtém os dados atuais
+  const userDoc = await userRef.get();
+  const currentGifts = userDoc.data().gifts?.received || [];
+
+  // Atualiza apenas os presentes pendentes
+  const updatedGifts = currentGifts.map(gift => {
+    const isPending = gifts.some(g => g.id === gift.id && gift.status === 'pending');
+    return isPending ? { ...gift, status: 'received' } : gift;
+  });
+
+  batch.update(userRef, {
+    'gifts.received': updatedGifts
+  });
+
+  await batch.commit();
+}
+
+function showGiftNotification(gifts) {
+  // Cria o elemento de notificação
+  const notification = document.createElement('div');
+  notification.className = 'gift-notification';
+  
+  // Conteúdo da notificação
+  notification.innerHTML = `
+    <div class="gift-notification-content">
+      <div class="gift-notification-icon">
+        <i class="fas fa-gift fa-shake"></i>
+      </div>
+      <div class="gift-notification-text">
+        Você tem ${gifts.length} novo(s) presente(s)!
+      </div>
+      <button class="gift-notification-close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+
+  // Adiciona ao corpo do documento
+  document.body.appendChild(notification);
+
+  // Fecha a notificação após 5 segundos ou quando clicar
+  setTimeout(() => {
+    notification.classList.add('fade-out');
+    setTimeout(() => notification.remove(), 500);
+  }, 5000);
+
+  notification.querySelector('.gift-notification-close').addEventListener('click', () => {
+    notification.classList.add('fade-out');
+    setTimeout(() => notification.remove(), 500);
+  });
+
+  // Animação de confetes
+  if (gifts.length > 0) {
+    launchConfetti();
+  }
+}
+function launchConfetti() {
+  // Verifica se a biblioteca está disponível
+  if (typeof confetti === 'undefined') {
+    console.warn('Biblioteca de confetes não carregada');
+    return;
+  }
+
+  // Configuração dos confetes
+  const count = 200;
+  const defaults = {
+    origin: { y: 0.7 },
+    spread: 90,
+    ticks: 100,
+    gravity: 1,
+    decay: 0.94,
+    startVelocity: 30,
+    colors: ['#ffd700', '#ff0000', '#00ff00', '#0000ff', '#ffffff']
+  };
+
+  // Dispara confetes
+  function fire(particleRatio, opts) {
+    confetti({
+      ...defaults,
+      ...opts,
+      particleCount: Math.floor(count * particleRatio)
+    });
+  }
+
+  // Efeitos diferentes
+  fire(0.25, { angle: 55, spread: 55 });
+  fire(0.2, { angle: 125, spread: 55 });
+  fire(0.35, { angle: 90, spread: 100, scalar: 0.8 });
+  fire(0.1, { angle: 45, spread: 120, startVelocity: 45 });
+  fire(0.1, { angle: 135, spread: 120, startVelocity: 45 });
+}
+// Função para atualizar o badge
+function updateGiftBadge() {
+  const badge = document.getElementById('gift-badge');
+  const unviewedGifts = userGifts.filter(gift => !gift.viewed).length;
+  
+  if (unviewedGifts > 0) {
+    badge.textContent = unviewedGifts;
+    badge.style.display = 'flex';
+    
+    // Adiciona animação
+    badge.classList.add('pulse');
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// Animação para o badge
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .pulse {
+    animation: pulse 1s infinite;
+  }
+`;
+document.head.appendChild(style);
+
+function createGiftElement(gift) {
+  const giftElement = document.createElement('div');
+  giftElement.className = 'gift-item';
+  
+  giftElement.innerHTML = `
+    <div class="gift-header">
+      <img src="${gift.senderPhoto || defaultAvatar}" 
+           class="gift-sender-avatar" 
+           alt="Remetente"
+           onerror="this.src='${defaultAvatar}'">
+      <span class="gift-sender-name">De: ${gift.senderName || 'Usuário'}</span>
+    </div>
+    <div class="gift-body">
+      <h4 class="gift-title">${gift.title || 'Presente'}</h4>
+      ${gift.imageUrl ? `<img src="${gift.imageUrl}" class="gift-image" onerror="this.style.display='none'">` : ''}
+      <p class="gift-message">${gift.message || ''}</p>
+    </div>
+    <div class="gift-footer">
+      <span class="gift-date">${formatGiftDate(gift.sentAt)}</span>
+      <button class="gift-action-btn" data-gift-id="${gift.id}">Aceitar</button>
+    </div>
+  `;
+
+  return giftElement;
+}
+
+function formatGiftDate(timestamp) {
+  if (!timestamp?.toDate) return '';
+  return timestamp.toDate().toLocaleDateString('pt-BR');
+}
+
+
+function openGiftsSection() {
+  console.log("Abrindo seção de presentes...");
+  const giftsSection = document.getElementById('gifts-section');
+  
+  // Remove todas as classes que podem estar interferindo
+  giftsSection.className = 'lux-gifts-section';
+  
+  // Aplica estilos diretamente
+  giftsSection.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    z-index: 9999;
+    display: block;
+    overflow-y: auto;
+    padding: 20px;
+  `;
+  
+  // Força o redesenho
+  void giftsSection.offsetWidth;
+  
+  document.body.style.overflow = 'hidden';
+  loadUserGifts();
+  
+  // Debug visual
+  giftsSection.style.border = '2px solid red'; // Remova depois de testar
+}
+
+
+
+// Função para fechar a seção
+function closeGiftsSection() {
+  document.getElementById('gifts-section').style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+
+// Variáveis globais
+let userGifts = [];
+let giftsSectionVisible = false;
+
+// Função para alternar a visibilidade da seção
+function toggleGiftsSection() {
+  const section = document.querySelector('.my-gifts-section');
+  giftsSectionVisible = !giftsSectionVisible;
+  
+  if (giftsSectionVisible) {
+    section.classList.remove('hidden');
+    loadUserGifts(); // Carrega os presentes quando aberto
+  } else {
+    section.classList.add('hidden');
+  }
+  
+  // Adiciona rolagem suave
+  if (giftsSectionVisible) {
+    setTimeout(() => {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }
+}
+
+// Configura o clique no ícone
+document.querySelector('.gift-icon').addEventListener('click', toggleGiftsSection);
+
+// Função principal para carregar presentes
+async function loadUserGifts() {
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
+  try {
+    const userRef = firebase.firestore().collection('users').doc(user.uid);
+    const userDoc = await userRef.get();
+    
+    if (userDoc.exists) {
+      userGifts = userDoc.data()?.gifts?.received || [];
+      
+      // Marca presentes como visualizados
+      if (userGifts.some(gift => !gift.viewed)) {
+        const batch = firebase.firestore().batch();
+        const updatedGifts = userGifts.map(gift => ({
+          ...gift,
+          viewed: true
+        }));
+        
+        batch.update(userRef, {
+          'gifts.received': updatedGifts
+        });
+        
+        await batch.commit();
+        userGifts = updatedGifts;
+      }
+      
+      updateGiftBadge();
+      updateGiftsUI();
+    }
+  } catch (error) {
+    console.error('Erro ao carregar presentes:', error);
+  }
+}
+
+// Listener em tempo real para novos presentes
+function setupGiftsListener() {
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
+  return firebase.firestore().collection('users').doc(user.uid)
+    .onSnapshot(doc => {
+      if (doc.exists) {
+        const newGifts = doc.data()?.gifts?.received || [];
+        const newUnviewed = newGifts.filter(gift => !gift.viewed).length;
+        
+        if (newUnviewed > 0 && !giftsSectionVisible) {
+          // Mostra notificação se houver novos presentes
+          showNewGiftsNotification(newUnviewed);
+        }
+        
+        userGifts = newGifts;
+        updateGiftBadge();
+        
+        if (giftsSectionVisible) {
+          updateGiftsUI();
+        }
+      }
+    });
+}
+
+// Mostra notificação de novos presentes
+function showNewGiftsNotification(count) {
+  const notification = document.createElement('div');
+  notification.className = 'gift-notification';
+  notification.innerHTML = `
+    <span>Você tem ${count} novo(s) presente(s)!</span>
+    <button onclick="toggleGiftsSection()">Ver</button>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.bottom = '20px';
+  }, 100);
+  
+  setTimeout(() => {
+    notification.style.bottom = '-100px';
+    setTimeout(() => notification.remove(), 500);
+  }, 5000);
+}
+
+// CSS para a notificação
+const notificationStyle = document.createElement('style');
+notificationStyle.textContent = `
+  .gift-notification {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -100px;
+    background: #e91e63;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    transition: bottom 0.3s ease;
+  }
+  
+  .gift-notification button {
+    background: white;
+    color: #e91e63;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+`;
+document.head.appendChild(notificationStyle);
+
+// Inicialização
+firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    setupGiftsListener();
+  }
+});
+
+async function updateGiftsUI(filter = 'all') {
+  const container = document.querySelector('.gifts-container');
+  
+  // Mostra loading enquanto carrega
+  container.innerHTML = '<div class="loading-gifts"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+  
+  // Filtra os presentes
+  const filteredGifts = filter === 'all' 
+    ? [...userGifts] 
+    : userGifts.filter(gift => gift.category === filter);
+
+  // Atualiza o resumo
+  updateGiftsSummary(filteredGifts);
+
+  if (filteredGifts.length === 0) {
+    container.innerHTML = `
+      <div class="no-gifts">
+        <i class="fas fa-gift"></i>
+        <p>Nenhum presente encontrado</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Ordena por data (mais recente primeiro)
+  const sortedGifts = [...filteredGifts].sort((a, b) => 
+    new Date(b.date) - new Date(a.date));
+
+  try {
+    // Busca todos os nomes de uma vez
+    const giftsWithNames = await Promise.all(
+      sortedGifts.map(async gift => {
+        const fromUserName = gift.fromUserName || await getUserName(gift.fromUserId);
+        return { ...gift, fromUserName };
+      })
+    );
+
+    // Cria o HTML dos presentes
+    container.innerHTML = `
+      <div class="gifts-grid">
+        ${giftsWithNames.map(gift => `
+          <div class="gift-item" data-id="${gift.giftId}">
+            <div class="gift-image-container">
+              <img src="${gift.image}" alt="${gift.name}" class="gift-image" 
+                   onerror="this.src='${defaultGiftImage}'">
+              <span class="gift-category">${getCategoryName(gift.category)}</span>
+            </div>
+            <div class="gift-info">
+              <h3 class="gift-name">${gift.name}</h3>
+              <p class="gift-price">${formatCurrency(gift.price)}</p>
+              <div class="gift-meta">
+                <span><i class="fas fa-calendar-alt"></i> ${formatDate(gift.date)}</span>
+                <span><i class="fas fa-user"></i> ${gift.fromUserName || 'Anônimo'}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+  } catch (error) {
+    console.error('Erro ao carregar nomes:', error);
+    container.innerHTML = `
+      <div class="no-gifts">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Erro ao carregar informações</p>
+      </div>
+    `;
+  }
+}
+
+
+// Cache para armazenar nomes de usuários
+const userNamesCache = new Map();
+
+// Função para buscar o nome do usuário
+async function getUserName(userId) {
+  // Verifica no cache primeiro
+  if (userNamesCache.has(userId)) {
+    return userNamesCache.get(userId);
+  }
+
+  try {
+    const userDoc = await firebase.firestore().collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      const userName = userDoc.data().name || 'Usuário desconhecido';
+      // Armazena no cache
+      userNamesCache.set(userId, userName);
+      return userName;
+    }
+    return 'Usuário desconhecido';
+  } catch (error) {
+    console.error('Erro ao buscar nome do usuário:', error);
+    return 'Erro ao carregar';
+  }
+}
+
+// Listener para atualizar cache quando nomes mudarem
+function setupUserNameListener() {
+  firebase.firestore().collection('users')
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'modified' || change.type === 'added') {
+          const userData = change.doc.data();
+          userNamesCache.set(change.doc.id, userData.name);
+        }
+      });
+    });
+}
+
+
+// Atualiza o resumo de presentes
+function updateGiftsSummary(gifts) {
+  const totalGifts = document.querySelector('.total-gifts');
+  const totalValue = document.querySelector('.total-value');
+  
+  const total = gifts.reduce((sum, gift) => sum + (gift.price || 0), 0);
+  const count = gifts.length;
+  
+  totalGifts.textContent = `${count} ${count === 1 ? 'presente' : 'presentes'}`;
+  totalValue.textContent = `Total: ${formatCurrency(total)}`;
+}
+
+// Configura os botões de filtro
+function setupFilterButtons() {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateGiftsUI(btn.dataset.filter);
+    });
+  });
+}
+
+// Funções auxiliares
+function formatDate(dateString) {
+  if (!dateString) return 'Data desconhecida';
+  const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+  return new Date(dateString).toLocaleDateString('pt-BR', options);
+}
+
+function getCategoryName(category) {
+  const categories = {
+    jewelry: 'Joias',
+    experiences: 'Experiências',
+    fashion: 'Moda',
+    digital: 'Digital'
+  };
+  return categories[category] || category;
+}
+
+// Inicializa quando o usuário está logado
+firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    setupUserNameListener();
+    loadUserGifts();
+    // Listener em tempo real para atualizações
+    firebase.firestore().collection('users').doc(user.uid)
+      .onSnapshot(doc => {
+        if (doc.exists) {
+          userGifts = doc.data()?.gifts?.received || [];
+          const currentFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+          updateGiftsUI(currentFilter);
+        }
+      });
+  }
+});
+
+
+// Função auxiliar para gerar ID se necessário
+function generateId() {
+  return 'gift_' + Math.random().toString(36).substr(2, 9);
+}
+
+
+// Exibir presentes
+function displayGifts(gifts) {
+  if (gifts.length === 0) {
+    giftsContainer.innerHTML = `
+      <div class="lux-no-gifts">
+        <i class="fas fa-gift"></i>
+        <p>Nenhum presente disponível nesta categoria</p>
+      </div>
+    `;
+    return;
+  }
+
+  giftsContainer.innerHTML = gifts.map(gift => `
+    <div class="lux-gift-card" data-id="${gift.id}">
+      <div class="lux-gift-image-container">
+        <img src="${gift.image}" alt="${gift.name}" class="lux-gift-image" 
+             onerror="this.src='${defaultGiftImage}'">
+      </div>
+      <div class="lux-gift-info">
+        <h3 class="lux-gift-name">${gift.name}</h3>
+        <p class="lux-gift-price">${formatCurrency(gift.price)}</p>
+      </div>
+    </div>
+  `).join('');
+
+  // Adiciona eventos de clique aos cartões
+  document.querySelectorAll('.lux-gift-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const giftId = card.getAttribute('data-id');
+      selectedGift = availableGifts.find(g => g.id === giftId);
+      showGiftActions(selectedGift);
+    });
+  });
+}
+
+// Adiciona eventos às cartas de presente
+function addGiftCardEvents() {
+  document.querySelectorAll('.lux-gift-accept').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const giftId = e.currentTarget.dataset.id;
+      await updateGiftStatus(giftId, 'accepted');
+      showToast('Presente aceito com sucesso!', 'success');
+    });
+  });
+  
+  document.querySelectorAll('.lux-gift-details').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const giftId = e.currentTarget.dataset.id;
+      showGiftDetails(giftId);
+    });
+  });
+}
+
+// Atualiza o status de um presente
+async function updateGiftStatus(giftId, newStatus) {
+  try {
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) return;
+    
+    const userRef = firebase.firestore().collection('users').doc(currentUser.uid);
+    
+    // Atualiza usando FieldValue.arrayUnion para evitar problemas de concorrência
+    await userRef.update({
+      'gifts.received': firebase.firestore.FieldValue.arrayRemove(...userGifts.filter(g => g.id === giftId)),
+      'gifts.received': firebase.firestore.FieldValue.arrayUnion({
+        ...userGifts.find(g => g.id === giftId),
+        status: newStatus
+      })
+    });
+
+    // Atualiza a UI
+    userGifts = userGifts.map(gift => 
+      gift.id === giftId ? {...gift, status: newStatus} : gift
+    );
+    
+    const currentCategory = document.querySelector('.lux-filter-btn.active')?.dataset.category || 'all';
+    displayGifts(userGifts, currentCategory);
+    
+  } catch (error) {
+    console.error('Erro ao atualizar status:', error);
+    showToast('Erro ao atualizar presente', 'error');
+  }
+}
+// Mostra detalhes do presente de forma completa e com tratamento de erros
+async function showGiftDetails(giftId) {
+  try {
+    // Encontra o presente na lista
+    const gift = userGifts.find(g => g.giftId === giftId || g.id === giftId);
+    if (!gift) {
+      console.error('Presente não encontrado:', giftId);
+      showToast('Presente não encontrado', 'error');
+      return;
+    }
+
+    // Cria o elemento modal
+    const modal = document.createElement('div');
+    modal.className = 'lux-gift-detail-modal';
+    
+    // Adiciona um spinner enquanto carrega
+    modal.innerHTML = `
+      <div class="lux-gift-detail-content">
+        <div class="lux-detail-loading">
+          <div class="lux-spinner"></div>
+          <p>Carregando detalhes...</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Obtém o nome do remetente de forma assíncrona
+    const senderName = await getSenderName(gift.fromUserId).catch(() => 'Usuário desconhecido');
+
+    // Preenche o modal com os dados completos
+    modal.innerHTML = `
+      <div class="lux-gift-detail-content">
+        <button class="lux-detail-close"><i class="fas fa-times"></i></button>
+        
+        <div class="lux-gift-detail-header">
+          <div class="lux-gift-detail-image" style="background-image: url('${gift.image || 'https://via.placeholder.com/300'}')">
+            ${gift.status === 'pending' ? '<span class="lux-gift-new">Novo</span>' : ''}
+          </div>
+          <h2>${gift.name || 'Presente sem nome'}</h2>
+          <div class="lux-gift-detail-meta">
+            <span class="lux-gift-price">R$ ${gift.price ? gift.price.toLocaleString('pt-BR') : '0,00'}</span>
+            <span class="lux-gift-category">${getCategoryName(gift.category)}</span>
+          </div>
+        </div>
+        
+        <div class="lux-gift-detail-body">
+          <div class="lux-gift-detail-row">
+            <span><i class="fas fa-calendar-alt"></i> Recebido em:</span>
+            <span>${gift.date ? formatDate(gift.date) : 'Data desconhecida'}</span>
+          </div>
+          <div class="lux-gift-detail-row">
+            <span><i class="fas fa-user"></i> Enviado por:</span>
+            <span>${senderName}</span>
+          </div>
+          <div class="lux-gift-detail-row">
+            <span><i class="fas fa-info-circle"></i> Status:</span>
+            <span class="lux-gift-status ${gift.status || 'unknown'}">
+              ${getStatusText(gift.status)}
+            </span>
+          </div>
+        </div>
+        
+        <div class="lux-gift-detail-actions">
+          ${gift.status === 'pending' ? `
+          <button class="lux-btn lux-btn-accept" data-id="${gift.giftId || gift.id}">
+            <i class="fas fa-check"></i> Aceitar Presente
+          </button>
+          ` : ''}
+          <button class="lux-btn lux-btn-thank" data-id="${gift.giftId || gift.id}">
+            <i class="fas fa-heart"></i> Agradecer
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Configura os eventos do modal
+    modal.querySelector('.lux-detail-close').addEventListener('click', () => {
+      modal.classList.add('fade-out');
+      setTimeout(() => modal.remove(), 300);
+    });
+
+    // Evento para aceitar presente (se estiver pendente)
+    if (gift.status === 'pending') {
+      modal.querySelector('.lux-btn-accept').addEventListener('click', async () => {
+        try {
+          modal.querySelector('.lux-btn-accept').disabled = true;
+          await updateGiftStatus(gift.giftId || gift.id, 'accepted');
+          modal.remove();
+          showToast('Presente aceito com sucesso!', 'success');
+        } catch (error) {
+          modal.querySelector('.lux-btn-accept').disabled = false;
+          showToast('Erro ao aceitar presente', 'error');
+        }
+      });
+    }
+
+    // Evento para agradecer
+    modal.querySelector('.lux-btn-thank').addEventListener('click', () => {
+      openThankYouModal(gift.fromUserId, gift.name);
+      modal.remove();
+    });
+
+    // Adiciona animação de entrada
+    setTimeout(() => {
+      modal.classList.add('visible');
+    }, 50);
+
+  } catch (error) {
+    console.error('Erro ao mostrar detalhes do presente:', error);
+    showToast('Erro ao carregar detalhes', 'error');
+    
+    // Remove o modal se existir
+    const existingModal = document.querySelector('.lux-gift-detail-modal');
+    if (existingModal) existingModal.remove();
+  }
+}
+
+
+
+function getStatusText(status) {
+  const statuses = {
+    pending: 'Pendente',
+    accepted: 'Aceito',
+    rejected: 'Recusado'
+  };
+  return statuses[status] || status;
+}
+
+async function getSenderName(userId) {
+  try {
+    const userDoc = await firebase.firestore().collection('users').doc(userId).get();
+    return userDoc.exists ? userDoc.data().name : 'Usuário desconhecido';
+  } catch (error) {
+    console.error('Erro ao obter nome do remetente:', error);
+    return 'Usuário desconhecido';
+  }
+}
+
+// Configura o clique no ícone de presentes
+document.querySelector('.lux-close-gifts').addEventListener('click', closeGiftsSection);
+
+// Configura os filtros de categoria
+document.querySelectorAll('.lux-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lux-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    displayGifts(userGifts, btn.dataset.category);
+  });
+});
+
