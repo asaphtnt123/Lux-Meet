@@ -497,21 +497,6 @@
 
  
 
-<!-- Seção da Loja (inicialmente oculta) -->
-<div id="giftShopSection" class="lux-gift-shop hidden">
-  <div class="lux-shop-header">
-    <h2><i class="fas fa-store"></i> Loja de Presentes Exclusivos</h2>
-    <button class="lux-close-shop">&times;</button>
-  </div>
-  
-  <div class="lux-gifts-container">
-    <div class="lux-gifts-loading">
-      <i class="fas fa-spinner fa-spin"></i> Carregando nossa seleção exclusiva...
-    </div>
-  </div>
-</div>
-
-<!-- Modal de Ações -->
 <div id="giftActionsModal" class="lux-gift-actions-modal">
   <div class="lux-gift-actions-content">
     <span class="lux-actions-close">&times;</span>
@@ -519,17 +504,54 @@
     <img id="selectedGiftImage" src="" alt="" class="lux-selected-gift-image">
     <p id="selectedGiftPrice" class="lux-gift-price"></p>
     
+    <!-- Ações principais -->
     <div class="lux-gift-actions">
       <button class="lux-action-btn lux-action-send">
-        <i class="fas fa-paper-plane"></i> Confirmar Envio
+        <i class="fas fa-paper-plane"></i> Envio Direto
       </button>
-      <button class="lux-action-btn lux-action-cancel">
-        <i class="fas fa-times"></i> Cancelar
-      </button>
+      <button class="lux-action-btn lux-action-customize">
+    <i class="fas fa-gift"></i> Personalizar Envio
+  </button>
     </div>
+
+    <!-- Seção de Personalização (inicialmente oculta) -->
+    <!-- Seção de Personalização (inicialmente oculta) -->
+<div id="customizeSection" style="display:none;">
+  <h3>Personalizar Envio</h3>
+  
+  <div class="form-group">
+    <label>Mensagem Personalizada</label>
+    <textarea 
+      id="giftMessage" 
+      class="form-control" 
+      rows="3"
+      placeholder="Escreva uma mensagem especial..."
+      maxlength="500"
+    ></textarea>
+    <small class="text-muted">Máximo 500 caracteres</small>
+  </div>
+  
+  <div class="form-group">
+    <label>Presente Extra (Opcional)</label>
+    <select id="additionalGifts" class="form-control">
+      <option value="">Nenhum presente extra</option>
+    </select>
+    <img id="additionalGiftPreview" src="" style="display:none; max-width:80px; margin-top:10px;">
+  </div>
+  
+  <div class="action-buttons">
+    <button id="confirmCustomSend" class="btn btn-primary">
+      <i class="fas fa-paper-plane"></i> Enviar Presente
+    </button>
+    <button id="backToMain" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> Voltar
+    </button>
   </div>
 </div>
 
+
+  </div>
+</div>
 
 
     <!-- Modal de ações para presente selecionado -->
@@ -614,7 +636,19 @@
     </form>
   </div>
 </div>
-
+<!-- Seção da Loja (inicialmente oculta) -->
+<div id="giftShopSection" class="lux-gift-shop hidden">
+  <div class="lux-shop-header">
+    <h2><i class="fas fa-store"></i> Loja de Presentes Exclusivos</h2>
+    <button class="lux-close-shop">&times;</button>
+  </div>
+  
+<div class="lux-gifts-container scrollable">
+    <div class="lux-gifts-loading">
+      <i class="fas fa-spinner fa-spin"></i> Carregando nossa seleção exclusiva...
+    </div>
+  </div>
+</div>
 <!-- Modal de Agendamento -->
 <div id="scheduleGiftModal" class="lux-modal">
   <div class="lux-modal-content">
@@ -749,6 +783,18 @@
         <i class="fas fa-spinner fa-spin"></i> Carregando seus presentes...
       </div>
     </div>
+  </div>
+</div>
+
+
+<div class="lux-gift-item">
+  <img src="miniatura.jpg" data-fullsize="imagem-grande.jpg" alt="Descrição">
+</div>
+<!-- Adicione isso no final do seu body -->
+<div class="gift-viewer-modal">
+  <span class="close-viewer">&times;</span>
+  <div class="gift-viewer-content">
+    <img id="fullsize-gift-image" src="" alt="Visualização completa do presente">
   </div>
 </div>
 

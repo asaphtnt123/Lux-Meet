@@ -6431,26 +6431,20 @@ function openGiftModal(userId) {
   setupGiftModalEvents();
 }
 
-
-// Configura eventos do modal de presentes
+// Adicione esta função para configurar todos os eventos do modal
 function setupGiftModalEvents() {
-  const modal = document.getElementById('giftModal');
-  
-  // Fechar modal
-  modal.querySelector('.lux-gift-close').addEventListener('click', closeGiftModal);
-  
-  // Previne a propagação do clique dentro do conteúdo
-  modal.querySelector('.lux-gift-modal-content').addEventListener('click', e => {
-    e.stopPropagation();
-  });
-  
-  // Filtros por categoria
-  document.querySelectorAll('.lux-gift-category').forEach(btn => {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.lux-gift-category').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      loadGifts(this.dataset.category);
-    });
+  // Botão de envio personalizado
+  const confirmBtn = document.getElementById('confirmCustomSend');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', sendCustomizedGift);
+  } else {
+    console.error('Botão confirmCustomSend não encontrado!');
+  }
+
+  // Botão voltar
+  document.getElementById('backToMain')?.addEventListener('click', () => {
+    document.getElementById('customizeSection').style.display = 'none';
+    document.querySelector('.lux-gift-actions').style.display = 'flex';
   });
 }
 
@@ -6471,32 +6465,269 @@ function setupGiftCardEvents() {
     });
   });
 }
-
-// Função para mostrar ações do presente
 function showGiftActions(gift) {
+  // 1. Armazena o presente selecionado
+  selectedGift = gift;
+  
+  // 2. Preenche os dados no modal
+  const nameElement = document.getElementById('selectedGiftName');
+  const imageElement = document.getElementById('selectedGiftImage');
+  const priceElement = document.getElementById('selectedGiftPrice');
+  
+  if (!nameElement || !imageElement || !priceElement) {
+    console.error('Elementos do modal não encontrados!');
+    return;
+  }
+  
+  nameElement.textContent = gift.name;
+  imageElement.src = gift.image;
+  priceElement.textContent = formatCurrency(gift.price);
+  
+  // 3. Configura o botão de envio direto - VERSÃO CORRIGIDA
+  const sendDirectBtn = document.querySelector('.lux-action-send');
+  
+  if (sendDirectBtn) {
+    // Remove eventos anteriores para evitar duplicação
+    sendDirectBtn.onclick = null;
+    
+    // Adiciona novo evento
+    sendDirectBtn.onclick = async () => {
+      console.log('Botão Enviar Direto clicado');
+      
+      if (!selectedUserId) {
+        showToast('Selecione um destinatário primeiro', 'error');
+        console.error('Nenhum selectedUserId definido');
+        return;
+      }
+      
+      try {
+        showLoading('Enviando presente...');
+        console.log('Enviando presente para:', selectedUserId);
+        
+        await sendGiftToUser(selectedUserId, selectedGift);
+        
+        showToast('Presente enviado com sucesso!', 'success');
+        closeGiftActionsModal();
+      } catch (error) {
+        console.error('Erro no envio:', error);
+        showToast(`Erro: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
+      }
+    };
+  } else {
+    console.error('Botão de envio direto não encontrado!');
+  }
+  
+  // 4. Mostra o modal
   const actionsModal = document.getElementById('giftActionsModal');
+  if (actionsModal) {
+    actionsModal.style.display = 'block';
+  } else {
+    console.error('Modal de ações não encontrado!');
+  }
+}
+
+function selectUser(userElement) {
+  // Remove seleção anterior
+  document.querySelectorAll('.user-card').forEach(card => {
+    card.classList.remove('selected');
+  });
   
-  // Preenche os dados
-  document.getElementById('selectedGiftName').textContent = gift.name;
-  document.getElementById('selectedGiftImage').src = gift.image;
-  document.getElementById('selectedGiftPrice').textContent = formatCurrency(gift.price);
+  // Adiciona seleção nova
+  userElement.classList.add('selected');
   
-  // Configura botões de ação
-  document.querySelector('.lux-action-send').onclick = () => {
-    if (selectedUserId) {
-      sendGiftToUser(selectedUserId, gift);
-    } else {
-      showToast('Selecione um destinatário primeiro', 'error');
+  // Armazena o ID do usuário selecionado
+  selectedUserId = userElement.dataset.userId;
+  console.log('Usuário selecionado:', selectedUserId); // Para depuração
+}
+
+async function sendScheduledGift(userId, gift) {
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) throw new Error('Usuário não autenticado');
+
+  // Verifica saldo (se for presente pago)
+  if (gift.price > 0) {
+    const userDoc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
+    const balance = userDoc.data()?.balance || 0;
+    
+    if (balance < gift.price) {
+      throw new Error('Saldo insuficiente');
     }
-  };
+  }
+
+  // Cria a transação no Firestore
+  const transactionRef = firebase.firestore().collection('scheduledGifts').doc();
   
-  // Mostra o modal de ações
-  actionsModal.style.display = 'block';
-  
-  // Configura fechamento
-  document.querySelector('.lux-actions-close').onclick = () => {
-    actionsModal.style.display = 'none';
+  const giftData = {
+    ...gift,
+    giftId: `scheduled_${transactionRef.id}`,
+    fromUserId: currentUser.uid,
+    toUserId: userId,
+    fromUserName: currentUser.displayName || 'Anônimo'
   };
+
+  await transactionRef.set(giftData);
+
+  // Atualiza o saldo imediatamente (se for pago)
+  if (gift.price > 0) {
+    await firebase.firestore().collection('users').doc(currentUser.uid).update({
+      balance: firebase.firestore.FieldValue.increment(-gift.price)
+    });
+  }
+}
+
+// Esta função deve rodar no servidor (Cloud Functions) ou em um worker
+async function processScheduledGifts() {
+  const now = new Date().toISOString();
+  const snapshot = await firebase.firestore()
+    .collection('scheduledGifts')
+    .where('deliveryDate', '<=', now)
+    .where('status', '==', 'scheduled')
+    .get();
+
+  const batch = firebase.firestore().batch();
+  
+  snapshot.forEach(doc => {
+    const gift = doc.data();
+    
+    // Cria a transação final
+    const transactionRef = firebase.firestore().collection('transactions').doc();
+    const giftData = {
+      ...gift,
+      giftId: `gift_${transactionRef.id}`,
+      transactionId: transactionRef.id,
+      status: 'delivered',
+      deliveredAt: now,
+      scheduled: false
+    };
+
+    // Adiciona à coleção de transações
+    batch.set(transactionRef, giftData);
+    
+    // Atualiza o usuário receptor
+    const receiverRef = firebase.firestore().collection('users').doc(gift.toUserId);
+    batch.update(receiverRef, {
+      'gifts.received': firebase.firestore.FieldValue.arrayUnion(giftData)
+    });
+
+    // Atualiza o status do agendamento
+    batch.update(doc.ref, { status: 'processed' });
+  });
+
+  await batch.commit();
+}
+
+async function loadAdditionalGifts() {
+  const select = document.getElementById('additionalGifts');
+  
+  try {
+    // Busca os presentes disponíveis
+    const querySnapshot = await firebase.firestore().collection('gifts').get();
+    
+    // Filtra para não mostrar o presente já selecionado
+    const gifts = querySnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(gift => gift.id !== selectedGift.id);
+    
+    // Preenche o dropdown
+    select.innerHTML = '<option value="">Nenhum presente extra</option>';
+    
+    gifts.forEach(gift => {
+      const option = document.createElement('option');
+      option.value = gift.id;
+      option.textContent = `${gift.name} (${formatCurrency(gift.price)})`;
+      option.dataset.image = gift.image;
+      select.appendChild(option);
+    });
+    
+    // Mostra preview ao selecionar
+    select.addEventListener('change', function() {
+      const preview = document.getElementById('additionalGiftPreview');
+      if (this.value) {
+        preview.src = this.options[this.selectedIndex].dataset.image;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+    
+  } catch (error) {
+    console.error("Erro ao carregar presentes:", error);
+    select.innerHTML = '<option value="">Erro ao carregar opções</option>';
+  }
+}
+async function sendCustomizedGift() {
+  // Verificação básica
+  if (!selectedUserId || !selectedGift) {
+    showToast('Dados incompletos para envio', 'error');
+    return;
+  }
+
+  // Coleta a mensagem - VERIFICAÇÃO ROBUSTA
+  const messageInput = document.getElementById('giftMessage');
+  const message = messageInput ? messageInput.value : '';
+  
+  // Coleta presente extra - VERIFICAÇÃO ROBUSTA
+  const additionalGiftsSelect = document.getElementById('additionalGifts');
+  const additionalGiftId = additionalGiftsSelect ? additionalGiftsSelect.value : null;
+
+  try {
+    showLoading('Enviando presente personalizado...');
+    
+    // MONTA O OBJETO CORRETAMENTE
+    const giftData = {
+      // Dados básicos do presente
+      ...selectedGift,
+      
+      // Dados de personalização
+      message: message.trim(), // Remove espaços extras
+      isCustomized: true,
+      createdAt: new Date().toISOString(),
+      
+      // Relacionamentos
+      fromUserId: firebase.auth().currentUser.uid,
+      toUserId: selectedUserId,
+      
+      // Status
+      status: 'delivered'
+    };
+
+    // ADICIONA PRESENTE EXTRA SE EXISTIR
+    if (additionalGiftId) {
+      const doc = await firebase.firestore().collection('gifts').doc(additionalGiftId).get();
+      if (doc.exists) {
+        giftData.additionalGift = {
+          id: doc.id,
+          ...doc.data()
+        };
+      }
+    }
+
+    console.log('Dados que serão enviados:', giftData); // LOG PARA DEPURAÇÃO
+
+    // ENVIA PARA O FIRESTORE
+    const transactionRef = firebase.firestore().collection('transactions').doc();
+    giftData.transactionId = transactionRef.id;
+    
+    await transactionRef.set(giftData);
+    
+    // ATUALIZA O USUÁRIO RECEPTOR
+    await firebase.firestore().collection('users')
+      .doc(selectedUserId)
+      .update({
+        'gifts.received': firebase.firestore.FieldValue.arrayUnion(giftData)
+      });
+
+    showToast('Presente personalizado enviado com sucesso!', 'success');
+    closeGiftActionsModal();
+
+  } catch (error) {
+    console.error('Erro completo:', error);
+    showToast(`Erro ao enviar: ${error.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
 }
 
 // Função para fechar todos os modais
@@ -6530,6 +6761,8 @@ function setupActionButtons(userId, gift) {
 function closeGiftActionsModal() {
   document.getElementById('giftActionsModal').style.display = 'none';
 }
+
+
 async function sendGiftToUser(userId, gift) {
   try {
      const currentUser = firebase.auth().currentUser;
@@ -7341,6 +7574,15 @@ async function addToWishlist(gift) {
     showToast(error.message, 'error');
   }
 }
+
+// Adicione isso após a criação do modal ou no DOMContentLoaded
+document.querySelector('.lux-action-customize').addEventListener('click', function() {
+  console.log("Botão Personalizar clicado!"); // Verifique se aparece no console
+  document.querySelector('.lux-gift-actions').style.display = 'none';
+  document.getElementById('customizeSection').style.display = 'block';
+});
+
+
 // Personalizar presente
 function customizeGift(gift) {
   const modal = document.getElementById('customizeGiftModal');
@@ -7964,7 +8206,6 @@ function toggleGiftsSection() {
 
 // Configura o clique no ícone
 document.querySelector('.gift-icon').addEventListener('click', toggleGiftsSection);
-
 // Função principal para carregar presentes
 async function loadUserGifts() {
   const user = firebase.auth().currentUser;
@@ -7994,7 +8235,7 @@ async function loadUserGifts() {
       }
       
       updateGiftBadge();
-      updateGiftsUI();
+      updateGiftsUI(userGifts); // Passa os presentes para a função de atualização da UI
     }
   } catch (error) {
     console.error('Erro ao carregar presentes:', error);
@@ -8086,41 +8327,68 @@ firebase.auth().onAuthStateChanged(user => {
     setupGiftsListener();
   }
 });
-
 async function updateGiftsUI(filter = 'all') {
   const container = document.querySelector('.gifts-container');
-  
+  if (!container) return;
+
   // Mostra loading enquanto carrega
   container.innerHTML = '<div class="loading-gifts"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
-  
-  // Filtra os presentes
-  const filteredGifts = filter === 'all' 
-    ? [...userGifts] 
-    : userGifts.filter(gift => gift.category === filter);
-
-  // Atualiza o resumo
-  updateGiftsSummary(filteredGifts);
-
-  if (filteredGifts.length === 0) {
-    container.innerHTML = `
-      <div class="no-gifts">
-        <i class="fas fa-gift"></i>
-        <p>Nenhum presente encontrado</p>
-      </div>
-    `;
-    return;
-  }
-
-  // Ordena por data (mais recente primeiro)
-  const sortedGifts = [...filteredGifts].sort((a, b) => 
-    new Date(b.date) - new Date(a.date));
 
   try {
-    // Busca todos os nomes de uma vez
+    // Verifica se userGifts existe e é um array
+    if (!Array.isArray(userGifts)) {
+      console.error('userGifts não é um array:', userGifts);
+      userGifts = [];
+    }
+
+    // Filtra os presentes (com verificação de categoria)
+    const filteredGifts = filter === 'all' 
+      ? [...userGifts] 
+      : userGifts.filter(gift => {
+          // Verifica se gift e gift.category existem
+          return gift && gift.category && gift.category === filter;
+        });
+
+    console.log('Presentes filtrados:', filteredGifts); // Debug
+
+    // Atualiza o resumo
+    updateGiftsSummary(filteredGifts);
+
+    if (filteredGifts.length === 0) {
+      container.innerHTML = `
+        <div class="no-gifts">
+          <i class="fas fa-gift"></i>
+          ${filter !== 'all' ? `<button onclick="updateGiftsUI('all')" class="reset-filter">
+            Ver todos os presentes
+          </button>` : ''}
+        </div>
+      `;
+      return;
+    }
+
+    // Ordena por data (usa createdAt se date não existir)
+    const sortedGifts = [...filteredGifts].sort((a, b) => {
+      const dateA = a.date || a.createdAt;
+      const dateB = b.date || b.createdAt;
+      return new Date(dateB) - new Date(dateA);
+    });
+
+    // Busca todos os nomes de uma vez (com tratamento de erro)
     const giftsWithNames = await Promise.all(
       sortedGifts.map(async gift => {
-        const fromUserName = gift.fromUserName || await getUserName(gift.fromUserId);
-        return { ...gift, fromUserName };
+        try {
+          const fromUserName = gift.fromUserName || 
+                             (gift.fromUserId ? await getUserName(gift.fromUserId) : 'Anônimo');
+          return { 
+            ...gift,
+            fromUserName,
+            // Garante que temos uma data válida
+            displayDate: formatDate(gift.date || gift.createdAt || new Date())
+          };
+        } catch (error) {
+          console.error('Erro ao carregar nome:', error);
+          return { ...gift, fromUserName: 'Anônimo' };
+        }
       })
     );
 
@@ -8128,18 +8396,29 @@ async function updateGiftsUI(filter = 'all') {
     container.innerHTML = `
       <div class="gifts-grid">
         ${giftsWithNames.map(gift => `
-          <div class="gift-item" data-id="${gift.giftId}">
+          <div class="gift-item" data-id="${gift.giftId || gift.id}">
             <div class="gift-image-container">
-              <img src="${gift.image}" alt="${gift.name}" class="gift-image" 
+              <img src="${gift.image || defaultGiftImage}" 
+                   alt="${gift.name}" 
+                   class="gift-image"
                    onerror="this.src='${defaultGiftImage}'">
-              <span class="gift-category">${getCategoryName(gift.category)}</span>
+              ${gift.category ? `<span class="gift-category">${getCategoryName(gift.category)}</span>` : ''}
             </div>
             <div class="gift-info">
-              <h3 class="gift-name">${gift.name}</h3>
-              <p class="gift-price">${formatCurrency(gift.price)}</p>
+              <h3 class="gift-name">${gift.name || 'Presente'}</h3>
+              ${gift.price !== undefined ? `<p class="gift-price">${formatCurrency(gift.price)}</p>` : ''}
+              
+              <!-- Adiciona mensagem se existir -->
+              ${gift.message ? `
+                <div class="gift-message">
+                  <i class="fas fa-quote-left"></i>
+                  ${gift.message}
+                </div>
+              ` : ''}
+              
               <div class="gift-meta">
-                <span><i class="fas fa-calendar-alt"></i> ${formatDate(gift.date)}</span>
-                <span><i class="fas fa-user"></i> ${gift.fromUserName || 'Anônimo'}</span>
+                <span><i class="fas fa-calendar-alt"></i> ${gift.displayDate}</span>
+                <span><i class="fas fa-user"></i> ${gift.fromUserName}</span>
               </div>
             </div>
           </div>
@@ -8148,16 +8427,18 @@ async function updateGiftsUI(filter = 'all') {
     `;
 
   } catch (error) {
-    console.error('Erro ao carregar nomes:', error);
+    console.error('Erro ao atualizar UI:', error);
     container.innerHTML = `
-      <div class="no-gifts">
+      <div class="error-loading">
         <i class="fas fa-exclamation-triangle"></i>
-        <p>Erro ao carregar informações</p>
+        <p>Erro ao carregar os presentes</p>
+        <button onclick="location.reload()" class="btn-retry">
+          Recarregar página
+        </button>
       </div>
     `;
   }
 }
-
 
 // Cache para armazenar nomes de usuários
 const userNamesCache = new Map();
@@ -8495,3 +8776,64 @@ document.querySelectorAll('.lux-filter-btn').forEach(btn => {
   });
 });
 
+
+
+
+document.querySelectorAll('.lux-gift-item').forEach(item => {
+  const giftName = item.dataset.name || 'Presente';
+  const giftPrice = item.dataset.price ? formatCurrency(item.dataset.price) : '';
+  
+  const tooltip = document.createElement('div');
+  tooltip.className = 'lux-gift-tooltip';
+  tooltip.textContent = `${giftName}${giftPrice ? ' - ' + giftPrice : ''}`;
+  
+  item.appendChild(tooltip);
+});
+
+// Exemplo: adiciona badge se quantidade > 1
+if (gift.quantity > 1) {
+  const badge = document.createElement('div');
+  badge.className = 'lux-gift-badge';
+  badge.textContent = gift.quantity;
+  giftElement.appendChild(badge);
+}
+
+
+// Ativa o visualizador de imagens
+document.querySelectorAll('.lux-gift-item img').forEach(img => {
+  img.addEventListener('click', function() {
+    const modal = document.querySelector('.gift-viewer-modal');
+    const fullsizeImg = document.getElementById('fullsize-gift-image');
+    
+    fullsizeImg.src = this.src;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Bloqueia scroll
+  });
+});
+
+// Fecha o visualizador
+document.querySelector('.close-viewer').addEventListener('click', closeViewer);
+document.querySelector('.gift-viewer-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeViewer();
+});
+
+function closeViewer() {
+  document.querySelector('.gift-viewer-modal').style.display = 'none';
+  document.body.style.overflow = 'auto'; // Restaura scroll
+}
+
+// Tecla ESC para fechar
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeViewer();
+});
+
+// Pré-carrega imagens grandes no hover
+document.querySelectorAll('.lux-gift-item').forEach(item => {
+  item.addEventListener('mouseenter', function() {
+    const fullsizeUrl = this.querySelector('img').dataset.fullsize;
+    if (fullsizeUrl) {
+      const img = new Image();
+      img.src = fullsizeUrl;
+    }
+  });
+});
