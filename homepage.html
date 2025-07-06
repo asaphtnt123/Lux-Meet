@@ -10,7 +10,9 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
@@ -93,6 +95,20 @@
         <div class="gift-icon">
   <i class="fas fa-gift"></i>
   <span id="gift-badge" class="gift-badge"></span>
+ <a href="MinhaGaleria.html" class="nav-link" id="gallery-link">
+  <i class="fas fa-camera "></i> 
+</a>
+
+  <div class="gifts-menu">
+   
+  <button class="gifts-dropbtn">
+    <i class="fas fa-gifts"></i> Meus Presentes
+  </button>
+  <div class="gifts-dropdown-content">
+    <a href="#"><i class="fas fa-gift"></i> Recebidos</a>
+    <a href="presentes-enviados.html"><i class="fas fa-paper-plane"></i> Enviados</a>
+  </div>
+</div>
 </div>
    <!-- Botão da Loja -->
 <button id="openGiftShopBtn" class="lux-btn lux-btn-shop">
@@ -608,6 +624,33 @@
   </div>
 </section>
 
+
+<section class="sent-gifts-section hidden">
+  <div class="section-header">
+    <h2><i class="fas fa-paper-plane"></i> Presentes Enviados</h2>
+    <div class="gifts-summary">
+      <span class="sent-count">0 enviados</span>
+      <span class="accepted-count">0 aceitos</span>
+      <span class="declined-count">0 recusados</span>
+    </div>
+  </div>
+  
+  <div class="gifts-filter">
+    <button class="filter-btn active" data-filter="all">Todos</button>
+    <button class="filter-btn" data-filter="accepted">Aceitos</button>
+    <button class="filter-btn" data-filter="declined">Recusados</button>
+    <button class="filter-btn" data-filter="pending">Pendentes</button>
+  </div>
+  
+  <div class="sent-gifts-container">
+    <div class="loading-gifts">
+      <i class="fas fa-spinner fa-spin"></i> Carregando seus presentes enviados...
+    </div>
+  </div>
+</section>
+
+
+
 <!-- Modal de Personalização -->
 <div id="customizeGiftModal" class="lux-modal">
   <div class="lux-modal-content">
@@ -637,18 +680,16 @@
   </div>
 </div>
 <!-- Seção da Loja (inicialmente oculta) -->
-<div id="giftShopSection" class="lux-gift-shop hidden">
-  <div class="lux-shop-header">
-    <h2><i class="fas fa-store"></i> Loja de Presentes Exclusivos</h2>
-    <button class="lux-close-shop">&times;</button>
-  </div>
-  
-<div class="lux-gifts-container scrollable">
-    <div class="lux-gifts-loading">
-      <i class="fas fa-spinner fa-spin"></i> Carregando nossa seleção exclusiva...
+<div id="giftShopSection">
+  <div class="lux-gifts-shop-container">
+    <div class="lux-shop-header">
+      <h2>Loja Exclusiva de Presentes</h2>
     </div>
+    <button class="lux-close-shop">&times;</button>
+    <div class="lux-gifts-container"></div>
   </div>
 </div>
+
 <!-- Modal de Agendamento -->
 <div id="scheduleGiftModal" class="lux-modal">
   <div class="lux-modal-content">

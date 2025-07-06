@@ -1,3 +1,16 @@
+
+console.log('Script carregado - Funções disponíveis:', {
+  sendGift,
+  sendGiftToUser,
+  showGratitudeScreen
+});
+// Configuração de persistência (deve ser chamada uma vez no app)
+function initializeFirebase() {
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(() => console.log('Persistência de autenticação configurada'))
+    .catch(error => console.error('Erro na persistência:', error));
+}
+
 const imageViewer = setupImageViewer();
 
 
@@ -1092,138 +1105,355 @@ function renderNewsCard(post) {
 
 
 const defaultGiftImage = 'https://via.placeholder.com/100?text=Presente';
-function openProfileModal(profileData) {
+
+
+function getAuthRedirectUrl(targetUrl) {
+  const currentUser = firebase.auth().currentUser;
+  if (currentUser) {
+    return currentUser.getIdToken().then((token) => {
+      return `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}auth=${token}`;
+    });
+  }
+  return Promise.resolve(`login.html?redirect=${encodeURIComponent(targetUrl)}`);
+}
+
+async function openProfileModal(profileData) {
   const modal = document.getElementById('profileModal');
   if (!modal) {
     console.error('Elemento profileModal não encontrado no DOM');
     return;
   }
 
-  // Verifica e processa os interesses
-  const interests = profileData.interests ? 
-    profileData.interests.split(',').map(i => i.trim()) : 
-    [];
-
-  // Processa os gifts recebidos - agora acessando profileData.gifts.received
-  const gifts = (profileData.gifts && Array.isArray(profileData.gifts.received)) ? 
-    profileData.gifts.received.filter(gift => gift && gift.image) : 
-    [];
-  const hasGifts = gifts.length > 0;
-
-  // DEBUG: Verifica os gifts no console
-  console.log('Dados dos gifts recebidos:', gifts);
-
-  // Preenche o modal com os dados do perfil
-  const modalContent = `
-    <div class="lux-profile-modal">
-      <div class="lux-profile-modal-header">
-        <div class="lux-avatar-container">
-          <img src="${profileData.profilePhotoURL || defaultAvatar}" 
-               class="lux-profile-modal-img" 
-               alt="${profileData.name || 'Usuário'}"
-               onerror="this.src='${defaultAvatar}'">
-          ${profileData.selo ? `<span class="lux-badge">${profileData.selo}</span>` : ''}
-        </div>
-        <div class="lux-profile-titles">
-          <h2>${profileData.name || 'Usuário'}</h2>
-          <div class="lux-profile-meta">
-            ${profileData.tipouser ? `<span class="lux-user-type">${profileData.tipouser}</span>` : ''}
-            ${profileData.age ? `<span><i class="fas fa-birthday-cake"></i> ${profileData.age} anos</span>` : ''}
-            ${profileData.cidade ? `<span><i class="fas fa-map-marker-alt"></i> ${profileData.cidade}</span>` : ''}
-          </div>
-        </div>
-      </div>
-      
-      <div class="lux-profile-modal-body">
-        ${profileData.bio ? `
-        <div class="lux-profile-section">
-          <h3><i class="fas fa-quote-left"></i> Sobre</h3>
-          <p>${profileData.bio}</p>
-        </div>` : ''}
-        
-        ${profileData.interestIn ? `
-        <div class="lux-profile-section">
-          <h3><i class="fas fa-heart"></i> Interessado em</h3>
-          <p>${profileData.interestIn}</p>
-        </div>` : ''}
-        
-        ${interests.length > 0 ? `
-        <div class="lux-profile-section">
-          <h3><i class="fas fa-tags"></i> Interesses</h3>
-          <div class="lux-interests">
-            ${interests.map(i => `<span class="lux-interest-tag">${i}</span>`).join('')}
-          </div>
-        </div>` : ''}
-      </div>
-      
-      <div class="lux-profile-actions">
-        <button class="lux-btn lux-btn-message" onclick="startChatWithUser('${profileData.userId || profileData.id}')">
-          <i class="fas fa-paper-plane"></i> Mensagem
-        </button>
-        <button class="lux-btn lux-btn-gift" onclick="openGiftModal('${profileData.userId || profileData.id}')">
-          <i class="fas fa-gift"></i> Presentear
-        </button>
-        <button class="lux-btn lux-btn-date" onclick="proposeDate('${profileData.userId || profileData.id}')">
-          <i class="fas fa-calendar-star"></i> Encontro
-        </button>
-        ${profileData.wishlistUrl ? `
-        <button class="lux-btn lux-btn-wishlist" onclick="window.open('${profileData.wishlistUrl}', '_blank')">
-          <i class="fas fa-heart"></i> Lista de Desejos
-        </button>` : ''}
-        <button class="lux-btn lux-btn-allowance" onclick="showAllowanceOptions('${profileData.userId || profileData.id}')">
-          <i class="fas fa-hand-holding-usd"></i> Apoio
-        </button>
-      </div>
-      
-      ${hasGifts ? `
-      <div class="lux-profile-gifts">
-        <h3><i class="fas fa-gifts"></i> Presentes Recebidos (${gifts.length})</h3>
-        <div class="lux-gifts-container">
-          ${gifts.map(gift => `
-            <div class="lux-gift-item" title="${gift.name || 'Presente'} (${formatCurrency(gift.price || 0)})">
-              <img src="${gift.image}" alt="${gift.name || 'Presente'}" class="lux-gift-image" 
-                   onerror="this.src='${defaultGiftImage || defaultAvatar}'">
-              ${gift.category ? `<span class="lux-gift-category">${gift.category}</span>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      </div>` : ''}
-    </div>
-  `;
-
-  // Resto do código permanece igual...
-  // Atualiza o modal e exibe
+  // Mostrar estado de loading
   modal.innerHTML = `
     <div class="lux-modal-content">
       <span class="lux-modal-close">&times;</span>
-      ${modalContent}
+      <div class="lux-modal-loading">
+        <div class="lux-spinner"></div>
+        <p>Carregando perfil...</p>
+      </div>
     </div>
   `;
-
-  // Mostra o modal
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
-  // Configura eventos para fechar o modal
-  const closeModal = () => {
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-  };
+  try {
+    // Processar dados do perfil
+    const interests = profileData.interests ? 
+      profileData.interests.split(',').map(i => i.trim()) : [];
+    
+    const gifts = (profileData.gifts && Array.isArray(profileData.gifts.received)) ? 
+      profileData.gifts.received.filter(gift => gift && gift.image) : [];
+    const hasGifts = gifts.length > 0;
 
-  modal.querySelector('.lux-modal-close').addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => e.target === modal && closeModal());
-  
-  document.addEventListener('keydown', function handleEsc(e) {
-    if (e.key === 'Escape') closeModal();
-    document.removeEventListener('keydown', handleEsc);
+    // Buscar prévia da galeria
+    let galleryPreview = '';
+    try {
+      const preview = await getGalleryPreview(profileData.userId || profileData.id);
+      galleryPreview = preview || '';
+    } catch (error) {
+      console.error('Erro ao carregar prévia da galeria:', error);
+      galleryPreview = '';
+    }
+
+    // Construir conteúdo completo do modal
+    const modalContent = `
+      <div class="lux-profile-modal">
+        <!-- Cabeçalho do Perfil -->
+        <div class="lux-profile-modal-header">
+          <div class="lux-avatar-container">
+            <img src="${profileData.profilePhotoURL || defaultAvatar}" 
+                 class="lux-profile-modal-img" 
+                 alt="${profileData.name || 'Usuário'}"
+                 onerror="this.src='${defaultAvatar}'">
+            ${profileData.selo ? `<span class="lux-badge">${profileData.selo}</span>` : ''}
+          </div>
+          <div class="lux-profile-titles">
+            <h2>${profileData.name || 'Usuário'}</h2>
+            <div class="lux-profile-meta">
+              ${profileData.tipouser ? `<span class="lux-user-type">${profileData.tipouser}</span>` : ''}
+              ${profileData.age ? `<span><i class="fas fa-birthday-cake"></i> ${profileData.age} anos</span>` : ''}
+              ${profileData.cidade ? `<span><i class="fas fa-map-marker-alt"></i> ${profileData.cidade}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Corpo do Perfil -->
+        <div class="lux-profile-modal-body">
+          ${profileData.bio ? `
+          <div class="lux-profile-section">
+            <h3><i class="fas fa-quote-left"></i> Sobre</h3>
+            <p>${profileData.bio}</p>
+          </div>` : ''}
+          
+          ${profileData.interestIn ? `
+          <div class="lux-profile-section">
+            <h3><i class="fas fa-heart"></i> Interessado em</h3>
+            <p>${profileData.interestIn}</p>
+          </div>` : ''}
+          
+          ${interests.length > 0 ? `
+          <div class="lux-profile-section">
+            <h3><i class="fas fa-tags"></i> Interesses</h3>
+            <div class="lux-interests">
+              ${interests.map(i => `<span class="lux-interest-tag">${i}</span>`).join('')}
+            </div>
+          </div>` : ''}
+        </div>
+        
+        <!-- Prévia da Galeria -->
+        <div class="lux-profile-gallery-preview">
+          <div class="lux-gallery-header">
+            <h3><i class="fas fa-camera-retro"></i> Minha Galeria</h3>
+            <a href="#" class="lux-view-all">
+              Ver Tudo <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="lux-gallery-grid" id="galleryPreviewContainer">
+            ${galleryPreview || `
+              <div class="lux-no-gallery">
+                <i class="fas fa-camera"></i>
+                <p>Nenhum álbum público disponível</p>
+              </div>
+            `}
+          </div>
+        </div>
+        
+        <!-- Presentes Recebidos -->
+        ${hasGifts ? `
+        <div class="lux-profile-gifts">
+          <h3><i class="fas fa-gifts"></i> Presentes Recebidos (${gifts.length})</h3>
+          <div class="lux-gifts-container">
+            ${gifts.map(gift => `
+              <div class="lux-gift-item" title="${gift.name || 'Presente'} (${formatCurrency(gift.price || 0)})">
+                <img src="${gift.image}" alt="${gift.name || 'Presente'}" class="lux-gift-image" 
+                     onerror="this.src='${defaultGiftImage || defaultAvatar}'">
+                ${gift.category ? `<span class="lux-gift-category">${gift.category}</span>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+        
+        <!-- Ações -->
+        <div class="lux-profile-actions">
+          <button class="lux-btn lux-btn-message" onclick="startChatWithUser('${profileData.userId || profileData.id}')">
+            <i class="fas fa-paper-plane"></i> Mensagem
+          </button>
+          <button class="lux-btn lux-btn-gift" onclick="openGiftModal('${profileData.userId || profileData.id}')">
+            <i class="fas fa-gift"></i> Presentear
+          </button>
+          <button class="lux-btn lux-btn-date" onclick="proposeDate('${profileData.userId || profileData.id}')">
+            <i class="fas fa-calendar-star"></i> Encontro
+          </button>
+          ${profileData.wishlistUrl ? `
+          <button class="lux-btn lux-btn-wishlist" onclick="window.open('${profileData.wishlistUrl}', '_blank')">
+            <i class="fas fa-heart"></i> Lista de Desejos
+          </button>` : ''}
+          <button class="lux-btn lux-btn-allowance" onclick="showAllowanceOptions('${profileData.userId || profileData.id}')">
+            <i class="fas fa-hand-holding-usd"></i> Apoio
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Atualizar o modal com o conteúdo completo
+    modal.innerHTML = `
+      <div class="lux-modal-content">
+        <span class="lux-modal-close">&times;</span>
+        ${modalContent}
+      </div>
+    `;
+// Adicionar evento de clique para o botão "Ver tudo"
+const viewAllBtn = modal.querySelector('.lux-view-all');
+if (viewAllBtn) {
+  viewAllBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    const profileUserId = profileData.userId || profileData.id;
+    
+    // Verificar se é o mesmo usuário logado
+    const currentUser = firebase.auth().currentUser;
+    const isOwnProfile = currentUser && currentUser.uid === profileUserId;
+    
+    // Armazenar em múltiplos lugares para redundância
+    const galleryData = {
+      creatorId: profileUserId,
+      viewerId: currentUser ? currentUser.uid : '',
+      isOwnGallery: isOwnProfile,
+      timestamp: Date.now()
+    };
+    
+    // 1. Session Storage (para navegação normal)
+    sessionStorage.setItem('galleryData', JSON.stringify(galleryData));
+    
+    // 2. Local Storage (como fallback)
+    localStorage.setItem('tempGalleryData', JSON.stringify(galleryData));
+    
+    // 3. URL Hash (para GitHub Codespaces)
+    const hash = `#gallery-${btoa(JSON.stringify(galleryData))}`;
+    
+    // Redirecionar com hash
+    window.location.href = `minhagaleriaCL.html${hash}`;
+  });
+}
+// Adicionar evento de clique para a galeria
+const galleryContainer = document.getElementById('galleryPreviewContainer');
+if (galleryContainer) {
+    galleryContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.lux-view-all') || e.target.closest('.lux-no-gallery')) {
+            return;
+        }
+        const profileUserId = profileData.userId || profileData.id;
+        redirectToGallery(profileUserId);
+    });
+    
+    galleryContainer.style.cursor = 'pointer';
+}
+      
+    
+
+    // Configurar eventos para fechar o modal
+    const closeModal = () => {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    };
+
+    modal.querySelector('.lux-modal-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => e.target === modal && closeModal());
+    
+    document.addEventListener('keydown', function handleEsc(e) {
+      if (e.key === 'Escape') closeModal();
+      document.removeEventListener('keydown', handleEsc);
+    });
+
+  } catch (error) {
+    console.error("Erro ao carregar perfil:", error);
+    modal.innerHTML = `
+      <div class="lux-modal-content">
+        <span class="lux-modal-close">&times;</span>
+        <div class="lux-modal-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>Erro ao carregar perfil. Tente novamente.</p>
+          <button class="lux-btn lux-btn-retry" onclick="openProfileModal(${JSON.stringify(profileData).replace(/"/g, '&quot;')})">
+            <i class="fas fa-sync-alt"></i> Tentar novamente
+          </button>
+        </div>
+      </div>
+    `;
+    
+    const closeModal = () => {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    };
+    
+    modal.querySelector('.lux-modal-close')?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => e.target === modal && closeModal());
+  }
+}
+
+// Atualize também a função redirectToGallery:
+window.redirectToGallery = async function(creatorId) {
+    try {
+        const currentUser = firebase.auth().currentUser;
+        const isOwnGallery = currentUser && currentUser.uid === creatorId;
+        
+        // Usar sessionStorage para evitar problemas com parâmetros
+        sessionStorage.setItem('galleryRedirectData', JSON.stringify({
+          creatorId: creatorId,
+          viewerId: currentUser ? currentUser.uid : '',
+          isOwnGallery: isOwnGallery,
+          timestamp: Date.now()
+        }));
+        
+        window.location.href = 'minhagaleriaCL.html';
+    } catch (error) {
+        console.error('Erro no redirecionamento:', error);
+        window.location.href = 'login.html';
+    }
+};
+
+// Função auxiliar para obter usuário autenticado
+async function getAuthenticatedUser() {
+  return new Promise((resolve, reject) => {
+    const unsubscribe = firebase.auth().onAuthStateChanged(user => {
+      unsubscribe();
+      resolve(user);
+    }, reject);
   });
 }
 
-function formatCurrency(value) {
-  return typeof value === 'number' ? 
-    value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 
-    value || 'R$ 0,00';
+async function getGalleryPreview(userId) {
+    try {
+        console.log(`Buscando galeria para o usuário: ${userId}`);
+        
+        const albumsRef = db.collection('users').doc(userId).collection('MinhaGaleria');
+        const albumsSnapshot = await albumsRef
+            .where('privacy', 'in', ['public', 'paid']) // Mostrar álbuns públicos ou pagos
+            .orderBy('createdAt', 'desc')
+            .limit(3)
+            .get();
+
+        if (albumsSnapshot.empty) {
+            console.log('Nenhum álbum encontrado');
+            return null;
+        }
+
+        let previewHtml = '';
+        const storage = firebase.storage();
+        
+        for (const albumDoc of albumsSnapshot.docs) {
+            const album = albumDoc.data();
+            console.log(`Processando álbum: ${album.name}`);
+            
+            // Tenta obter a URL da capa
+            let coverUrl = album.coverUrl;
+            
+            // Se não tiver capa, busca a primeira foto
+            if (!coverUrl) {
+                const firstPhoto = await albumDoc.ref.collection('photos')
+                    .orderBy('uploadedAt')
+                    .limit(1)
+                    .get();
+                    
+                if (!firstPhoto.empty) {
+                    coverUrl = firstPhoto.docs[0].data().url;
+                }
+            }
+            
+            // Fallback se não encontrar imagem
+            if (!coverUrl) {
+                coverUrl = 'https://via.placeholder.com/300x200?text=Sem+Imagem';
+            }
+
+            previewHtml += `
+                <div class="lux-album-preview" data-album-id="${albumDoc.id}">
+                    <div class="lux-album-cover">
+                        <img src="${coverUrl}" alt="${album.name}" loading="lazy">
+                        <div class="lux-album-overlay">
+                            <span class="lux-album-name">${album.name}</span>
+                            <span class="lux-album-count">${album.photosCount || 0} foto(s)</span>
+                            ${album.privacy === 'paid' ? `
+                            <span class="lux-album-premium">
+                                <i class="fas fa-crown"></i> Premium
+                            </span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        return previewHtml;
+    } catch (error) {
+        console.error("Erro ao buscar prévia da galeria:", error);
+        return null;
+    }
 }
+async function checkGalleryPermission(userId) {
+    // Implemente sua lógica de permissão aqui
+    // Por exemplo, verificar se é público, se o usuário pagou, etc.
+    return true; // Temporariamente retorna true para todos
+}
+
+
 
 async function loadUserPosts(userId) {
   const postsGrid = document.getElementById('userPostsGrid');
@@ -5502,7 +5732,7 @@ if (matchCountElement) matchCountElement.textContent = matchCount;
 
 document.addEventListener('DOMContentLoaded', function() {
     initProfile();
-
+setupGalleryNavigation();
 
   
   // Preview da imagem de perfil
@@ -6252,38 +6482,29 @@ async function fetchAvailableGifts() {
     return getDefaultGifts();
   }
 }
-// Carregar presentes
-async function loadGifts(category = 'all') {
-  const container = document.querySelector('#giftModal .lux-gifts-container');
-  container.innerHTML = '<div class="lux-gifts-loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
 
-  try {
-    const gifts = await fetchAvailableGifts();
-    luxuryGifts = gifts;
-    
-    const filteredGifts = category === 'all' 
-      ? gifts 
-      : gifts.filter(gift => gift.category === category);
+// Variável global para armazenar os presentes
 
-    displayGiftsInModal(filteredGifts);
-  } catch (error) {
-    console.error('Erro ao carregar presentes:', error);
-    container.innerHTML = '<div class="lux-no-gifts">Erro ao carregar presentes</div>';
-  }
-}
 
+// Função para exibir os presentes (atualizada)
 function displayGiftsInModal(gifts) {
-  const container = document.querySelector('#giftModal .lux-gifts-container');
+  const container = document.querySelector('#giftShopSection .lux-gifts-container');
   
-  if (gifts.length === 0) {
-    container.innerHTML = '<div class="lux-no-gifts">Nenhum presente nesta categoria</div>';
+  if (!gifts || gifts.length === 0) {
+    container.innerHTML = `
+      <div class="lux-no-gifts" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+        <i class="fas fa-gift" style="font-size: 40px; color: rgba(255,255,255,0.5);"></i>
+        <p style="color: rgba(255,255,255,0.5); margin-top: 15px;">Nenhum presente disponível nesta categoria</p>
+      </div>`;
     return;
   }
 
   container.innerHTML = gifts.map(gift => `
     <div class="lux-gift-card" data-id="${gift.id}">
-      <img src="${gift.image}" alt="${gift.name}" class="lux-gift-image" 
-           onerror="this.src='${defaultGiftImage}'">
+      <div class="lux-gift-image-container">
+        <img src="${gift.image}" alt="${gift.name}" class="lux-gift-image" 
+             onerror="this.src='${defaultGiftImage}'">
+      </div>
       <div class="lux-gift-info">
         <h3 class="lux-gift-name">${gift.name}</h3>
         <p class="lux-gift-price">${formatCurrency(gift.price)}</p>
@@ -6291,7 +6512,26 @@ function displayGiftsInModal(gifts) {
     </div>
   `).join('');
 
-  setupGiftCardEvents(); // Configura os eventos corretamente
+  setupShopGiftCards();
+}
+async function openGiftShop(userId) {
+  const modal = document.getElementById('giftModal');
+  if (!modal) {
+    console.error('Modal de presentes não encontrado');
+    return;
+  }
+
+  // Armazenar o ID do destinatário no modal
+  modal.dataset.recipientId = userId;
+  
+  // Mostrar modal
+  modal.style.display = 'block';
+  
+  // Carregar presentes
+  await loadGifts();
+  
+  // Configurar eventos
+  setupGiftModalEvents();
 }
 
 // Função para fechar todos os modais
@@ -6406,48 +6646,6 @@ function setupGiftCardEvents() {
 // Variáveis globais
 let selectedGiftForSending = null;
 
-// Função para abrir o modal de envio de presentes
-function openGiftModal(userId) {
-  selectedUserId = userId;
-  const modal = document.getElementById('giftModal');
-  
-  // Esconde outros modais
-  document.getElementById('giftActionsModal').style.display = 'none';
-  
-  // Configura o modal
-  document.querySelectorAll('.lux-gift-category').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  document.querySelector('.lux-gift-category[data-category="all"]').classList.add('active');
-  
-  // Abre o modal principal
-  modal.style.display = 'block';
-  document.body.style.overflow = 'hidden';
-  
-  // Carrega os presentes
-  loadGifts();
-  
-  // Configura eventos específicos
-  setupGiftModalEvents();
-}
-
-// Adicione esta função para configurar todos os eventos do modal
-function setupGiftModalEvents() {
-  // Botão de envio personalizado
-  const confirmBtn = document.getElementById('confirmCustomSend');
-  if (confirmBtn) {
-    confirmBtn.addEventListener('click', sendCustomizedGift);
-  } else {
-    console.error('Botão confirmCustomSend não encontrado!');
-  }
-
-  // Botão voltar
-  document.getElementById('backToMain')?.addEventListener('click', () => {
-    document.getElementById('customizeSection').style.display = 'none';
-    document.querySelector('.lux-gift-actions').style.display = 'flex';
-  });
-}
-
 // Função modificada para exibir ações do presente
 function setupGiftCardEvents() {
   document.querySelectorAll('.lux-gift-card').forEach(card => {
@@ -6465,68 +6663,8 @@ function setupGiftCardEvents() {
     });
   });
 }
-function showGiftActions(gift) {
-  // 1. Armazena o presente selecionado
-  selectedGift = gift;
-  
-  // 2. Preenche os dados no modal
-  const nameElement = document.getElementById('selectedGiftName');
-  const imageElement = document.getElementById('selectedGiftImage');
-  const priceElement = document.getElementById('selectedGiftPrice');
-  
-  if (!nameElement || !imageElement || !priceElement) {
-    console.error('Elementos do modal não encontrados!');
-    return;
-  }
-  
-  nameElement.textContent = gift.name;
-  imageElement.src = gift.image;
-  priceElement.textContent = formatCurrency(gift.price);
-  
-  // 3. Configura o botão de envio direto - VERSÃO CORRIGIDA
-  const sendDirectBtn = document.querySelector('.lux-action-send');
-  
-  if (sendDirectBtn) {
-    // Remove eventos anteriores para evitar duplicação
-    sendDirectBtn.onclick = null;
-    
-    // Adiciona novo evento
-    sendDirectBtn.onclick = async () => {
-      console.log('Botão Enviar Direto clicado');
-      
-      if (!selectedUserId) {
-        showToast('Selecione um destinatário primeiro', 'error');
-        console.error('Nenhum selectedUserId definido');
-        return;
-      }
-      
-      try {
-        showLoading('Enviando presente...');
-        console.log('Enviando presente para:', selectedUserId);
-        
-        await sendGiftToUser(selectedUserId, selectedGift);
-        
-        showToast('Presente enviado com sucesso!', 'success');
-        closeGiftActionsModal();
-      } catch (error) {
-        console.error('Erro no envio:', error);
-        showToast(`Erro: ${error.message}`, 'error');
-      } finally {
-        hideLoading();
-      }
-    };
-  } else {
-    console.error('Botão de envio direto não encontrado!');
-  }
-  
-  // 4. Mostra o modal
-  const actionsModal = document.getElementById('giftActionsModal');
-  if (actionsModal) {
-    actionsModal.style.display = 'block';
-  } else {
-    console.error('Modal de ações não encontrado!');
-  }
-}
+
+
 
 function selectUser(userElement) {
   // Remove seleção anterior
@@ -6577,86 +6715,6 @@ async function sendScheduledGift(userId, gift) {
   }
 }
 
-// Esta função deve rodar no servidor (Cloud Functions) ou em um worker
-async function processScheduledGifts() {
-  const now = new Date().toISOString();
-  const snapshot = await firebase.firestore()
-    .collection('scheduledGifts')
-    .where('deliveryDate', '<=', now)
-    .where('status', '==', 'scheduled')
-    .get();
-
-  const batch = firebase.firestore().batch();
-  
-  snapshot.forEach(doc => {
-    const gift = doc.data();
-    
-    // Cria a transação final
-    const transactionRef = firebase.firestore().collection('transactions').doc();
-    const giftData = {
-      ...gift,
-      giftId: `gift_${transactionRef.id}`,
-      transactionId: transactionRef.id,
-      status: 'delivered',
-      deliveredAt: now,
-      scheduled: false
-    };
-
-    // Adiciona à coleção de transações
-    batch.set(transactionRef, giftData);
-    
-    // Atualiza o usuário receptor
-    const receiverRef = firebase.firestore().collection('users').doc(gift.toUserId);
-    batch.update(receiverRef, {
-      'gifts.received': firebase.firestore.FieldValue.arrayUnion(giftData)
-    });
-
-    // Atualiza o status do agendamento
-    batch.update(doc.ref, { status: 'processed' });
-  });
-
-  await batch.commit();
-}
-
-async function loadAdditionalGifts() {
-  const select = document.getElementById('additionalGifts');
-  
-  try {
-    // Busca os presentes disponíveis
-    const querySnapshot = await firebase.firestore().collection('gifts').get();
-    
-    // Filtra para não mostrar o presente já selecionado
-    const gifts = querySnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(gift => gift.id !== selectedGift.id);
-    
-    // Preenche o dropdown
-    select.innerHTML = '<option value="">Nenhum presente extra</option>';
-    
-    gifts.forEach(gift => {
-      const option = document.createElement('option');
-      option.value = gift.id;
-      option.textContent = `${gift.name} (${formatCurrency(gift.price)})`;
-      option.dataset.image = gift.image;
-      select.appendChild(option);
-    });
-    
-    // Mostra preview ao selecionar
-    select.addEventListener('change', function() {
-      const preview = document.getElementById('additionalGiftPreview');
-      if (this.value) {
-        preview.src = this.options[this.selectedIndex].dataset.image;
-        preview.style.display = 'block';
-      } else {
-        preview.style.display = 'none';
-      }
-    });
-    
-  } catch (error) {
-    console.error("Erro ao carregar presentes:", error);
-    select.innerHTML = '<option value="">Erro ao carregar opções</option>';
-  }
-}
 async function sendCustomizedGift() {
   // Verificação básica
   if (!selectedUserId || !selectedGift) {
@@ -6762,34 +6820,33 @@ function closeGiftActionsModal() {
   document.getElementById('giftActionsModal').style.display = 'none';
 }
 
-
 async function sendGiftToUser(userId, gift) {
   try {
-     const currentUser = firebase.auth().currentUser;
+    const currentUser = firebase.auth().currentUser;
     if (!currentUser) throw new Error('Usuário não autenticado');
 
     showLoading('Enviando presente...');
-      const userDoc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
+    
+    // 1. Obter informações dos usuários
+    const [receiverDoc, userDoc] = await Promise.all([
+      db.collection('users').doc(userId).get(),
+      db.collection('users').doc(currentUser.uid).get()
+    ]);
+    
+    const receiverName = receiverDoc.data()?.name || 'Usuário';
     const userName = userDoc.data()?.name || 'Anônimo';
 
-    if (!currentUser) {
-      showToast('Faça login para enviar presentes', 'error');
-      return;
-    }
-
-    // Verifica saldo (se aplicável)
+    // 2. Verificar saldo (se aplicável)
     if (gift.price > 0) {
-      const userDoc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
       const balance = userDoc.data()?.balance || 0;
-      
       if (balance < gift.price) {
         showToast('Saldo insuficiente para enviar este presente', 'error');
         return;
       }
     }
 
-    // Cria a transação
-    const transactionRef = firebase.firestore().collection('transactions').doc();
+    // 3. Criar documento na coleção CORRETA (giftTransactions)
+    const transactionRef = db.collection('giftTransactions').doc();
     const giftData = {
       giftId: `gift_${transactionRef.id}`,
       transactionId: transactionRef.id,
@@ -6798,54 +6855,132 @@ async function sendGiftToUser(userId, gift) {
       image: gift.image,
       category: gift.category,
       date: new Date().toISOString(),
-      status: 'completed',
-      type: 'received',
+      status: 'pending', // Alterado para pending (será accepted quando recebido)
+      type: 'sent', // Tipo diferente para envio
       fromUserId: currentUser.uid,
-      fromUserName: userName, // Adiciona o nome aqui
-
-      toUserId: userId
+      fromUserName: userName,
+      toUserId: userId,
+      toUserName: receiverName,
+      viewed: false
     };
 
-    // Batch write para atomicidade
-    const batch = firebase.firestore().batch();
+    // 4. Executar todas as operações em batch
+    const batch = db.batch();
     
-    // 1. Adiciona à coleção de transações
+    // a) Adicionar à coleção principal
     batch.set(transactionRef, giftData);
     
-    // 2. Atualiza o usuário receptor
-    const receiverRef = firebase.firestore().collection('users').doc(userId);
-    batch.update(receiverRef, {
-      'gifts.received': firebase.firestore.FieldValue.arrayUnion(giftData)
+    // b) Atualizar usuário remetente
+    batch.update(db.collection('users').doc(currentUser.uid), {
+      'gifts.sent': firebase.firestore.FieldValue.arrayUnion({
+        ...giftData,
+        status: 'sent' // Mantém como sent no histórico do usuário
+      }),
+      ...(gift.price > 0 && { 
+        balance: firebase.firestore.FieldValue.increment(-gift.price) 
+      })
     });
-    
-    // 3. Atualiza o usuário remetente (se for presente pago)
-    if (gift.price > 0) {
-      const senderRef = firebase.firestore().collection('users').doc(currentUser.uid);
-      batch.update(senderRef, {
-        'gifts.sent': firebase.firestore.FieldValue.arrayUnion(giftData),
-        'balance': firebase.firestore.FieldValue.increment(-gift.price)
-      });
-    }
-    
-    await batch.commit();
 
-    showToast(`Presente enviado com sucesso!`, 'success');
-    closeGiftActionsModal();
-    closeGiftModal();
+    // c) Atualizar usuário destinatário
+    batch.update(db.collection('users').doc(userId), {
+      'gifts.received': firebase.firestore.FieldValue.arrayUnion({
+        ...giftData,
+        status: 'pending' // Status diferente para o receptor
+      })
+    });
+
+    await batch.commit();
     
-    // Atualiza o saldo na UI (se for presente pago)
+    // 5. Mostrar confirmação e atualizar UI
+    await showGratitudeScreen(gift, receiverName);
+    showToast(`Presente enviado com sucesso para ${receiverName}!`, 'success');
+    
+    // 6. Atualizar a lista de presentes enviados
+    await loadSentGifts();
+    
     if (gift.price > 0) {
       await updateUserBalanceUI();
     }
 
   } catch (error) {
     console.error('Erro ao enviar presente:', error);
-    showToast(`Erro: ${error.message}`, 'error');
+    showToast(`Erro ao enviar: ${error.message}`, 'error');
   } finally {
     hideLoading();
   }
 }
 
+async function showGratitudeScreen(gift, receiverName) {
+  try {
+    console.log('[showGratitudeScreen] Exibindo tela para:', receiverName);
+    
+    const currentUser = firebase.auth().currentUser;
+    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+    const userName = userDoc.data()?.name || 'Prezado(a) Cliente';
+
+    await Swal.fire({
+      title: '✨ Presente Enviado com Sucesso!',
+      html: `
+        <div style="text-align: center; max-width: 600px; margin: 0 auto;">
+          <div style="
+            height: 150px;
+            background-image: url('${gift.image || 'https://example.com/default-gift.jpg'}');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            margin: 20px 0;
+          "></div>
+          
+          <h3 style="color: #d4af37; margin-bottom: 20px;">${userName}, seu gesto foi registrado</h3>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            O presente <strong>${gift.name}</strong> foi enviado com sucesso para 
+            <strong>${receiverName}</strong>.
+          </p>
+          
+          <div style="
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #d4af37, transparent);
+            margin: 25px 0;
+          "></div>
+          
+          <div style="
+            background: rgba(212, 175, 55, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+          ">
+            <h4 style="color: #d4af37; margin-top: 0;">Próximos Passos:</h4>
+            <ul style="padding-left: 20px;">
+              <li>Você receberá uma notificação quando o presente for aceito</li>
+              <li>Nosso serviço de concierge poderá auxiliar no agendamento</li>
+              <li>Acompanhe o status na seção "Meus Presentes"</li>
+            </ul>
+          </div>
+        </div>
+      `,
+      width: 700,
+      background: '#1a1a1a',
+      color: '#ffffff',
+      showConfirmButton: true,
+      confirmButtonText: 'Voltar à Seleção Exclusiva',
+      confirmButtonColor: '#d4af37',
+      backdrop: `
+        rgba(0,0,0,0.7)
+        url("https://media.giphy.com/media/XEZE9JYPwaXIsXkX0Q/giphy.gif")
+        center top
+        no-repeat
+      `
+    });
+    
+    console.log('[showGratitudeScreen] Tela exibida com sucesso');
+  } catch (error) {
+    console.error('[showGratitudeScreen] Erro:', error);
+    // Fallback caso ocorra erro no SweetAlert
+    showToast('Presente enviado com sucesso!', 'success');
+  }
+}
 // Função para atualizar o saldo do usuário
 async function updateUserBalanceUI() {
   const balanceElement = document.querySelector('.user-balance');
@@ -6961,12 +7096,7 @@ async function checkUserBalance(giftPrice) {
   return balance >= giftPrice;
 }
 
-function formatCurrency(value) {
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-}
+
 /**
  * Função de serviço para enviar presente ao Firestore
  * Retorna { success: boolean, message?: string }
@@ -7025,15 +7155,6 @@ async function sendGiftToFirestore(senderId, receiverId, giftData) {
 
 
 
-
-function setupGiftEventListeners() {
-  // Remove listeners antigos para evitar duplicação
-  const sendBtn = document.querySelector('.lux-action-send');
-  if (sendBtn) {
-    sendBtn.replaceWith(sendBtn.cloneNode(true));
-    document.querySelector('.lux-action-send').addEventListener('click', handleSendGift);
-  }
-}
 
 // Função principal para enviar presentes
 async function handleSendGift() {
@@ -7223,51 +7344,152 @@ async function cleanDuplicateGifts() {
 }
 let isSendingGift = false;
 
-
-async function sendGift() {
-  if (isSendingGift) return;
-  isSendingGift = true;
-
+async function sendGift(giftId, direct = false) {
   try {
-    showLoading('Enviando presente...');
+    // Debug inicial
+    console.log('[sendGift] Iniciando processo, giftId:', giftId, 'direct:', direct);
     
+    // Verificar autenticação
     const currentUser = firebase.auth().currentUser;
-    if (!currentUser) throw new Error('Usuário não autenticado');
-    if (!selectedGift || !selectedUserId) throw new Error('Selecione um presente e destinatário');
+    if (!currentUser) {
+      showToast('Faça login para enviar presentes', 'error');
+      console.log('[sendGift] Usuário não autenticado');
+      return;
+    }
 
-    // Gera IDs únicos consistentes
-    const transactionId = firebase.firestore().collection('transactions').doc().id;
-    const giftId = `gift_${transactionId}`;
-    const timestamp = new Date().toISOString();
+    // Obter dados do presente com tratamento de erro
+    console.log('[sendGift] Buscando presente no Firestore, ID:', giftId);
+    const giftDoc = await db.collection('gifts').doc(giftId).get();
+    
+    if (!giftDoc.exists) {
+      console.error('[sendGift] Presente não encontrado. ID:', giftId);
+      
+      // Debug adicional - listar alguns presentes existentes
+      const sampleGifts = await db.collection('gifts').limit(3).get();
+      console.log('[sendGift] Exemplos de IDs existentes:', 
+        sampleGifts.docs.map(doc => doc.id));
+      
+      showToast('Presente não encontrado', 'error');
+      return;
+    }
 
-    // Objeto de presente padronizado
-    const giftData = {
-      transactionId,
-      giftId, // Usando SEMPRE giftId (nunca id)
-      name: selectedGift.name,
-      price: selectedGift.price,
-      image: selectedGift.image,
-      category: selectedGift.category,
-      date: timestamp,
-      status: 'pending',
-      type: 'received', // Será sobrescrito conforme necessário
-      fromUserId: currentUser.uid // Será removido do remetente
+    const gift = {
+      id: giftDoc.id,
+      ...giftDoc.data()
     };
+    console.log('[sendGift] Presente encontrado:', gift);
 
- 
+    // Envio direto com pesquisa de usuário
+    if (direct) {
+      console.log('[sendGift] Modo envio direto ativado');
+      
+      // Passo 1: Pesquisar usuário
+      const { value: searchTerm } = await Swal.fire({
+        title: 'Enviar presente diretamente',
+        input: 'text',
+        inputLabel: 'Digite o nome do usuário',
+        inputPlaceholder: 'Nome do destinatário...',
+        showCancelButton: true,
+        inputValidator: (value) => {
+          if (!value) return 'Digite um nome para pesquisar!';
+          if (value.length < 3) return 'Mínimo 3 caracteres';
+        }
+      });
 
-    showToast('Presente enviado com sucesso!', 'success');
-    closeModal('giftActionsModal');
-    closeModal('giftModal');
+      if (!searchTerm) {
+        console.log('[sendGift] Pesquisa cancelada pelo usuário');
+        return;
+      }
+
+      // Passo 2: Buscar usuários no Firestore
+      console.log('[sendGift] Buscando usuários com termo:', searchTerm);
+      showLoading('Buscando usuários...');
+      
+      const usersSnapshot = await db.collection('users')
+        .where('name', '>=', searchTerm)
+        .where('name', '<=', searchTerm + '\uf8ff')
+        .limit(10)
+        .get();
+
+      hideLoading();
+
+      if (usersSnapshot.empty) {
+        console.log('[sendGift] Nenhum usuário encontrado para:', searchTerm);
+        await Swal.fire('Nenhum resultado', 'Não encontramos usuários com esse nome', 'info');
+        return;
+      }
+
+      // Passo 3: Selecionar usuário
+      console.log('[sendGift] Usuários encontrados:', usersSnapshot.size);
+      const usersOptions = usersSnapshot.docs.map(doc => {
+        const user = doc.data();
+        return `<option value="${doc.id}">${user.name} (${user.email || 'Sem email'})</option>`;
+      });
+
+      const { value: selectedUserId } = await Swal.fire({
+        title: 'Selecione o destinatário',
+        html: `
+          <div style="margin: 15px 0;">
+            <select id="userSelect" class="swal2-select" style="width: 100%; padding: 8px;">
+              ${usersOptions.join('')}
+            </select>
+          </div>
+          <p>Presente selecionado: <b>${gift.name}</b></p>
+          ${gift.price > 0 ? `<p>Valor: ${formatCurrency(gift.price)}</p>` : ''}
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Selecionar',
+        preConfirm: () => document.getElementById('userSelect').value
+      });
+
+      if (!selectedUserId) {
+        console.log('[sendGift] Seleção cancelada pelo usuário');
+        return;
+      }
+
+      // Passo 4: Confirmar envio
+      console.log('[sendGift] Usuário selecionado:', selectedUserId);
+      const confirmation = await Swal.fire({
+        title: 'Confirmar envio?',
+        html: `
+          <div style="text-align: left;">
+            <p>Você está enviando:</p>
+            <p><b>${gift.name}</b></p>
+            ${gift.image ? `<img src="${gift.image}" style="max-width: 100px; max-height: 100px; margin: 10px 0;">` : ''}
+            <p>Para: <b>${usersSnapshot.docs.find(d => d.id === selectedUserId).data().name}</b></p>
+            ${gift.price > 0 ? `<p>Valor: <b>${formatCurrency(gift.price)}</b></p>` : ''}
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar Envio',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (confirmation.isConfirmed) {
+        console.log('[sendGift] Confirmado, enviando presente...');
+        await sendGiftToUser(selectedUserId, gift);
+            await showGratitudeScreen(gift, receiverName);
+
+      }
+    } else {
+      // Lógica para envio não-direto (se necessário)
+      console.log('[sendGift] Envio padrão não implementado');
+      showToast('Método de envio não disponível', 'info');
+    }
   } catch (error) {
-    console.error('Erro no envio:', error);
-    showToast(error.message || 'Erro ao enviar presente', 'error');
-  } finally {
-    isSendingGift = false;
-    hideLoading();
+    console.error('[sendGift] Erro completo:', error);
+    showToast(`Erro: ${error.message}`, 'error');
   }
 }
 
+// Função auxiliar para formatar moeda
+function formatCurrency(value) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value || 0);
+}
 
 async function saveGiftsSeparately(senderId, receiverId, sentGift, receivedGift) {
   const db = firebase.firestore();
@@ -7423,24 +7645,21 @@ function closeAllModals() {
   document.body.style.overflow = 'auto';
 }
 
-// Função para mostrar loading
+// Funções auxiliares (já existentes no seu código)
 function showLoading(message) {
-  const loadingDiv = document.createElement('div');
-  loadingDiv.id = 'lux-loading-overlay';
-  loadingDiv.innerHTML = `
-    <div class="lux-loading-content">
-      <i class="fas fa-spinner fa-spin"></i>
-      <p>${message}</p>
-    </div>
-  `;
-  document.body.appendChild(loadingDiv);
+  Swal.fire({
+    title: message,
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 }
 
-// Função para esconder loading
 function hideLoading() {
-  const loading = document.getElementById('lux-loading-overlay');
-  if (loading) loading.remove();
+  Swal.close();
 }
+
 
 function closeAllGiftModals() {
   document.querySelectorAll('.gift-modal').forEach(modal => {
@@ -7663,20 +7882,125 @@ function hideLoading() {
 }
 
 // Mostrar toast notification
-function showToast(message, type = 'success') {
-  const toast = document.createElement('div');
-  toast.className = `lux-toast lux-toast-${type}`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
+async function sendGift(giftId, direct = false) {
+  try {
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) {
+      showToast('Faça login para enviar presentes', 'error');
+      return;
+    }
+
+    // Obter dados do presente
+    const giftDoc = await db.collection('gifts').doc(giftId).get();
+    if (!giftDoc.exists) {
+      showToast('Presente não encontrado', 'error');
+      return;
+    }
+    const gift = giftDoc.data();
+
+    if (direct) {
+      // Implementação da pesquisa de usuário
+      const { value: searchTerm } = await Swal.fire({
+        title: 'Enviar presente diretamente',
+        input: 'text',
+        inputLabel: 'Digite o nome do usuário',
+        inputPlaceholder: 'Nome do destinatário...',
+        showCancelButton: true,
+        inputValidator: (value) => {
+          if (!value) {
+            return 'Você precisa digitar um nome!';
+          }
+        }
+      });
+
+      if (searchTerm) {
+        // Busca usuários
+        const usersSnapshot = await db.collection('users')
+          .where('name', '>=', searchTerm)
+          .where('name', '<=', searchTerm + '\uf8ff')
+          .limit(10)
+          .get();
+
+        if (usersSnapshot.empty) {
+          Swal.fire('Nenhum usuário encontrado', 'Tente outro nome', 'info');
+          return;
+        }
+
+        // Preparar opções
+        const usersOptions = usersSnapshot.docs.map(doc => {
+          const user = doc.data();
+          return `<option value="${doc.id}">${user.name} (${user.email || 'Sem email'})</option>`;
+        });
+
+        // Selecionar usuário
+        const { value: selectedUserId } = await Swal.fire({
+          title: 'Selecione o destinatário',
+          html: `<select id="userSelect" class="swal2-select">
+            ${usersOptions.join('')}
+          </select>`,
+          focusConfirm: false,
+          preConfirm: () => {
+            return document.getElementById('userSelect').value;
+          }
+        });
+
+        if (selectedUserId) {
+          // Confirmar envio
+          const confirmation = await Swal.fire({
+            title: 'Confirmar envio?',
+            html: `Você está enviando <b>${gift.name}</b> para o usuário selecionado`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Confirmar envio'
+          });
+
+          if (confirmation.isConfirmed) {
+            await sendGiftToUser(selectedUserId, gift);
+          }
+        }
+      }
+    } else {
+      // Lógica para envio não-direto (se aplicável)
+      // ...
+    }
+  } catch (error) {
+    console.error('Erro ao enviar presente:', error);
+    showToast(`Erro: ${error.message}`, 'error');
+  }
+}
+
+// Funções auxiliares (já existentes no seu código)
+function showLoading(message) {
+  Swal.fire({
+    title: message,
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+}
+
+function hideLoading() {
+  Swal.close();
+}
+
+function showToast(message, type) {
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
   
-  setTimeout(() => {
-    toast.classList.add('lux-toast-show');
-  }, 10);
-  
-  setTimeout(() => {
-    toast.classList.remove('lux-toast-show');
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  Toast.fire({
+    icon: type,
+    title: message
+  });
 }
 async function addToWishlist(userId, giftData) {
   try {
@@ -7753,25 +8077,85 @@ giftShopBtn.addEventListener('click', openGiftShop);
 
 // Variável global para os presentes
 let shopGifts = [];
-
-// Função principal para abrir a loja
-function openGiftShop() {
-  console.log("Abrindo loja de presentes...");
+// Função para criar o menu de contexto dinamicamente
+function createContextMenu(giftId) {
+  const menu = document.createElement('div');
+  menu.className = 'gift-context-menu';
+  menu.id = `menu-${giftId}`;
   
-  // Mostra a seção
-  const giftShopSection = document.getElementById('giftShopSection');
-  giftShopSection.classList.remove('hidden');
+  // Botões de ação
+  const actions = [
+    { action: 'send', text: 'Enviar presente' },
+    { action: 'customize', text: 'Personalizar' },
+    { action: 'details', text: 'Detalhes' }
+  ];
   
-  // Carrega os presentes
-  loadShopGifts();
+  actions.forEach(item => {
+    const button = document.createElement('button');
+    button.textContent = item.text;
+    button.setAttribute('data-action', item.action);
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleGiftAction(item.action, giftId);
+    });
+    menu.appendChild(button);
+  });
   
-  // Configura o botão de fechar
-  document.querySelector('.lux-close-shop').onclick = closeGiftShop;
+  return menu;
 }
 
-// Função para fechar a loja
-function closeGiftShop() {
-  document.getElementById('giftShopSection').classList.add('hidden');
+// Configura os eventos dos cartões (versão atualizada)
+function setupShopGiftCards() {
+  // Remove event listeners antigos para evitar duplicação
+  document.removeEventListener('click', handleDocumentClick);
+  document.querySelectorAll('.lux-gift-card').forEach(card => {
+    card.removeEventListener('click', handleCardClick);
+  });
+
+  // Fecha menus ao clicar em qualquer lugar
+  document.addEventListener('click', handleDocumentClick);
+
+  // Configura os eventos para cada card
+  document.querySelectorAll('.lux-gift-card').forEach(card => {
+    card.addEventListener('click', handleCardClick);
+  });
+}
+
+function handleDocumentClick(e) {
+  if (!e.target.closest('.lux-gift-card') && !e.target.closest('.gift-context-menu')) {
+    document.querySelectorAll('.gift-context-menu').forEach(menu => {
+      menu.remove(); // Remove os menus em vez de apenas esconder
+    });
+  }
+}
+
+function handleCardClick(e) {
+  const card = e.currentTarget;
+  const giftId = card.getAttribute('data-id');
+  
+  // Impede a abertura se clicar em um botão de ação
+  if (e.target.hasAttribute('data-action')) return;
+  
+  // Remove outros menus abertos
+  document.querySelectorAll('.gift-context-menu').forEach(menu => {
+    menu.remove();
+  });
+  
+  // Cria e posiciona o novo menu
+  const menu = createContextMenu(giftId);
+  card.appendChild(menu);
+  
+  // Posiciona o menu corretamente (opcional)
+  positionMenu(menu, card);
+}
+
+// Função auxiliar para posicionar o menu (opcional)
+function positionMenu(menu, card) {
+  const cardRect = card.getBoundingClientRect();
+  menu.style.position = 'absolute';
+  menu.style.top = `${cardRect.height}px`;
+  menu.style.left = '50%';
+  menu.style.transform = 'translateX(-50%)';
 }
 
 // Carrega os presentes da loja
@@ -7847,21 +8231,6 @@ function displayShopGifts(gifts) {
   // Configura os eventos de clique
   setupShopGiftCards();
 }
-
-// Configura os eventos dos cartões
-function setupShopGiftCards() {
-  document.querySelectorAll('#giftShopSection .lux-gift-card').forEach(card => {
-    card.addEventListener('click', function() {
-      const giftId = this.getAttribute('data-id');
-      const selectedGift = shopGifts.find(g => g.id === giftId);
-      
-      if (selectedGift) {
-        showGiftActions(selectedGift);
-      }
-    });
-  });
-}
-
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
   // Configura o botão da loja
@@ -8079,18 +8448,35 @@ function launchConfetti() {
   fire(0.1, { angle: 135, spread: 120, startVelocity: 45 });
 }
 // Função para atualizar o badge
-function updateGiftBadge() {
-  const badge = document.getElementById('gift-badge');
-  const unviewedGifts = userGifts.filter(gift => !gift.viewed).length;
-  
-  if (unviewedGifts > 0) {
-    badge.textContent = unviewedGifts;
-    badge.style.display = 'flex';
-    
-    // Adiciona animação
-    badge.classList.add('pulse');
-  } else {
-    badge.style.display = 'none';
+// Formatar data
+function formatDate(dateString) {
+  const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+  return new Date(dateString).toLocaleDateString('pt-BR', options);
+}
+
+// Notificar o remetente
+async function notifySender(senderId, giftId) {
+  try {
+    const senderRef = firebase.firestore().collection('users').doc(senderId);
+    await senderRef.update({
+      notifications: firebase.firestore.FieldValue.arrayUnion({
+        type: 'gift-accepted',
+        giftId,
+        date: new Date().toISOString(),
+        read: false
+      })
+    });
+  } catch (error) {
+    console.error('Erro ao notificar remetente:', error);
+  }
+}
+
+// Atualizar badge de novos presentes
+function updateGiftBadge(unviewedCount) {
+  const badge = document.querySelector('.gifts-badge');
+  if (badge) {
+    badge.textContent = unviewedCount > 0 ? unviewedCount : '';
+    badge.style.display = unviewedCount > 0 ? 'flex' : 'none';
   }
 }
 
@@ -8107,32 +8493,6 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
-
-function createGiftElement(gift) {
-  const giftElement = document.createElement('div');
-  giftElement.className = 'gift-item';
-  
-  giftElement.innerHTML = `
-    <div class="gift-header">
-      <img src="${gift.senderPhoto || defaultAvatar}" 
-           class="gift-sender-avatar" 
-           alt="Remetente"
-           onerror="this.src='${defaultAvatar}'">
-      <span class="gift-sender-name">De: ${gift.senderName || 'Usuário'}</span>
-    </div>
-    <div class="gift-body">
-      <h4 class="gift-title">${gift.title || 'Presente'}</h4>
-      ${gift.imageUrl ? `<img src="${gift.imageUrl}" class="gift-image" onerror="this.style.display='none'">` : ''}
-      <p class="gift-message">${gift.message || ''}</p>
-    </div>
-    <div class="gift-footer">
-      <span class="gift-date">${formatGiftDate(gift.sentAt)}</span>
-      <button class="gift-action-btn" data-gift-id="${gift.id}">Aceitar</button>
-    </div>
-  `;
-
-  return giftElement;
-}
 
 function formatGiftDate(timestamp) {
   if (!timestamp?.toDate) return '';
@@ -8206,42 +8566,404 @@ function toggleGiftsSection() {
 
 // Configura o clique no ícone
 document.querySelector('.gift-icon').addEventListener('click', toggleGiftsSection);
-// Função principal para carregar presentes
+
+
 async function loadUserGifts() {
   const user = firebase.auth().currentUser;
   if (!user) return;
 
   try {
+    showLoading('Carregando seus presentes exclusivos...');
     const userRef = firebase.firestore().collection('users').doc(user.uid);
     const userDoc = await userRef.get();
     
     if (userDoc.exists) {
-      userGifts = userDoc.data()?.gifts?.received || [];
+      const giftsData = userDoc.data()?.gifts || {};
+      const receivedGifts = giftsData.received || [];
       
-      // Marca presentes como visualizados
-      if (userGifts.some(gift => !gift.viewed)) {
-        const batch = firebase.firestore().batch();
-        const updatedGifts = userGifts.map(gift => ({
-          ...gift,
-          viewed: true
-        }));
-        
-        batch.update(userRef, {
+      // Atualizar status não visualizados
+      const updatedGifts = receivedGifts.map(gift => ({
+        ...gift,
+        viewed: gift.viewed || false,
+        accepted: gift.accepted || false,
+        acceptedDate: gift.acceptedDate || null
+      }));
+      
+      // Atualizar no Firestore se houver mudanças
+      if (JSON.stringify(receivedGifts) !== JSON.stringify(updatedGifts)) {
+        await userRef.update({
           'gifts.received': updatedGifts
         });
-        
-        await batch.commit();
-        userGifts = updatedGifts;
       }
       
-      updateGiftBadge();
-      updateGiftsUI(userGifts); // Passa os presentes para a função de atualização da UI
+      updateGiftBadge(updatedGifts.filter(g => !g.viewed).length);
+      renderGiftsUI(updatedGifts);
     }
   } catch (error) {
     console.error('Erro ao carregar presentes:', error);
+    showToast('Erro ao carregar seus presentes', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+function renderGiftsUI(gifts) {
+  const container = document.querySelector('.gifts-container');
+  if (!gifts.length) {
+    container.innerHTML = `
+      <div class="no-gifts">
+        <i class="fas fa-gift"></i>
+        <p>Nenhum presente recebido ainda</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Calcular totais
+  const acceptedGifts = gifts.filter(g => g.status === 'accepted');
+  const totalValue = acceptedGifts.reduce((sum, gift) => sum + (gift.price || 0), 0);
+  
+  document.querySelector('.total-gifts').textContent = `${gifts.length} ${gifts.length === 1 ? 'presente' : 'presentes'}`;
+  document.querySelector('.total-value').textContent = `Total: ${formatCurrency(totalValue)}`;
+
+  // Renderizar cada presente
+  container.innerHTML = gifts.map(gift => `
+    <div class="gift-item ${gift.status}" data-gift-id="${gift.giftId}">
+      <div class="gift-image-container">
+        <div class="gift-image" style="background-image: url('${gift.image || 'default-gift.jpg'}')"></div>
+        ${!gift.viewed ? '<div class="new-badge">Novo</div>' : ''}
+      </div>
+      
+      <div class="gift-details">
+        <h3>${gift.name}</h3>
+        <p class="gift-from">De: ${gift.fromUserName || 'Anônimo'}</p>
+        ${gift.price ? `<p class="gift-price">${formatCurrency(gift.price)}</p>` : ''}
+        <p class="gift-date">Recebido em: ${formatDate(gift.date)}</p>
+        
+        <div class="gift-actions">
+          ${gift.status === 'pending' ? `
+            <button class="btn-accept-gift" data-gift-id="${gift.giftId}">
+              <i class="fas fa-check-circle"></i> Aceitar Presente
+            </button>
+            <button class="btn-decline-gift" data-gift-id="${gift.giftId}">
+              <i class="fas fa-times-circle"></i> Recusar
+            </button>
+          ` : gift.status === 'accepted' ? `
+            <div class="accepted-info">
+              <div class="accepted-badge">
+                <i class="fas fa-check"></i> Aceito em ${formatDate(gift.acceptedDate)}
+              </div>
+              ${gift.thankYouNote ? `
+                <div class="thank-you-note">
+                  <p><strong>Agradecimento:</strong> ${gift.thankYouNote}</p>
+                  ${gift.thankYouImage ? `
+                    <div class="thank-you-image">
+                      <img src="${gift.thankYouImage}" alt="Imagem de agradecimento">
+                    </div>
+                  ` : ''}
+                </div>
+              ` : `
+                <button class="btn-thank-you" data-gift-id="${gift.giftId}">
+                  <i class="fas fa-heart"></i> Enviar Agradecimento
+                </button>
+              `}
+            </div>
+          ` : `
+            <div class="declined-info">
+              <div class="declined-badge">
+                <i class="fas fa-times"></i> Recusado
+              </div>
+              ${gift.declineMessage ? `
+                <div class="decline-message">
+                  <p><strong>Mensagem:</strong> ${gift.declineMessage}</p>
+                </div>
+              ` : ''}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Adicionar event listeners
+  setupGiftEventListeners();
+}
+
+function setupGiftEventListeners() {
+  // Aceitar presente
+  document.querySelectorAll('.btn-accept-gift').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const giftId = e.currentTarget.dataset.giftId;
+      await handleGiftAction(giftId, 'accept');
+    });
+  });
+
+  // Recusar presente
+  document.querySelectorAll('.btn-decline-gift').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const giftId = e.currentTarget.dataset.giftId;
+      await showDeclineModal(giftId);
+    });
+  });
+
+  // Agradecimento
+  document.querySelectorAll('.btn-thank-you').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const giftId = e.currentTarget.dataset.giftId;
+      await showThankYouModal(giftId);
+    });
+  });
+}
+
+
+
+// Modal para recusar presente
+async function showDeclineModal(giftId) {
+  const { value: formValues } = await Swal.fire({
+    title: 'Recusar Presente',
+    html:
+      '<textarea id="decline-message" class="swal2-textarea" placeholder="Digite uma mensagem para o remetente (opcional)"></textarea>' +
+      '<input type="file" id="decline-image" class="swal2-file" accept="image/*">',
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Confirmar Recusa',
+    cancelButtonText: 'Cancelar',
+    preConfirm: async () => {
+      const message = document.getElementById('decline-message').value;
+      const fileInput = document.getElementById('decline-image');
+      
+      let imageUrl = null;
+      if (fileInput.files.length > 0) {
+        imageUrl = await uploadImage(fileInput.files[0]);
+      }
+      
+      return { message, imageUrl };
+    }
+  });
+
+  if (formValues) {
+    await handleGiftAction(giftId, 'decline', formValues.message, formValues.imageUrl);
   }
 }
 
+// Modal para agradecimento
+async function showThankYouModal(giftId) {
+  const { value: formValues } = await Swal.fire({
+    title: 'Enviar Agradecimento',
+    html:
+      '<textarea id="thank-you-note" class="swal2-textarea" placeholder="Digite sua mensagem de agradecimento"></textarea>' +
+      '<input type="file" id="thank-you-image" class="swal2-file" accept="image/*">',
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Enviar Agradecimento',
+    cancelButtonText: 'Cancelar',
+    preConfirm: async () => {
+      const note = document.getElementById('thank-you-note').value;
+      const fileInput = document.getElementById('thank-you-image');
+      
+      let imageUrl = null;
+      if (fileInput.files.length > 0) {
+        imageUrl = await uploadImage(fileInput.files[0]);
+      }
+      
+      return { note, imageUrl };
+    }
+  });
+
+  if (formValues) {
+    await sendThankYouNote(giftId, formValues.note, formValues.imageUrl);
+  }
+}
+
+// Função para enviar agradecimento
+async function sendThankYouNote(giftId, note, imageUrl) {
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
+  try {
+    showLoading('Enviando agradecimento...');
+    
+    const userRef = db.collection('users').doc(user.uid);
+    const userDoc = await userRef.get();
+    const receivedGifts = userDoc.data()?.gifts?.received || [];
+    
+    const giftIndex = receivedGifts.findIndex(g => g.giftId === giftId);
+    if (giftIndex === -1) throw new Error('Presente não encontrado');
+
+    const updatedGifts = [...receivedGifts];
+    updatedGifts[giftIndex] = {
+      ...updatedGifts[giftIndex],
+      thankYouNote: note,
+      thankYouImage: imageUrl || null
+    };
+
+    await userRef.update({
+      'gifts.received': updatedGifts
+    });
+
+    // Atualizar na transação
+    const transactionQuery = await db.collection('giftTransactions')
+      .where('giftId', '==', giftId)
+      .limit(1)
+      .get();
+
+    if (!transactionQuery.empty) {
+      const transactionRef = transactionQuery.docs[0].ref;
+      await transactionRef.update({
+        thankYouNote: note,
+        thankYouImage: imageUrl || null
+      });
+    }
+
+    // Notificar o remetente
+    const giftData = updatedGifts[giftIndex];
+    if (giftData.fromUserId) {
+      await notifySender(
+        giftData.fromUserId, 
+        giftId, 
+        'thank_you',
+        `Recebeu um agradecimento pelo presente: ${note}`,
+        imageUrl
+      );
+    }
+
+    showToast('Agradecimento enviado com sucesso!', 'success');
+    loadUserGifts();
+
+  } catch (error) {
+    console.error('Erro ao enviar agradecimento:', error);
+    showToast('Erro ao enviar agradecimento', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Função para upload de imagem
+async function uploadImage(file) {
+  try {
+    const storageRef = firebase.storage().ref();
+    const fileRef = storageRef.child(`thankYouImages/${Date.now()}_${file.name}`);
+    await fileRef.put(file);
+    return await fileRef.getDownloadURL();
+  } catch (error) {
+    console.error('Erro ao fazer upload da imagem:', error);
+    return null;
+  }
+}
+
+async function handleGiftAction(giftId, action, message = null, imageUrl = null) {
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
+  try {
+    showLoading(action === 'accept' ? 'Processando presente...' : 'Recusando presente...');
+    
+    // 1. Atualizar no documento do usuário RECEPTOR
+    const userRef = db.collection('users').doc(user.uid);
+    const userDoc = await userRef.get();
+    const receivedGifts = userDoc.data()?.gifts?.received || [];
+    
+    const giftIndex = receivedGifts.findIndex(g => g.giftId === giftId);
+    if (giftIndex === -1) throw new Error('Presente não encontrado');
+
+    const updatedGifts = [...receivedGifts];
+    updatedGifts[giftIndex] = {
+      ...updatedGifts[giftIndex],
+      status: action === 'accept' ? 'accepted' : 'declined',
+      acceptedDate: action === 'accept' ? new Date().toISOString() : null,
+      viewed: true,
+      ...(action === 'decline' && {
+        declineMessage: message,
+        declineImage: imageUrl
+      })
+    };
+
+    await userRef.update({
+      'gifts.received': updatedGifts
+    });
+
+    // 2. Atualizar na coleção de transações
+    const transactionQuery = await db.collection('giftTransactions')
+      .where('giftId', '==', giftId)
+      .limit(1)
+      .get();
+
+    if (!transactionQuery.empty) {
+      const transactionRef = transactionQuery.docs[0].ref;
+      await transactionRef.update({
+        status: action === 'accept' ? 'accepted' : 'declined',
+        acceptedDate: action === 'accept' ? new Date().toISOString() : null,
+        viewed: true,
+        ...(action === 'decline' && {
+          declineMessage: message,
+          declineImage: imageUrl
+        })
+      });
+    }
+
+    // 3. Atualizar no documento do usuário REMETENTE
+    const giftData = updatedGifts[giftIndex];
+    if (giftData.fromUserId) {
+      const senderRef = db.collection('users').doc(giftData.fromUserId);
+      const senderDoc = await senderRef.get();
+      const sentGifts = senderDoc.data()?.gifts?.sent || [];
+      
+      const sentGiftIndex = sentGifts.findIndex(g => g.giftId === giftId);
+      if (sentGiftIndex !== -1) {
+        const updatedSentGifts = [...sentGifts];
+        updatedSentGifts[sentGiftIndex] = {
+          ...updatedSentGifts[sentGiftIndex],
+          status: action === 'accept' ? 'accepted' : 'declined',
+          ...(action === 'decline' && {
+            declineMessage: message,
+            declineImage: imageUrl
+          })
+        };
+        
+        await senderRef.update({
+          'gifts.sent': updatedSentGifts
+        });
+      }
+    }
+
+    showToast(`Presente ${action === 'accept' ? 'aceito' : 'recusado'} com sucesso!`, 'success');
+    loadUserGifts();
+
+    // 4. Notificar o remetente
+    if (giftData.fromUserId) {
+      await notifySender(
+        giftData.fromUserId, 
+        giftId, 
+        action === 'accept' ? 'accepted' : 'declined',
+        action === 'accept' 
+          ? 'Seu presente foi aceito!' 
+          : message || 'Seu presente foi recusado',
+        action === 'decline' ? imageUrl : null
+      );
+    }
+
+  } catch (error) {
+    console.error(`Erro ao ${action} presente:`, error);
+    showToast(`Erro: ${error.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function notifySender(senderId, giftId, action) {
+  try {
+    const notificationRef = db.collection('notifications').doc();
+    await notificationRef.set({
+      userId: senderId,
+      type: 'gift-' + action,
+      giftId: giftId,
+      date: new Date().toISOString(),
+      read: false,
+      message: `Seu presente foi ${action === 'accepted' ? 'aceito' : 'recusado'}`
+    });
+  } catch (error) {
+    console.error('Erro ao enviar notificação:', error);
+  }
+}
 // Listener em tempo real para novos presentes
 function setupGiftsListener() {
   const user = firebase.auth().currentUser;
@@ -8509,38 +9231,289 @@ function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString('pt-BR', options);
 }
 
-function getCategoryName(category) {
-  const categories = {
-    jewelry: 'Joias',
-    experiences: 'Experiências',
-    fashion: 'Moda',
-    digital: 'Digital'
-  };
-  return categories[category] || category;
-}
-
-// Inicializa quando o usuário está logado
-firebase.auth().onAuthStateChanged(user => {
-  if (user) {
-    setupUserNameListener();
-    loadUserGifts();
-    // Listener em tempo real para atualizações
-    firebase.firestore().collection('users').doc(user.uid)
-      .onSnapshot(doc => {
-        if (doc.exists) {
-          userGifts = doc.data()?.gifts?.received || [];
-          const currentFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
-          updateGiftsUI(currentFilter);
-        }
-      });
-  }
-});
 
 
 // Função auxiliar para gerar ID se necessário
 function generateId() {
   return 'gift_' + Math.random().toString(36).substr(2, 9);
 }
+
+
+
+
+async function openGiftModal(userId) {
+  const modal = document.getElementById('giftModal');
+  if (!modal) {
+    console.error('Modal de presentes não encontrado');
+    return;
+  }
+
+  // Armazenar o ID do destinatário no modal
+  modal.dataset.recipientId = userId;
+  
+  // Mostrar modal
+  modal.style.display = 'block';
+  
+  // Carregar presentes
+  await loadGifts();
+  
+  // Configurar eventos
+  setupGiftModalEvents();
+}
+
+async function loadGifts(category = 'all') {
+  const giftsContainer = document.querySelector('.lux-gifts-container');
+  giftsContainer.innerHTML = `
+    <div class="lux-gifts-loading">
+      <i class="fas fa-spinner fa-spin"></i> Carregando nossa seleção exclusiva...
+    </div>
+  `;
+
+  try {
+    let query = db.collection('gifts').where('available', '==', true);
+    
+    if (category !== 'all') {
+      query = query.where('category', '==', category);
+    }
+
+    const snapshot = await query.orderBy('price', 'asc').limit(20).get();
+
+    console.log(`Encontrados ${snapshot.size} presentes para categoria ${category}`); // Debug
+
+    if (snapshot.empty) {
+      if (category !== 'all') {
+        await loadGifts('all'); // Tenta carregar todas as categorias
+        return;
+      }
+      giftsContainer.innerHTML = `
+        <div class="lux-no-gifts">
+          <i class="fas fa-gift"></i>
+          <p>Nenhum presente disponível no momento</p>
+        </div>
+      `;
+      return;
+    }
+
+    giftsContainer.innerHTML = '';
+    
+    snapshot.forEach(doc => {
+      const gift = doc.data();
+      console.log('Exibindo presente:', gift.name); // Debug
+      const giftElement = createGiftElement(gift, doc.id);
+      giftsContainer.appendChild(giftElement);
+    });
+
+  } catch (error) {
+    console.error('Erro ao carregar presentes:', error);
+    // ... (manter o tratamento de erro existente)
+  }
+}
+// Na função que cria os elementos dos presentes:
+function createGiftElement(gift, giftId) {
+  const giftElement = document.createElement('div');
+  giftElement.className = 'gift-item';
+  giftElement.innerHTML = `
+    <!-- Seu HTML existente -->
+    <button class="btn-direct-send" data-gift-id="${giftId}">
+      Envio direto
+    </button>
+  `;
+  
+  // Adicione o event listener corretamente
+  giftElement.querySelector('.btn-direct-send').addEventListener('click', (e) => {
+    e.preventDefault();
+    const giftId = e.currentTarget.getAttribute('data-gift-id');
+    console.log('ID do presente clicado:', giftId); // Debug
+    sendGift(giftId, true);
+  });
+  
+  return giftElement;
+}
+function getCategoryName(category) {
+  const categories = {
+    'jewelry': 'Joias',
+    'experiences': 'Experiências',
+    'fashion': 'Moda',
+    'digital': 'Digital',
+    'other': 'Outros'
+  };
+  return categories[category] || category;
+}
+
+function setupGiftModalEvents() {
+  const modal = document.getElementById('giftModal');
+  if (!modal) return;
+
+  // Fechar modal com o botão X
+  modal.querySelector('.lux-gift-close').addEventListener('click', closeGiftShop);
+
+  // Fechar ao clicar fora
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeGiftShop();
+    }
+  });
+
+  // Fechar modal de ações
+  const actionsModal = document.getElementById('giftActionsModal');
+  if (actionsModal) {
+    actionsModal.querySelector('.lux-actions-close').addEventListener('click', closeGiftShop);
+  }
+
+  // Filtros de categoria
+  document.querySelectorAll('.lux-gift-category').forEach(btn => {
+    btn.addEventListener('click', function() {
+      // Remover classe active de todos os botões
+      document.querySelectorAll('.lux-gift-category').forEach(b => {
+        b.classList.remove('active');
+      });
+      
+      // Adicionar classe active ao botão clicado
+      this.classList.add('active');
+      
+      // Carregar presentes da categoria selecionada
+      const category = this.dataset.category;
+      loadGifts(category).catch(error => {
+        console.error('Erro ao carregar presentes:', error);
+        // Se der erro, tentar carregar todos
+        loadGifts('all');
+      });
+    });
+  });
+}
+async function loadAdditionalGifts() {
+  const select = document.getElementById('additionalGifts');
+  if (!select) return;
+
+  try {
+    const snapshot = await db.collection('gifts')
+      .where('available', '==', true)
+      .where('price', '<', 100) // Presentes mais baratos como extras
+      .limit(5)
+      .get();
+
+    // Limpar opções existentes
+    select.innerHTML = '<option value="">Nenhum presente extra</option>';
+    
+    snapshot.forEach(doc => {
+      const gift = doc.data();
+      const option = document.createElement('option');
+      option.value = doc.id;
+      option.textContent = `${gift.name} (${formatCurrency(gift.price)})`;
+      option.dataset.imageUrl = gift.imageUrl;
+      select.appendChild(option);
+    });
+
+    // Mostrar preview quando selecionar
+    select.addEventListener('change', function() {
+      const preview = document.getElementById('additionalGiftPreview');
+      const selectedOption = this.options[this.selectedIndex];
+      
+      if (selectedOption.value) {
+        preview.src = selectedOption.dataset.imageUrl;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao carregar presentes extras:', error);
+  }
+}
+
+async function sendGiftNotification(senderId, recipientId, giftData, message = '') {
+  try {
+    // Buscar dados do remetente
+    const senderDoc = await db.collection('users').doc(senderId).get();
+    const senderData = senderDoc.data();
+
+    // Criar notificação
+    await db.collection('notifications').add({
+      userId: recipientId,
+      type: 'new_gift',
+      title: '🎁 Você recebeu um presente!',
+      message: message || `${senderData.name || 'Alguém'} te enviou ${giftData.name}`,
+      imageUrl: giftData.imageUrl,
+      read: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      relatedUserId: senderId,
+      giftId: giftData.id
+    });
+
+  } catch (error) {
+    console.error('Erro ao enviar notificação:', error);
+  }
+}
+
+
+function closeGiftShop() {
+  const modal = document.getElementById('giftModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  
+  const actionsModal = document.getElementById('giftActionsModal');
+  if (actionsModal) {
+    actionsModal.style.display = 'none';
+  }
+}
+function showGiftActions(gift, giftId) {
+  const modal = document.getElementById('giftActionsModal');
+  const recipientId = document.getElementById('giftModal').dataset.recipientId;
+  
+  if (!modal || !recipientId) return;
+
+  // Preencher informações do presente
+  document.getElementById('selectedGiftName').textContent = gift.name;
+  document.getElementById('selectedGiftImage').src = gift.imageUrl;
+  document.getElementById('selectedGiftPrice').textContent = formatCurrency(gift.price);
+  
+  // Mostrar modal de ações
+  modal.style.display = 'block';
+  
+  // Configurar eventos dos botões
+  document.querySelector('.lux-action-send').onclick = () => {
+    sendGift(recipientId, giftId, gift);
+  };
+  
+  document.querySelector('.lux-action-customize').onclick = () => {
+    showCustomizeSection(gift, giftId, recipientId);
+  };
+  
+  document.querySelector('.lux-actions-close').onclick = () => {
+    modal.style.display = 'none';
+  };
+}
+
+function showCustomizeSection(gift, giftId, recipientId) {
+  const customizeSection = document.getElementById('customizeSection');
+  const mainActions = document.querySelector('.lux-gift-actions');
+  
+  // Esconder ações principais e mostrar seção de personalização
+  mainActions.style.display = 'none';
+  customizeSection.style.display = 'block';
+  
+  // Configurar botão de envio personalizado
+  document.getElementById('confirmCustomSend').onclick = () => {
+    const message = document.getElementById('giftMessage').value.trim();
+    sendGift(recipientId, giftId, gift, message);
+  };
+  
+  // Configurar botão de voltar
+  document.getElementById('backToMain').onclick = () => {
+    customizeSection.style.display = 'none';
+    mainActions.style.display = 'flex';
+  };
+  
+  // Carregar presentes extras (opcional)
+  loadAdditionalGifts();
+}
+
+
+
+
+
 
 
 // Exibir presentes
@@ -8626,123 +9599,6 @@ async function updateGiftStatus(giftId, newStatus) {
     showToast('Erro ao atualizar presente', 'error');
   }
 }
-// Mostra detalhes do presente de forma completa e com tratamento de erros
-async function showGiftDetails(giftId) {
-  try {
-    // Encontra o presente na lista
-    const gift = userGifts.find(g => g.giftId === giftId || g.id === giftId);
-    if (!gift) {
-      console.error('Presente não encontrado:', giftId);
-      showToast('Presente não encontrado', 'error');
-      return;
-    }
-
-    // Cria o elemento modal
-    const modal = document.createElement('div');
-    modal.className = 'lux-gift-detail-modal';
-    
-    // Adiciona um spinner enquanto carrega
-    modal.innerHTML = `
-      <div class="lux-gift-detail-content">
-        <div class="lux-detail-loading">
-          <div class="lux-spinner"></div>
-          <p>Carregando detalhes...</p>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    // Obtém o nome do remetente de forma assíncrona
-    const senderName = await getSenderName(gift.fromUserId).catch(() => 'Usuário desconhecido');
-
-    // Preenche o modal com os dados completos
-    modal.innerHTML = `
-      <div class="lux-gift-detail-content">
-        <button class="lux-detail-close"><i class="fas fa-times"></i></button>
-        
-        <div class="lux-gift-detail-header">
-          <div class="lux-gift-detail-image" style="background-image: url('${gift.image || 'https://via.placeholder.com/300'}')">
-            ${gift.status === 'pending' ? '<span class="lux-gift-new">Novo</span>' : ''}
-          </div>
-          <h2>${gift.name || 'Presente sem nome'}</h2>
-          <div class="lux-gift-detail-meta">
-            <span class="lux-gift-price">R$ ${gift.price ? gift.price.toLocaleString('pt-BR') : '0,00'}</span>
-            <span class="lux-gift-category">${getCategoryName(gift.category)}</span>
-          </div>
-        </div>
-        
-        <div class="lux-gift-detail-body">
-          <div class="lux-gift-detail-row">
-            <span><i class="fas fa-calendar-alt"></i> Recebido em:</span>
-            <span>${gift.date ? formatDate(gift.date) : 'Data desconhecida'}</span>
-          </div>
-          <div class="lux-gift-detail-row">
-            <span><i class="fas fa-user"></i> Enviado por:</span>
-            <span>${senderName}</span>
-          </div>
-          <div class="lux-gift-detail-row">
-            <span><i class="fas fa-info-circle"></i> Status:</span>
-            <span class="lux-gift-status ${gift.status || 'unknown'}">
-              ${getStatusText(gift.status)}
-            </span>
-          </div>
-        </div>
-        
-        <div class="lux-gift-detail-actions">
-          ${gift.status === 'pending' ? `
-          <button class="lux-btn lux-btn-accept" data-id="${gift.giftId || gift.id}">
-            <i class="fas fa-check"></i> Aceitar Presente
-          </button>
-          ` : ''}
-          <button class="lux-btn lux-btn-thank" data-id="${gift.giftId || gift.id}">
-            <i class="fas fa-heart"></i> Agradecer
-          </button>
-        </div>
-      </div>
-    `;
-
-    // Configura os eventos do modal
-    modal.querySelector('.lux-detail-close').addEventListener('click', () => {
-      modal.classList.add('fade-out');
-      setTimeout(() => modal.remove(), 300);
-    });
-
-    // Evento para aceitar presente (se estiver pendente)
-    if (gift.status === 'pending') {
-      modal.querySelector('.lux-btn-accept').addEventListener('click', async () => {
-        try {
-          modal.querySelector('.lux-btn-accept').disabled = true;
-          await updateGiftStatus(gift.giftId || gift.id, 'accepted');
-          modal.remove();
-          showToast('Presente aceito com sucesso!', 'success');
-        } catch (error) {
-          modal.querySelector('.lux-btn-accept').disabled = false;
-          showToast('Erro ao aceitar presente', 'error');
-        }
-      });
-    }
-
-    // Evento para agradecer
-    modal.querySelector('.lux-btn-thank').addEventListener('click', () => {
-      openThankYouModal(gift.fromUserId, gift.name);
-      modal.remove();
-    });
-
-    // Adiciona animação de entrada
-    setTimeout(() => {
-      modal.classList.add('visible');
-    }, 50);
-
-  } catch (error) {
-    console.error('Erro ao mostrar detalhes do presente:', error);
-    showToast('Erro ao carregar detalhes', 'error');
-    
-    // Remove o modal se existir
-    const existingModal = document.querySelector('.lux-gift-detail-modal');
-    if (existingModal) existingModal.remove();
-  }
-}
-
 
 
 function getStatusText(status) {
@@ -8837,3 +9693,282 @@ document.querySelectorAll('.lux-gift-item').forEach(item => {
     }
   });
 });
+
+
+
+
+
+
+async function loadSentGifts() {
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
+  try {
+    showLoading('Carregando seu histórico de presentes...');
+    
+    // Buscar presentes enviados no próprio perfil
+    const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+    const sentGifts = userDoc.data()?.gifts?.sent || [];
+    
+    // Buscar informações adicionais das transações
+    const transactionsQuery = await firebase.firestore()
+      .collection('giftTransactions')
+      .where('fromUserId', '==', user.uid)
+      .orderBy('date', 'desc')
+      .get();
+
+    const enrichedGifts = await Promise.all(transactionsQuery.docs.map(async doc => {
+      const transaction = doc.data();
+      
+      // Buscar informações do destinatário
+      let receiverName = "Usuário";
+      try {
+        const receiverDoc = await firebase.firestore().collection('users').doc(transaction.toUserId).get();
+        receiverName = receiverDoc.data()?.name || "Usuário";
+      } catch (e) {
+        console.error("Erro ao buscar destinatário:", e);
+      }
+      
+      return {
+        ...transaction,
+        id: doc.id,
+        receiverName,
+        status: transaction.status || 'pending',
+        dateFormatted: formatDate(transaction.date)
+      };
+    }));
+
+    updateSentGiftsUI(enrichedGifts);
+    updateSentGiftsSummary(enrichedGifts);
+    
+  } catch (error) {
+    console.error('Erro ao carregar presentes enviados:', error);
+    showToast('Erro ao carregar histórico de presentes', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function updateSentGiftsUI(gifts) {
+  const container = document.querySelector('.sent-gifts-container');
+  
+  if (!gifts.length) {
+    container.innerHTML = `
+      <div class="no-gifts">
+        <i class="fas fa-paper-plane"></i>
+        <p>Você ainda não enviou nenhum presente</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = gifts.map(gift => `
+    <div class="sent-gift-item ${gift.status}" data-gift-id="${gift.id}">
+      <div class="gift-image" style="background-image: url('${gift.image || 'default-gift.jpg'}')"></div>
+      
+      <div class="gift-info">
+        <h3>${gift.name}</h3>
+        <p class="gift-meta">
+          Para: <strong>${gift.receiverName}</strong> • 
+          ${gift.price ? `${formatCurrency(gift.price)} • ` : ''}
+          ${gift.dateFormatted}
+        </p>
+        
+        <div class="gift-status">
+          ${getStatusBadge(gift.status)}
+          ${gift.status === 'accepted' ? `
+            <p class="status-message">Presente aceito com sucesso!</p>
+          ` : gift.status === 'declined' ? `
+            <p class="status-message">Presente não foi aceito</p>
+          ` : `
+            <p class="status-message">Aguardando resposta</p>
+          `}
+        </div>
+      </div>
+      
+      ${gift.status === 'pending' ? `
+        <button class="btn-cancel-gift" data-gift-id="${gift.id}">
+          <i class="fas fa-times"></i> Cancelar Envio
+        </button>
+      ` : ''}
+    </div>
+  `).join('');
+
+  // Adicionar event listeners para cancelamento
+  document.querySelectorAll('.btn-cancel-gift').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const giftId = e.currentTarget.dataset.giftId;
+      await cancelSentGift(giftId);
+    });
+  });
+}
+
+function getStatusBadge(status) {
+  const statusInfo = {
+    accepted: { class: 'accepted', icon: 'fa-check-circle', text: 'Aceito' },
+    declined: { class: 'declined', icon: 'fa-times-circle', text: 'Recusado' },
+    pending: { class: 'pending', icon: 'fa-clock', text: 'Pendente' }
+  };
+  
+  const info = statusInfo[status] || statusInfo.pending;
+  return `
+    <span class="status-badge ${info.class}">
+      <i class="fas ${info.icon}"></i> ${info.text}
+    </span>
+  `;
+}
+
+function updateSentGiftsSummary(gifts) {
+  const totalSent = gifts.length;
+  const acceptedCount = gifts.filter(g => g.status === 'accepted').length;
+  const declinedCount = gifts.filter(g => g.status === 'declined').length;
+  
+  document.querySelector('.sent-count').textContent = `${totalSent} enviados`;
+  document.querySelector('.accepted-count').textContent = `${acceptedCount} aceitos`;
+  document.querySelector('.declined-count').textContent = `${declinedCount} recusados`;
+}
+
+async function cancelSentGift(giftId) {
+  try {
+    const confirmation = await Swal.fire({
+      title: 'Cancelar envio?',
+      text: 'Você pode reenviar este presente depois',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, cancelar',
+      cancelButtonText: 'Manter envio'
+    });
+    
+    if (confirmation.isConfirmed) {
+      showLoading('Cancelando envio...');
+      
+      // Atualizar status na transação
+      await firebase.firestore().collection('giftTransactions').doc(giftId).update({
+        status: 'cancelled',
+        cancelledDate: new Date().toISOString()
+      });
+      
+      // Remover da lista de enviados do usuário
+      const user = firebase.auth().currentUser;
+      const userRef = firebase.firestore().collection('users').doc(user.uid);
+      
+      await userRef.update({
+        'gifts.sent': firebase.firestore.FieldValue.arrayRemove(giftId)
+      });
+      
+      showToast('Envio cancelado com sucesso', 'success');
+      loadSentGifts(); // Recarregar a lista
+    }
+    
+  } catch (error) {
+    console.error('Erro ao cancelar presente:', error);
+    showToast('Erro ao cancelar envio', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+document.querySelectorAll('.sent-gifts-section .filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const filter = this.dataset.filter;
+    
+    // Atualizar botões ativos
+    document.querySelectorAll('.sent-gifts-section .filter-btn').forEach(b => {
+      b.classList.toggle('active', b === this);
+    });
+    
+    // Filtrar presentes
+    const allGifts = Array.from(document.querySelectorAll('.sent-gift-item'));
+    allGifts.forEach(gift => {
+      const shouldShow = filter === 'all' || gift.classList.contains(filter);
+      gift.style.display = shouldShow ? 'flex' : 'none';
+    });
+  });
+});
+
+
+
+// Adicione esta função para verificar assinatura
+async function checkSubscription(userId) {
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    return userDoc.data()?.subscriptionLevel || 'public';
+  } catch (error) {
+    console.error('Erro ao verificar assinatura:', error);
+    return 'public';
+  }
+}
+
+// Adicione esta função para navegar para a galeria
+function setupGalleryNavigation() {
+  const galleryLink = document.getElementById('gallery-link');
+  if (galleryLink) {
+    galleryLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const user = firebase.auth().currentUser;
+      if (user) {
+    window.location.href = `minhagaleria.html?uid=${user.uid}`;
+      } else {
+        showToast('Por favor, faça login para acessar sua galeria', 'warning');
+        window.location.href = 'login.html';
+      }
+    });
+  }
+}
+
+// Chame esta função no seu initialization
+
+
+// Adicione isso no seu arquivo script.js principal
+function showLoading(message = 'Carregando...') {
+  // Remove qualquer loading existente
+  hideLoading();
+  
+  // Cria o elemento de loading
+  const loadingDiv = document.createElement('div');
+  loadingDiv.id = 'luxury-loading';
+  loadingDiv.style.position = 'fixed';
+  loadingDiv.style.top = '0';
+  loadingDiv.style.left = '0';
+  loadingDiv.style.width = '100%';
+  loadingDiv.style.height = '100%';
+  loadingDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+  loadingDiv.style.display = 'flex';
+  loadingDiv.style.flexDirection = 'column';
+  loadingDiv.style.justifyContent = 'center';
+  loadingDiv.style.alignItems = 'center';
+  loadingDiv.style.zIndex = '9999';
+  loadingDiv.style.color = '#fff';
+  
+  // Adiciona spinner
+  loadingDiv.innerHTML = `
+    <div class="luxury-spinner" style="
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(139, 110, 75, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--luxury-gold);
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 20px;
+    "></div>
+    <p style="font-size: 1.2rem; margin-top: 10px;">${message}</p>
+  `;
+  
+  document.body.appendChild(loadingDiv);
+  
+  // Adiciona a animação de spin
+  const style = document.createElement('style');
+  style.innerHTML = `
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function hideLoading() {
+  const loadingDiv = document.getElementById('luxury-loading');
+  if (loadingDiv) {
+    loadingDiv.remove();
+  }
+}

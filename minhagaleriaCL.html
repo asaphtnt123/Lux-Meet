@@ -1,0 +1,3048 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Galeria | Luxury Encounters</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #8B4513;
+            --secondary-color: #D4AF37;
+            --dark-color: #1A1A1A;
+            --light-color: #F5F5F5;
+            --accent-color: #A0522D;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Playfair Display', serif;
+        }
+        
+        body {
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* User Profile Header */
+        .user-profile-header {
+            display: flex;
+            align-items: center;
+            padding: 40px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 30px;
+        }
+        
+        .user-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--secondary-color);
+            margin-right: 30px;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-size: 32px;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+        
+        .user-bio {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #aaa;
+            max-width: 600px;
+        }
+        
+        .user-stats {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: var(--secondary-color);
+            color: var(--dark-color);
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-color);
+            color: var(--light-color);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--secondary-color);
+            color: var(--secondary-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--secondary-color);
+            color: var(--dark-color);
+        }
+        
+        /* Subscription Options */
+      .subscription-options {
+    display: none; /* Esconde inicialmente */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #2A2A2A;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 800px;
+    z-index: 1001;
+    border: 2px solid var(--secondary-color);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.subscription-options.show {
+    display: block; /* Mostra quando tem a classe 'show' */
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.modal-overlay.show {
+    display: block;
+}
+
+.close-subscription {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    font-size: 24px;
+    cursor: pointer;
+}
+        
+        .subscription-title {
+            font-size: 24px;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .subscription-plans {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .subscription-plan {
+            background-color: #3A3A3A;
+            padding: 25px;
+            border-radius: 8px;
+            width: 280px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .subscription-plan:hover {
+            transform: translateY(-5px);
+        }
+        
+        .plan-name {
+            font-size: 20px;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+        
+        .plan-price {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .plan-period {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        
+        .plan-features {
+            list-style: none;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        .plan-features li {
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .plan-features li::before {
+            content: "\f00c";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            color: var(--secondary-color);
+        }
+        
+        /* Gallery Section */
+        .gallery-section {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            color: var(--secondary-color);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .albums-filter {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-btn {
+            padding: 8px 20px;
+            background-color: #333;
+            border: none;
+            border-radius: 20px;
+            color: var(--light-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn.active {
+            background-color: var(--secondary-color);
+            color: var(--dark-color);
+        }
+        
+        .filter-btn:hover {
+            background-color: #444;
+        }
+        
+        .albums-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .album-card {
+            background-color: #2A2A2A;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s;
+            position: relative;
+        }
+        
+        .album-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .album-cover {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .album-info {
+            padding: 15px;
+        }
+        
+        .album-title {
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: var(--light-color);
+        }
+        
+        .album-date {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        
+        .album-price {
+            font-size: 20px;
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+        
+        .album-locked {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        
+        .album-locked i {
+            font-size: 40px;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+        
+        /* Loading State */
+        .loading-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary-color);
+        }
+        
+        .loading-state i {
+            font-size: 40px;
+            margin-bottom: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+        }
+        
+        .error-state i {
+            font-size: 40px;
+            margin-bottom: 20px;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state i {
+            font-size: 40px;
+            margin-bottom: 20px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .user-profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .user-avatar {
+                margin-right: 0;
+                margin-bottom: 20px;
+            }
+            
+            .user-stats {
+                justify-content: center;
+            }
+            
+            .user-actions {
+                justify-content: center;
+            }
+            
+            .subscription-plans {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .subscription-plan {
+                width: 100%;
+                max-width: 350px;
+            }
+        }
+
+        .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+  background-color: #2a2a2a;
+  margin: 5% auto;
+  padding: 30px;
+  border: 1px solid var(--secondary-color);
+  border-radius: 10px;
+  width: 90%;
+  max-width: 800px;
+  position: relative;
+}
+
+.close-modal {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-modal:hover {
+  color: var(--secondary-color);
+}
+
+/* Plan Options */
+.plan-options {
+  display: flex;
+  gap: 20px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.plan-card {
+  background: #3a3a3a;
+  padding: 25px;
+  border-radius: 8px;
+  width: 250px;
+  transition: all 0.3s;
+  border: 1px solid #444;
+}
+
+.plan-card.featured {
+  border: 2px solid var(--secondary-color);
+  transform: scale(1.05);
+}
+
+.plan-card h3 {
+  color: var(--secondary-color);
+  margin-bottom: 15px;
+  font-size: 22px;
+}
+
+.plan-price {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.plan-period {
+  color: #aaa;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.plan-features {
+  list-style: none;
+  margin: 20px 0;
+  min-height: 120px;
+}
+
+.plan-features li {
+  margin-bottom: 10px;
+  padding-left: 25px;
+  position: relative;
+}
+
+.plan-features li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--secondary-color);
+}
+
+.select-plan-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--secondary-color);
+  color: var(--dark-color);
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.select-plan-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .plan-options {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .plan-card {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+
+.luxury-swal {
+    border: 1px solid #D4AF37 !important;
+    border-radius: 10px !important;
+}
+
+.swal-title-luxury {
+    color: #D4AF37 !important;
+    font-family: 'Playfair Display', serif !important;
+    font-size: 24px !important;
+}
+
+.swal-content-luxury {
+    color: #F5F5F5 !important;
+    font-family: 'Playfair Display', serif !important;
+}
+
+/* Modal de Confirmação */
+.luxury-confirm-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1003;
+  justify-content: center;
+  align-items: center;
+}
+
+.luxury-confirm-content {
+  background-color: #2A2A2A;
+  padding: 30px;
+  border-radius: 10px;
+  border: 1px solid #D4AF37;
+  max-width: 450px;
+  text-align: center;
+  animation: fadeIn 0.3s;
+}
+
+.luxury-confirm-content i {
+  color: #D4AF37;
+  font-size: 40px;
+  margin-bottom: 15px;
+}
+
+.luxury-confirm-content h3 {
+  color: #D4AF37;
+  margin-bottom: 15px;
+  font-size: 22px;
+}
+
+.luxury-confirm-content p {
+  color: #F5F5F5;
+  margin-bottom: 25px;
+  font-size: 16px;
+}
+
+#currentPlanName {
+  color: #D4AF37;
+  font-weight: bold;
+}
+
+.luxury-confirm-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.luxury-confirm-buttons button {
+  padding: 12px 25px;
+  border-radius: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+#confirmCancelYes {
+  background-color: #8B4513;
+  color: white;
+  border: none;
+}
+
+#confirmCancelYes:hover {
+  background-color: #A0522D;
+}
+
+#confirmCancelNo {
+  background-color: transparent;
+  color: #D4AF37;
+  border: 2px solid #D4AF37;
+}
+
+#confirmCancelNo:hover {
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+.luxury-confirm-note {
+  font-size: 14px;
+  color: #aaa;
+  font-style: italic;
+  margin-top: 15px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* Album View Styles */
+.album-view-container {
+    display: none;
+    margin-top: 30px;
+    border-top: 1px solid #444;
+    padding-top: 20px;
+}
+
+.album-view-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.album-view-header h2 {
+    margin-left: 20px;
+    color: var(--secondary-color);
+}
+
+.album-photos-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.album-photo {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.album-photo:hover {
+    transform: scale(1.02);
+}
+
+.photo-details-container {
+    display: flex;
+    gap: 30px;
+}
+
+.photo-detail {
+    flex: 2;
+    background-color: #2A2A2A;
+    border-radius: 8px;
+    padding: 20px;
+    display: none;
+}
+
+.photo-detail img {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.photo-interactions {
+    flex: 1;
+    background-color: #2A2A2A;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.likes-comments {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.like-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    margin-right: 20px;
+}
+
+.like-btn i {
+    margin-right: 5px;
+}
+
+.comments-count {
+    color: #aaa;
+    font-size: 14px;
+}
+
+.comment-section {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.comment-section input {
+    flex: 1;
+    padding: 10px;
+    background-color: #3A3A3A;
+    border: 1px solid #444;
+    border-radius: 20px;
+    color: white;
+}
+
+.comment-section button {
+    margin-left: 10px;
+}
+
+.comments-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.comment {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #3A3A3A;
+}
+
+.comment-author {
+    font-weight: bold;
+    color: var(--secondary-color);
+    margin-bottom: 5px;
+}
+
+.comment-text {
+    color: #ddd;
+}
+
+.comment-time {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 5px;
+}
+
+@media (max-width: 768px) {
+    .photo-details-container {
+        flex-direction: column;
+    }
+    
+    .album-photos-container {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+}
+
+/* Modal de Avaliação */
+.luxury-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1002;
+  justify-content: center;
+  align-items: center;
+}
+
+.luxury-modal-content {
+  background-color: #2a2a2a;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 500px;
+  border: 1px solid var(--secondary-color);
+  position: relative;
+}
+
+.luxury-modal h2 {
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+
+
+
+
+.rating-stars {
+    margin: 20px 0;
+    font-size: 24px;
+    color: #D4AF37;
+}
+
+.rating-stars i {
+    cursor: pointer;
+    margin: 0 5px;
+    transition: all 0.2s;
+}
+
+.rating-stars i.active {
+    color: #ffd700;
+    transform: scale(1.2);
+}
+
+#ratingComment {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #333;
+    color: white;
+    min-height: 100px;
+}
+
+.ratings-list {
+    margin-top: 20px;
+}
+
+.rating-item {
+    background: #2A2A2A;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.rating-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.rating-user {
+    font-weight: bold;
+}
+
+.rating-comment {
+    font-style: italic;
+    color: #ccc;
+}
+
+.rating-date {
+    color: #888;
+    display: block;
+    text-align: right;
+}
+.btn-luxury {
+  background-color: var(--secondary-color);
+  color: var(--dark-color);
+  border: none;
+  padding: 12px 25px;
+  border-radius: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+  transition: all 0.3s;
+}
+
+.btn-luxury:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.close-modal {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-modal:hover {
+  color: var(--secondary-color);
+}
+
+
+.clickable-stat {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.clickable-stat:hover {
+    background-color: rgba(255, 215, 0, 0.1);
+    color: #D4AF37;
+}
+
+.clickable-stat .fa-star {
+    margin-right: 5px;
+    color: #D4AF37;
+}
+
+.stat-item.clickable-stat .stat-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rating-stars i {
+    cursor: pointer;
+    margin: 0 5px;
+    transition: all 0.2s;
+    font-size: 2rem;
+}
+
+.rating-stars i.fas {
+    color: #D4AF37;
+    transform: scale(1.1);
+}
+
+.rating-stars i.hover {
+    color: #ffd700;
+    transform: scale(1.05);
+}
+
+.rating-stars i.active {
+    color: #D4AF37;
+    text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+}
+
+
+.div:where(.swal2-container).swal2-center>.swal2-popup {
+    grid-column: 2;
+    color: beige;
+    grid-row: 2;
+    place-self: center center;
+}
+
+/* Estilos para o modal de avaliações */
+.reviews-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    margin: 20px 0;
+}
+
+.review-item {
+    background: #2A2A2A;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 3px solid #D4AF37;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.review-user {
+    font-weight: bold;
+    color: #D4AF37;
+}
+
+.review-stars {
+    color: #ffd700;
+}
+
+.review-comment {
+    margin: 10px 0;
+    color: #ddd;
+}
+
+.review-date {
+    font-size: 0.8em;
+    color: #999;
+    text-align: right;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+#pageInfo {
+    color: #ccc;
+}
+
+/* Adicione ao seu CSS */
+.spinner {
+    border: 4px solid rgba(255, 215, 0, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid #D4AF37;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#rateUserBtn.rated {
+    background-color: rgba(212, 175, 55, 0.1);
+    border-color: #D4AF37;
+    color: #D4AF37;
+    cursor: not-allowed;
+}
+
+#rateUserBtn:disabled {
+    opacity: 0.8;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- User Profile Section -->
+        <div class="user-profile-header" id="userInfoContainer">
+            <!-- Será preenchido dinamicamente pelo loadUserInfo() -->
+            
+        </div>
+
+
+        
+        <!-- Subscription Options -->
+        <div class="subscription-options" id="subscriptionOptions" >
+            <h3 class="subscription-title">Escolha seu Plano de Assinatura</h3>
+            <div class="subscription-plans">
+                <div class="subscription-plan">
+                    <h4 class="plan-name">Básico</h4>
+                    <div class="plan-price">R$ 99</div>
+                    <div class="plan-period">1 semana</div>
+                    <ul class="plan-features">
+                        <li>Acesso a todas Midias</li>
+                        <li>Mensagens Limitada</li>
+                        
+                    </ul>
+                    <button class="btn btn-outline" data-plan="basic">Selecionar</button>
+                </div>
+                
+                <div class="subscription-plan" style="border: 2px solid var(--secondary-color);">
+                    <h4 class="plan-name">Premium</h4>
+                    <div class="plan-price">R$ 199</div>
+                    <div class="plan-period">1 mês</div>
+                    <ul class="plan-features">
+                        <li>Acesso ilimitado a todos os álbuns</li>
+                        <li>Fotos em alta resolução</li>
+                        <li>Mensagens ilimitadas</li>
+                        <li>Conteúdo exclusivo semanal</li>
+                    </ul>
+                    <button class="btn" data-plan="premium">Selecionar</button>
+                </div>
+                
+                <div class="subscription-plan">
+                    <h4 class="plan-name">VIP</h4>
+                    <div class="plan-price">R$499</div>
+                    <div class="plan-period">3 meses</div>
+                    <ul class="plan-features">
+                        <li>Todos os benefícios Premium</li>
+                        <li>Encontros personalizados</li>
+                        <li>Presentes exclusivos</li>
+                        <li>Experiências customizadas</li>
+                    </ul>
+                    <button class="btn btn-outline" data-plan="vip">Selecionar</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gallery Section -->
+        <div class="gallery-section">
+            <h2 class="section-title">
+                <span>Álbuns Disponíveis</span>
+                <span id="subscriptionStatus">Carregando...</span>
+            </h2>
+            
+            <div class="albums-filter">
+                <button class="filter-btn active">Todos</button>
+                <button class="filter-btn">Mais Recentes</button>
+                <button class="filter-btn">Mais Populares</button>
+                <button class="filter-btn">Exclusivos</button>
+            </div>
+            
+            <div class="albums-grid" id="albumsGrid">
+                <!-- Será preenchido dinamicamente pelo loadAlbums() -->
+                <div class="loading-state">
+                    <i class="fas fa-spinner"></i>
+                    <p>Carregando álbuns...</p>
+                </div>
+            </div>
+
+            <div id="albumViewContainer" class="album-view-container">
+    <div class="album-view-header">
+        <button id="closeAlbumView" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+        <h2 id="albumViewTitle"></h2>
+    </div>
+    
+    <div id="albumPhotosContainer" class="album-photos-container">
+        <!-- Fotos serão carregadas aqui -->
+    </div>
+    
+    <div class="photo-details-container">
+        <div id="photoDetailContainer" class="photo-detail">
+            <!-- Detalhes da foto selecionada -->
+        </div>
+        
+        <div class="photo-interactions">
+            <div class="likes-comments">
+                <button class="like-btn">
+                    <i class="far fa-heart"></i>
+                    <span id="likeCount">0</span>
+                </button>
+                <span class="comments-count">0 comentários</span>
+            </div>
+            
+            <div class="comment-section">
+                <input type="text" placeholder="Adicione um comentário..." id="commentInput">
+                <button id="postCommentBtn" class="btn">Enviar</button>
+            </div>
+            
+            <div id="commentsContainer" class="comments-container">
+                <!-- Comentários serão carregados aqui -->
+            </div>
+        </div>
+    </div>
+</div>
+
+        </div>
+    </div>
+
+
+<div id="ratingModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>Avaliar Usuário</h2>
+        <div class="rating-stars">
+            <i class="far fa-star" data-rating="1"></i>
+            <i class="far fa-star" data-rating="2"></i>
+            <i class="far fa-star" data-rating="3"></i>
+            <i class="far fa-star" data-rating="4"></i>
+            <i class="far fa-star" data-rating="5"></i>
+        </div>
+        <div id="ratingText" style="margin-bottom: 15px; color: #D4AF37;">
+            Selecione sua avaliação
+        </div>
+        <textarea id="ratingComment" placeholder="Deixe um comentário (opcional)..."></textarea>
+        <button id="submitRating" class="btn btn-primary">Enviar Avaliação</button>
+    </div>
+</div>
+
+<div id="ratingsContainer" class="ratings-list"></div>
+
+
+
+    <!-- Modal de Assinatura -->
+<div id="subscriptionModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal">&times;</span>
+    <h2>Escolha seu Plano</h2>
+    
+    <div class="plan-options">
+      <div class="plan-card" data-plan="basic">
+        <h3>Básico</h3>
+        <div class="plan-price">R$ <span id="basicPrice">99</span></div>
+        <div class="plan-period">1 semana</div>
+        <ul class="plan-features">
+          <li>Acesso a todas mídias</li>
+          <li>Mensagens limitadas</li>
+        </ul>
+        <button class="select-plan-btn">Selecionar</button>
+      </div>
+      
+      <div class="plan-card featured" data-plan="premium">
+        <h3>Premium</h3>
+        <div class="plan-price">R$ <span id="premiumPrice">199</span></div>
+        <div class="plan-period">1 mês</div>
+        <ul class="plan-features">
+          <li>Acesso ilimitado</li>
+          <li>Mensagens ilimitadas</li>
+          <li>Conteúdo exclusivo</li>
+        </ul>
+        <button class="select-plan-btn">Selecionar</button>
+      </div>
+      
+      <div class="plan-card" data-plan="vip">
+        <h3>VIP</h3>
+        <div class="plan-price">R$ <span id="vipPrice">499</span></div>
+        <div class="plan-period">3 meses</div>
+        <ul class="plan-features">
+          <li>Todos benefícios Premium</li>
+          <li>Encontros personalizados</li>
+          <li>Presentes exclusivos</li>
+        </ul>
+        <button class="select-plan-btn">Selecionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal de Confirmação de Cancelamento -->
+<div id="cancelConfirmModal" class="luxury-confirm-modal">
+  <div class="luxury-confirm-content">
+    <i class="fas fa-crown"></i>
+    <h3>Confirmar Cancelamento</h3>
+    <p>Tem certeza que deseja encerrar sua assinatura <span id="currentPlanName">PREMIUM</span>?</p>
+    <div class="luxury-confirm-buttons">
+      <button id="confirmCancelYes">Sim, Encerrar</button>
+      <button id="confirmCancelNo">Manter Assinatura</button>
+    </div>
+    <p class="luxury-confirm-note">Você perderá acesso aos benefícios exclusivos</p>
+  </div>
+</div>
+
+
+<!-- Modal para listar avaliações (adicione junto com os outros modais) -->
+<div id="reviewsModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="close-modal" onclick="closeReviewsModal()">&times;</span>
+        <h2>Avaliações Recebidas</h2>
+        <div id="reviewsList" class="reviews-container">
+            <!-- As avaliações serão carregadas aqui -->
+        </div>
+        <div class="pagination-controls">
+            <button id="prevPageBtn" class="btn btn-outline" disabled>Anterior</button>
+            <span id="pageInfo">Página 1</span>
+            <button id="nextPageBtn" class="btn btn-outline">Próxima</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    
+    <script>
+      // Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyA-7HOp-Ycvyf3b_03ev__8aJEwAbWSQZY",
+  authDomain: "connectfamilia-312dc.firebaseapp.com",
+  projectId: "connectfamilia-312dc",
+  storageBucket: "connectfamilia-312dc.appspot.com",
+  messagingSenderId: "797817838649",
+  appId: "1:797817838649:web:1aa7c54abd97661f8d81e8",
+  measurementId: "G-QKN9NFXZZQ"
+};
+ 
+        
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Elementos da interface
+        const userInfoContainer = document.getElementById('userInfoContainer');
+        const albumsGrid = document.getElementById('albumsGrid');
+        const subscriptionStatus = document.getElementById('subscriptionStatus');
+        const subscribeBtn = document.createElement('button');
+        const followBtn = document.createElement('button');
+        
+        // Estado da aplicação
+        let currentUserId = null; // Será definido quando a página carregar
+        let isSubscribed = false;
+        let isFollowing = false;
+        let currentPlan = null;
+        let subscribersListener = null; // Variável que estava faltando
+        let followingListener = null;
+let subscriptionListener = null;
+        let creatorData = {};
+        let creatorId = null;
+
+        let currentReviewsPage = 1;
+const reviewsPerPage = 5;
+
+
+
+
+        
+       
+        
+        function showErrorState(message) {
+            albumsGrid.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        function formatDate(timestamp) {
+            if (!timestamp) return 'Data desconhecida';
+            const date = timestamp.toDate();
+            return date.toLocaleDateString('pt-BR');
+        }
+        
+
+
+
+        // Adicione esta linha no início do seu código (com as outras declarações de variáveis)
+const rateUserBtn = document.createElement('button');
+rateUserBtn.id = 'rateUserBtn';
+rateUserBtn.className = 'btn btn-outline';
+rateUserBtn.innerHTML = '<i class="fas fa-star"></i> Avaliar';
+
+// Função loadUserInfo corrigida
+async function loadUserInfo(userId) {
+        creatorId = userId; // Defina o creatorId aqui
+            showLoading("Carregando informações do usuário...");
+
+
+    
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        
+        // Cria os botões de ação (se ainda não existirem)
+        if (!subscribeBtn) {
+            subscribeBtn = document.createElement('button');
+            subscribeBtn.id = 'subscribeBtn';
+            subscribeBtn.className = 'btn';
+        }
+        
+        if (!followBtn) {
+            followBtn = document.createElement('button');
+            followBtn.id = 'followBtn';
+            followBtn.className = 'btn btn-outline';
+        }
+        
+        // Configura o botão de avaliação (se ainda não existir)
+        if (!rateUserBtn) {
+            rateUserBtn = document.createElement('button');
+            rateUserBtn.id = 'rateUserBtn';
+            rateUserBtn.className = 'btn btn-outline';
+            rateUserBtn.innerHTML = '<i class="fas fa-star"></i> Avaliar';
+        }
+        
+        // Adiciona os botões ao container
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'user-actions';
+        actionsDiv.appendChild(subscribeBtn);
+        actionsDiv.appendChild(followBtn);
+        actionsDiv.appendChild(rateUserBtn);
+
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            
+            userInfoContainer.innerHTML = `
+                <img src="${userData.profilePhotoURL || 'https://via.placeholder.com/150'}" 
+                     class="user-avatar" 
+                     alt="${userData.name || 'Usuário'}"
+                     onerror="this.src='https://via.placeholder.com/150'">
+                <div class="user-info">
+                    <h1 class="user-name">${userData.name || 'Usuário'}</h1>
+                    <p class="user-bio">${userData.bio || 'Este usuário ainda não adicionou uma biografia.'}</p>
+                    <div class="user-stats">
+                        <div class="stat-item">
+                            <div class="stat-number" id="albumsCount">0</div>
+                            <div class="stat-label">Álbuns</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="followersCount">0</div>
+                            <div class="stat-label">Seguidores</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="subscribersCount">0</div>
+                            <div class="stat-label">Assinantes</div>
+                        </div>
+                        <div class="stat-item clickable-stat" id="reviewsStat">
+                            <div class="stat-number" id="reviewsCount">0</div>
+                            <div class="stat-label">
+                                <i class="fas fa-star"></i> Avaliações
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Adiciona os botões de ação após o user-stats
+            document.querySelector('.user-info').appendChild(actionsDiv);
+            
+            // Carrega estatísticas adicionais
+            loadUserStats(userId);
+            
+            // Configura os event listeners
+            setupReviewsStatListener();
+            setupRateButtonListener();
+await checkUserRating(userId);
+        } else {
+            userInfoContainer.innerHTML = `
+                <img src="https://via.placeholder.com/150" class="user-avatar" alt="Usuário">
+                <div class="user-info">
+                    <h1 class="user-name">Usuário</h1>
+                    <p class="user-bio">Usuário não encontrado.</p>
+                    <div class="user-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Álbuns</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Seguidores</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Avaliações</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.querySelector('.user-info').appendChild(actionsDiv);
+        }
+        
+        // Atualiza a UI com os estados iniciais
+        updateUI();
+        await checkUserRating(userId);
+    } catch (error) {
+        console.error('Erro ao carregar informações do usuário:', error);
+        userInfoContainer.innerHTML = `
+            <img src="https://via.placeholder.com/150" class="user-avatar" alt="Usuário">
+            <div class="user-info">
+                <h1 class="user-name">Usuário</h1>
+                <p class="user-bio">Erro ao carregar informações.</p>
+            </div>
+        `;
+     } finally {
+        hideLoading();
+    }
+}
+
+
+// Fechar modal ao clicar fora
+window.addEventListener('click', function(event) {
+    const reviewsModal = document.getElementById('reviewsModal');
+    if (event.target === reviewsModal) {
+        closeReviewsModal();
+    }
+});
+
+
+// Função para configurar o listener do botão de avaliação
+function setupRateButtonListener() {
+    if (rateUserBtn) {
+        rateUserBtn.addEventListener('click', () => {
+            if (!isSubscribed) {
+                alert('Você precisa ser assinante para avaliar este perfil.');
+                return;
+            }
+            document.getElementById('ratingModal').style.display = 'flex';
+        });
+    }
+}
+
+        
+ // Variáveis para os listeners
+let albumsListener = null;
+let userStatsListener = null;
+let currentAlbum = null;
+let currentPhoto = null;
+// Função para carregar e monitorar estatísticas em tempo real
+async function loadUserStats(userId) {
+    // Remove listeners anteriores se existirem
+    cleanupListeners();
+
+    try {
+        // 1. Listener para contagem de álbuns
+        albumsListener = db.collection('users').doc(userId)
+            .collection('MinhaGaleria')
+            .where('privacy', 'in', ['public', 'paid'])
+            .onSnapshot(async (snapshot) => {
+                const albumsCount = snapshot.size;
+                document.getElementById('albumsCount').textContent = albumsCount;
+                await db.collection('users').doc(userId).update({
+                    albumsCount: albumsCount
+                });
+            }, (error) => {
+                console.error('Erro no listener de álbuns:', error);
+            });
+
+        // 2. Listener para estatísticas do usuário
+        userStatsListener = db.collection('users').doc(userId)
+            .onSnapshot((doc) => {
+                if (doc.exists) {
+                    const userData = doc.data();
+                    document.getElementById('followersCount').textContent = userData.followersCount || 0;
+                    document.getElementById('subscribersCount').textContent = userData.subscribersCount || 0;
+                    document.getElementById('reviewsCount').textContent = userData.reviewsCount || 0;
+                }
+            }, (error) => {
+                console.error('Erro no listener de estatísticas:', error);
+            });
+
+        // 3. Listener para contagem de assinantes (alternativa mais eficiente)
+        subscribersListener = db.collection('users').doc(userId)
+            .collection('subscribers') // Crie esta subcoleção para melhor performance
+            .onSnapshot((snapshot) => {
+                const count = snapshot.size;
+                document.getElementById('subscribersCount').textContent = count;
+                db.collection('users').doc(userId).update({
+                    subscribersCount: count
+                });
+            }, (error) => {
+                console.error('Erro no listener de assinantes:', error);
+            });
+
+        // 4. Verifica status do usuário atual
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+            // Listener para seguir
+            followingListener = db.collection('users').doc(currentUser.uid)
+                .collection('following').doc(userId)
+                .onSnapshot((doc) => {
+                    isFollowing = doc.exists;
+                    updateUI();
+                });
+
+            // Listener para assinatura
+            subscriptionListener = db.collection('users').doc(currentUser.uid)
+                .collection('subscriptions').doc(userId)
+                .onSnapshot((doc) => {
+                    isSubscribed = doc.exists;
+                    if (isSubscribed) currentPlan = doc.data()?.plan || 'premium';
+                    updateUI();
+                });
+        }
+
+    } catch (error) {
+        console.error('Erro ao configurar listeners:', error);
+        showErrorState('Erro ao carregar estatísticas.');
+    }
+}
+
+// Atualize a função de assinatura para manter a contagem
+async function subscribeUser(plan) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    try {
+        const userRef = db.collection('users').doc(creatorId);
+        const subscriptionRef = db.collection('users').doc(currentUser.uid)
+            .collection('subscriptions').doc(creatorId);
+
+        await db.runTransaction(async (transaction) => {
+            // Adiciona assinatura
+            transaction.set(subscriptionRef, {
+                plan: plan,
+                subscribedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                creatorId: creatorId
+            });
+            
+            // Atualiza contagem de assinantes (opcional - já temos o listener)
+            transaction.update(userRef, {
+                subscribers: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+            });
+        });
+
+    } catch (error) {
+        console.error('Erro na assinatura:', error);
+        throw error;
+    }
+}
+
+
+// Função para limpar todos os listeners
+function cleanupListeners() {
+    const listeners = [
+        albumsListener,
+        userStatsListener,
+        subscribersListener,
+        followingListener,
+        subscriptionListener
+    ];
+
+    listeners.forEach(listener => {
+        if (listener && typeof listener === 'function') {
+            listener();
+        }
+    });
+
+    albumsListener = null;
+    userStatsListener = null;
+    subscribersListener = null;
+    followingListener = null;
+    subscriptionListener = null;
+}
+
+
+// Modifique sua função de assinatura para manter a contagem
+async function subscribeToUser(userId, plan) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return false;
+
+    try {
+        const batch = db.batch();
+        const userRef = db.collection('users').doc(userId);
+        const subscriberRef = db.collection('users').doc(userId)
+            .collection('subscribers').doc(currentUser.uid);
+        const subscriptionRef = db.collection('users').doc(currentUser.uid)
+            .collection('subscriptions').doc(userId);
+
+        batch.set(subscriberRef, {
+            subscribedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            plan: plan
+        });
+
+        batch.set(subscriptionRef, {
+            plan: plan,
+            subscribedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            creatorId: userId
+        });
+
+        batch.update(userRef, {
+            subscribersCount: firebase.firestore.FieldValue.increment(1)
+        });
+
+        await batch.commit();
+        return true;
+
+    } catch (error) {
+        console.error('Erro na assinatura:', error);
+        throw error;
+    }
+}
+
+
+
+
+
+
+        // Carrega os álbuns (adaptado do seu código)
+        async function loadAlbums(userId) {
+            
+            try {
+                const currentUser = auth.currentUser;
+                const albumsRef = db.collection('users').doc(userId).collection('MinhaGaleria');
+                
+                // Busca álbuns públicos ou pagos
+                const albumsQuery = albumsRef
+                    .where('privacy', 'in', ['public', 'paid'])
+                    .orderBy('createdAt', 'desc');
+                
+                const albumsSnapshot = await albumsQuery.get();
+                
+                if (albumsSnapshot.empty) {
+                    albumsGrid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-camera"></i>
+                            <p>Nenhum álbum disponível</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Verifica álbuns comprados pelo usuário atual
+                let purchasedAlbums = [];
+                if (currentUser) {
+                    const purchases = await db.collection('users').doc(currentUser.uid)
+                        .collection('purchasedAlbums')
+                        .where('creatorId', '==', userId)
+                        .get();
+                    purchasedAlbums = purchases.docs.map(doc => doc.id);
+                    
+                    // Verifica se o usuário é assinante
+                    const subscription = await db.collection('users').doc(currentUser.uid)
+                        .collection('subscriptions')
+                        .doc(userId)
+                        .get();
+                    
+                    if (subscription.exists) {
+                        isSubscribed = true;
+                        currentPlan = subscription.data().plan || 'premium';
+                    }
+                }
+                
+                // Processa os álbuns
+                const albums = await Promise.all(albumsSnapshot.docs.map(async (doc) => {
+                    const albumData = doc.data();
+                    const isOwner = currentUser && currentUser.uid === userId;
+                    const isPurchased = purchasedAlbums.includes(doc.id);
+                    
+                    // Garante que a data existe
+                    const createdAt = albumData.createdAt || firebase.firestore.FieldValue.serverTimestamp();
+                    
+                    // Obtém contagem de fotos
+                    const photosCount = (await doc.ref.collection('photos').get()).size;
+                    
+                    // Obtém URL da capa
+                    let coverUrl = albumData.coverUrl;
+                    if (!coverUrl && photosCount > 0) {
+                        const firstPhoto = await doc.ref.collection('photos')
+                            .orderBy('uploadedAt')
+                            .limit(1)
+                            .get();
+                        coverUrl = firstPhoto.docs[0]?.data()?.url || 'assets/default-cover.jpg';
+                    }
+                    
+                    return {
+                        id: doc.id,
+                        name: albumData.name || 'Álbum sem título',
+                        privacy: albumData.privacy || 'public',
+                        price: albumData.price || 0,
+                        createdAt: createdAt,
+                        photosCount: photosCount,
+                        coverUrl: coverUrl || 'assets/default-cover.jpg',
+                        isOwner: isOwner,
+                        isPurchased: isPurchased,
+                        canView: isOwner || isPurchased || albumData.privacy === 'public' || isSubscribed
+                    };
+                }));
+                
+                displayAlbums(albums);
+                updateUI();
+                
+            } catch (error) {
+                console.error("Erro ao carregar álbuns:", error);
+                showErrorState("Erro ao carregar álbuns. Tente novamente.");
+            }
+        }
+        
+        // Exibe os álbuns na galeria
+        function displayAlbums(albums) {
+            if (albums.length === 0) {
+                albumsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-camera"></i>
+                        <p>Nenhum álbum disponível</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            albumsGrid.innerHTML = '';
+            
+            albums.forEach(album => {
+                const albumCard = document.createElement('div');
+                albumCard.className = 'album-card';
+                
+                let priceDisplay = 'GRATUITO';
+                if (album.privacy === 'paid' && album.price > 0) {
+                    priceDisplay = `R$ ${album.price.toFixed(2)}`;
+                }
+                
+                albumCard.innerHTML = `
+                    <img src="${album.coverUrl}" alt="${album.name}" class="album-cover">
+                    <div class="album-info">
+                        <h3 class="album-title">${album.name}</h3>
+                        <p class="album-date">${formatDate(album.createdAt)}</p>
+                        <p class="album-price">${priceDisplay}</p>
+                    </div>
+                `;
+                
+                // Adiciona overlay de bloqueio se o usuário não pode ver
+                if (!album.canView) {
+                    const lockedDiv = document.createElement('div');
+                    lockedDiv.className = 'album-locked';
+                    lockedDiv.innerHTML = `
+                        <i class="fas fa-lock"></i>
+                        <p>Conteúdo exclusivo</p>
+                        <small>Disponível para assinantes</small>
+                    `;
+                    albumCard.appendChild(lockedDiv);
+                }
+                
+                // Adiciona evento de clique
+                albumCard.addEventListener('click', () => {
+        if (album.canView) {
+            openAlbum(album);
+        } else {
+            showSubscribePrompt();
+        }
+    });
+                
+                albumsGrid.appendChild(albumCard);
+            });
+        }
+        
+        // Atualiza a interface com base no estado
+        function updateUI() {
+            // Atualiza o status de assinatura
+            if (isSubscribed) {
+                subscriptionStatus.textContent = `Assinante ${currentPlan.toUpperCase()}`;
+                subscriptionStatus.style.color = 'var(--secondary-color)';
+                
+                subscribeBtn.textContent = `Assinante ${currentPlan.toUpperCase()}`;
+                subscribeBtn.className = 'btn-outline';
+            } else {
+                subscriptionStatus.textContent = 'Você não é assinante';
+                subscriptionStatus.style.color = '';
+                
+                subscribeBtn.textContent = 'Assinar Usuário';
+                subscribeBtn.className = 'btn';
+            }
+            
+            // Atualiza o botão de seguir
+            if (isFollowing) {
+                followBtn.textContent = 'Seguindo';
+                followBtn.className = 'btn';
+            } else {
+                followBtn.textContent = 'Seguir';
+                followBtn.className = 'btn-outline';
+            }
+        }
+        
+// Elementos do modal
+const subscriptionModal = document.getElementById('subscriptionModal');
+const closeModalBtn = document.querySelector('.close-modal');
+const planCards = document.querySelectorAll('.plan-card');
+const selectPlanBtns = document.querySelectorAll('.select-plan-btn');
+
+// Mostra/oculta botão de avaliação
+  const rateBtn = document.getElementById('rateUserBtn');
+  if (rateBtn) {
+    rateBtn.style.display = isSubscribed ? 'block' : 'none';
+  }
+
+// Mostrar modal ao clicar em "Assinar Usuário"
+subscribeBtn.addEventListener('click', async () => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    alert('Você precisa estar logado para assinar este usuário.');
+    return;
+  }
+
+  if (isSubscribed) {
+    await showCancelConfirmation();
+    return;
+}
+
+  // Carrega dados do criador se necessário
+  if (!creatorData) {
+    try {
+      const doc = await db.collection('users').doc(creatorId).get();
+      creatorData = doc.exists ? doc.data() : {};
+    } catch (error) {
+      console.error('Erro ao carregar dados do criador:', error);
+      alert('Erro ao carregar informações. Tente novamente.');
+      return;
+    }
+  }
+
+  // Atualiza preços baseados no ValorAssinatura
+  const basePrice = creatorData.ValorAssinatura || 99;
+  document.getElementById('basicPrice').textContent = basePrice.toFixed(2);
+  document.getElementById('premiumPrice').textContent = (basePrice * 1.5).toFixed(2);
+  document.getElementById('vipPrice').textContent = (basePrice * 3).toFixed(2);
+
+  // Mostra o modal
+  subscriptionModal.style.display = 'block';
+});
+
+// Fechar modal ao clicar no X
+closeModalBtn.addEventListener('click', () => {
+  subscriptionModal.style.display = 'none';
+});
+
+// Fechar modal ao clicar fora do conteúdo
+window.addEventListener('click', (event) => {
+  if (event.target === subscriptionModal) {
+    subscriptionModal.style.display = 'none';
+  }
+});
+
+// Seleção de plano
+selectPlanBtns.forEach(btn => {
+  btn.addEventListener('click', async function() {
+    const planCard = this.closest('.plan-card');
+    const plan = planCard.dataset.plan;
+    const basePrice = creatorData.ValorAssinatura || 99;
+    
+    // Calcula valor conforme plano selecionado
+    let amount = basePrice;
+    if (plan === 'premium') amount *= 1.5;
+    if (plan === 'vip') amount *= 3;
+    
+    // Fecha o modal
+    subscriptionModal.style.display = 'none';
+    
+    // Processa a assinatura
+    await processSubscription(plan, amount);
+  });
+});
+
+
+
+
+// Adicione estas funções:
+async function showCancelConfirmation() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('cancelConfirmModal');
+    const planName = document.getElementById('currentPlanName');
+    
+    planName.textContent = currentPlan.toUpperCase();
+    modal.style.display = 'flex';
+    
+    document.getElementById('confirmCancelYes').onclick = async () => {
+      modal.style.display = 'none';
+      await cancelSubscription();
+      resolve();
+    };
+    
+    document.getElementById('confirmCancelNo').onclick = () => {
+      modal.style.display = 'none';
+      resolve();
+    };
+  });
+}
+
+// Função para fechar ao clicar fora (adicione este evento)
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('cancelConfirmModal');
+  if (e.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+
+// Função para processar assinatura (melhorada)
+async function processSubscription(plan, amount) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return false;
+
+    try {
+        // 1. Verificar saldo do usuário
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+        const userBalance = userData?.balance || 0;
+
+        if (userBalance < amount) {
+            alert(`Saldo insuficiente. Você precisa de R$ ${amount.toFixed(2)}. Seu saldo: R$ ${userBalance.toFixed(2)}`);
+            return false;
+        }
+
+        // 2. Processar transação
+        const batch = db.batch();
+        
+        // Atualizar saldo do usuário
+        const userRef = db.collection('users').doc(currentUser.uid);
+        batch.update(userRef, {
+            balance: firebase.firestore.FieldValue.increment(-amount)
+        });
+
+        // Criar assinatura
+        const subscriptionRef = db.collection('users').doc(currentUser.uid)
+            .collection('subscriptions').doc(creatorId);
+        
+        batch.set(subscriptionRef, {
+            plan: plan,
+            subscribedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias
+            amountPaid: amount,
+            creatorId: creatorId
+        });
+
+        // Adicionar aos assinantes do criador
+        const creatorSubscriberRef = db.collection('users').doc(creatorId)
+            .collection('subscribers').doc(currentUser.uid);
+        
+        batch.set(creatorSubscriberRef, {
+            subscribedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            plan: plan,
+            subscriberId: currentUser.uid
+        });
+
+        // Atualizar contagem de assinantes
+        const creatorRef = db.collection('users').doc(creatorId);
+        batch.update(creatorRef, {
+            subscribersCount: firebase.firestore.FieldValue.increment(1)
+        });
+
+        await batch.commit();
+
+        // 3. Atualizar estado local
+        isSubscribed = true;
+        currentPlan = plan;
+        updateUI();
+        loadAlbums(creatorId);
+        
+// Por esta mensagem personalizada:
+Swal.fire({
+    title: 'Assinatura Concluída!',
+    html: `
+        <div style="text-align: center;">
+            <i class="fas fa-gem" style="font-size: 48px; color: #D4AF37; margin-bottom: 20px;"></i>
+            <p style="font-size: 18px; margin-bottom: 10px;">Sua assinatura <strong>${plan.toUpperCase()}</strong> foi ativada com sucesso!</p>
+            <p style="font-size: 16px; color: #aaa;">Agradecemos por fazer parte do <span style="color: #D4AF37;">Quero'Luxo</span></p>
+            <p style="font-style: italic; margin-top: 20px;">Que esta jornada traga encontros memoráveis<br>e experiências verdadeiramente exclusivas</p>
+        </div>
+    `,
+    icon: 'success',
+    confirmButtonText: 'Iniciar Experiência',
+    confirmButtonColor: '#D4AF37',
+    background: '#2A2A2A',
+    customClass: {
+        popup: 'luxury-swal',
+        title: 'swal-title-luxury',
+        content: 'swal-content-luxury'
+    }
+});        return true;
+
+    } catch (error) {
+        console.error('Erro ao processar assinatura:', error);
+        alert('Erro ao processar assinatura. Tente novamente.');
+        return false;
+    }
+}
+
+
+
+// Função para cancelar assinatura (sem reembolso)
+async function cancelSubscription() {
+    try {
+        const batch = db.batch();
+        
+        // Remove a assinatura
+        const subscriptionRef = db.collection('users').doc(auth.currentUser.uid)
+            .collection('subscriptions').doc(creatorId);
+        batch.delete(subscriptionRef);
+
+        // Remove dos assinantes do criador
+        const subscriberRef = db.collection('users').doc(creatorId)
+            .collection('subscribers').doc(auth.currentUser.uid);
+        batch.delete(subscriberRef);
+
+        // Atualiza contagem
+        const creatorRef = db.collection('users').doc(creatorId);
+        batch.update(creatorRef, {
+            subscribersCount: firebase.firestore.FieldValue.increment(-1)
+        });
+
+        await batch.commit();
+
+        // Atualiza estado local
+        isSubscribed = false;
+        updateUI();
+        loadAlbums(creatorId);
+        
+      // Substitua o alert por esta mensagem personalizada
+        Swal.fire({
+            title: 'Assinatura Encerrada',
+            html: `
+                <div style="text-align: center;">
+                    <i class="fas fa-champagne-glasses" style="font-size: 48px; color: #D4AF37; margin-bottom: 20px;"></i>
+                    <p style="font-size: 18px; margin-bottom: 10px;">Sua assinatura <strong>${currentPlan.toUpperCase()}</strong> foi cancelada</p>
+                    <p style="font-size: 16px; color: #aaa;">Foi um prazer tê-lo conosco no <span style="color: #D4AF37;">Quero'Luxo</span></p>
+                    <p style="font-style: italic; margin-top: 20px;">Que suas experiências continuem a brilhar<br>como as joias mais preciosas</p>
+                    <p style="margin-top: 15px; font-size: 14px;">Sempre será bem-vindo de volta</p>
+                </div>
+            `,
+            icon: 'info',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#8B4513',
+            background: '#2A2A2A',
+            customClass: {
+                popup: 'luxury-swal',
+                title: 'swal-title-luxury',
+                content: 'swal-content-luxury'
+            }
+        });
+
+        // Atualiza estado local
+        isSubscribed = false;
+        currentPlan = null;
+        updateUI();
+        
+    } catch (error) {
+        console.error('Erro ao cancelar:', error);
+        
+        // Mensagem de erro personalizada
+        Swal.fire({
+            title: 'Erro',
+            html: `
+                <div style="text-align: center;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #ff6b6b; margin-bottom: 20px;"></i>
+                    <p style="font-size: 18px;">Não foi possível cancelar sua assinatura</p>
+                    <p style="font-size: 14px; color: #aaa;">Por favor, tente novamente mais tarde</p>
+                </div>
+            `,
+            icon: 'error',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#A0522D',
+            background: '#2A2A2A'
+        });
+    }
+}
+
+
+
+
+
+
+        // Evento de clique no botão de seguir
+// Evento de clique no botão de seguir
+followBtn.addEventListener('click', async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        alert('Você precisa estar logado para seguir este usuário.');
+        return;
+    }
+    
+    if (!creatorId) {
+        alert('Erro: Não foi possível identificar o usuário a ser seguido.');
+        return;
+    }
+    
+    try {
+        const userRef = db.collection('users').doc(creatorId);
+        const followingRef = db.collection('users').doc(currentUser.uid)
+            .collection('following').doc(creatorId);
+        
+        if (isFollowing) {
+            // Deixar de seguir
+            await db.runTransaction(async (transaction) => {
+                transaction.update(userRef, {
+                    followers: firebase.firestore.FieldValue.arrayRemove(currentUser.uid),
+                    followersCount: firebase.firestore.FieldValue.increment(-1)
+                });
+                transaction.delete(followingRef);
+            });
+        } else {
+            // Seguir
+            await db.runTransaction(async (transaction) => {
+                transaction.update(userRef, {
+                    followers: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+                    followersCount: firebase.firestore.FieldValue.increment(1)
+                });
+                transaction.set(followingRef, {
+                    followedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    creatorId: creatorId
+                });
+            });
+        }
+        
+        // Não precisa mais do alerta aqui - a UI atualiza automaticamente
+    } catch (error) {
+        console.error('Erro ao atualizar status de seguimento:', error);
+        alert('Erro ao processar. Tente novamente.');
+    }
+});
+    
+        // Evento de clique nos filtros
+        document.querySelectorAll('.filter-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                // Aqui você implementaria a filtragem real dos álbuns
+                // Por enquanto, apenas recarrega
+                if (currentUserId) loadAlbums(currentUserId);
+            });
+        });
+        
+           // Função para decodificar dados do hash (nova)
+        function getDataFromHash() {
+            if (window.location.hash) {
+                try {
+                    const hashData = window.location.hash.substring(1);
+                    if (hashData.startsWith('gallery-')) {
+                        return JSON.parse(atob(hashData.substring(8)));
+                    }
+                } catch (e) {
+                    console.error('Erro ao decodificar hash:', e);
+                }
+            }
+            return null;
+        }
+
+        // Inicialização quando a página carrega (atualizada)
+        document.addEventListener('DOMContentLoaded', async function() {
+ setupRatingStars();
+document.getElementById('submitRating').addEventListener('click', submitRating);
+
+
+            // Obter dados de todas as fontes possíveis
+            let galleryData = null;
+            
+            // 1. Tentar do hash primeiro (para GitHub Codespaces)
+            galleryData = getDataFromHash();
+            
+            // 2. Tentar do sessionStorage
+            if (!galleryData) {
+                try {
+                    galleryData = JSON.parse(sessionStorage.getItem('galleryData') || 'null');
+                    sessionStorage.removeItem('galleryData');
+                } catch (e) {
+                    console.error('Erro ao ler sessionStorage:', e);
+                }
+            }
+            
+            // 3. Tentar do localStorage como último recurso
+            if (!galleryData) {
+                try {
+                    galleryData = JSON.parse(localStorage.getItem('tempGalleryData') || 'null');
+                    localStorage.removeItem('tempGalleryData');
+                } catch (e) {
+                    console.error('Erro ao ler localStorage:', e);
+                }
+            }
+            
+            // Verificar se os dados são válidos
+            if (!galleryData || !galleryData.creatorId) {
+                showErrorState("ID do usuário não especificado.");
+                return;
+            }
+            
+            // Definir as variáveis globais
+            creatorId = galleryData.creatorId;
+            viewerId = galleryData.viewerId || '';
+            isOwnGallery = galleryData.isOwnGallery || false;
+            
+            // Carrega as informações do usuário e álbuns
+            try {
+                await loadUserInfo(creatorId);
+                await loadAlbums(creatorId);
+                
+                // Verifica se o usuário atual está seguindo este perfil
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    const followDoc = await db.collection('users').doc(currentUser.uid)
+                        .collection('following')
+                        .doc(creatorId)
+                        .get();
+                    
+                    isFollowing = followDoc.exists;
+                    
+                    // Verifica assinatura
+                    const subscriptionDoc = await db.collection('users').doc(currentUser.uid)
+                        .collection('subscriptions')
+                        .doc(creatorId)
+                        .get();
+                    
+                    if (subscriptionDoc.exists) {
+                        isSubscribed = true;
+                        currentPlan = subscriptionDoc.data().plan || 'premium';
+                    }
+                }
+                
+                updateUI();
+document.getElementById('submitRating').addEventListener('click', submitRating);
+
+                
+            } catch (error) {
+                console.error('Erro ao carregar galeria:', error);
+                showErrorState('Erro ao carregar galeria. Tente novamente.');
+            }
+        });
+
+
+        // Função para abrir o álbum
+async function openAlbum(album) {
+    currentAlbum = album;
+    
+    // Mostra o título do álbum
+    document.getElementById('albumViewTitle').textContent = album.name;
+    
+    // Esconde a grade de álbuns e mostra o visualizador
+    document.getElementById('albumsGrid').style.display = 'none';
+    document.getElementById('albumViewContainer').style.display = 'block';
+    
+    // Carrega as fotos do álbum
+    await loadAlbumPhotos(album.id);
+}
+
+// Função para carregar fotos do álbum
+async function loadAlbumPhotos(albumId) {
+    const photosContainer = document.getElementById('albumPhotosContainer');
+    photosContainer.innerHTML = '<p>Carregando fotos...</p>';
+    
+    try {
+        const photosSnapshot = await db.collection('users').doc(creatorId)
+            .collection('MinhaGaleria').doc(albumId)
+            .collection('photos').orderBy('uploadedAt').get();
+        
+        if (photosSnapshot.empty) {
+            photosContainer.innerHTML = '<p>Nenhuma foto neste álbum.</p>';
+            return;
+        }
+        
+        photosContainer.innerHTML = '';
+        
+        photosSnapshot.forEach(doc => {
+            const photo = doc.data();
+            photo.id = doc.id;
+            
+            const photoElement = document.createElement('img');
+            photoElement.src = photo.url;
+            photoElement.alt = photo.caption || 'Foto do álbum';
+            photoElement.className = 'album-photo';
+            photoElement.dataset.photoId = photo.id;
+            
+            photoElement.addEventListener('click', () => showPhotoDetail(photo));
+            
+            photosContainer.appendChild(photoElement);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar fotos:', error);
+        photosContainer.innerHTML = '<p>Erro ao carregar fotos.</p>';
+    }
+}
+
+// Função para mostrar detalhes da foto
+async function showPhotoDetail(photo) {
+    currentPhoto = photo;
+    const detailContainer = document.getElementById('photoDetailContainer');
+    
+    detailContainer.innerHTML = `
+        <img src="${photo.url}" alt="${photo.caption || 'Foto do álbum'}">
+        ${photo.caption ? `<p class="photo-caption">${photo.caption}</p>` : ''}
+    `;
+    
+    detailContainer.style.display = 'block';
+    
+    // Carrega curtidas e comentários
+    await loadPhotoInteractions(photo.id);
+}
+
+// Função para carregar interações (versão corrigida)
+async function loadPhotoInteractions(photoId) {
+commentsContainer.innerHTML = '<p class="loading-comments">Carregando comentários...</p>';
+
+    if (!currentAlbum || !photoId) return;
+    
+    try {
+        const photoRef = db.collection('users').doc(creatorId)
+            .collection('MinhaGaleria').doc(currentAlbum.id)
+            .collection('photos').doc(photoId);
+        
+        // 1. Carrega curtidas
+        const likesSnapshot = await photoRef.collection('likes').get();
+        document.getElementById('likeCount').textContent = likesSnapshot.size;
+        
+        // 2. Carrega comentários e atualiza contagem
+        const commentsSnapshot = await photoRef.collection('comments')
+            .orderBy('timestamp', 'desc')
+            .get();
+        
+        // Atualiza o contador de comentários
+        const commentsCount = commentsSnapshot.size;
+        document.querySelector('.comments-count').textContent = 
+            `${commentsCount} comentário${commentsCount !== 1 ? 's' : ''}`;
+        
+        // 3. Exibe os comentários
+        const commentsContainer = document.getElementById('commentsContainer');
+        commentsContainer.innerHTML = '';
+        
+        if (commentsCount === 0) {
+            commentsContainer.innerHTML = '<p>Nenhum comentário ainda.</p>';
+            return;
+        }
+        
+        commentsSnapshot.forEach(doc => {
+            const comment = doc.data();
+            const commentElement = document.createElement('div');
+            commentElement.className = 'comment';
+            commentElement.innerHTML = `
+                <div class="comment-author">${comment.authorName}</div>
+                <div class="comment-text">${comment.text}</div>
+                <div class="comment-time">${formatDate(comment.timestamp)}</div>
+            `;
+            commentsContainer.appendChild(commentElement);
+        });
+        
+        // 4. Verifica se o usuário atual já curtiu
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+            const userLike = await photoRef.collection('likes')
+                .doc(currentUser.uid).get();
+            
+            const likeBtn = document.querySelector('.like-btn i');
+            if (userLike.exists) {
+                likeBtn.classList.replace('far', 'fas');
+                likeBtn.style.color = '#ff6b6b';
+            } else {
+                likeBtn.classList.replace('fas', 'far');
+                likeBtn.style.color = '';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar interações:', error);
+        document.querySelector('.comments-count').textContent = '0 comentários';
+        commentsContainer.innerHTML = '<p>Erro ao carregar comentários.</p>';
+    }
+}
+
+// Evento para curtir foto
+document.querySelector('.like-btn').addEventListener('click', async () => {
+    if (!auth.currentUser) {
+        alert('Você precisa estar logado para curtir.');
+        return;
+    }
+    
+    if (!currentPhoto) return;
+    
+    const photoRef = db.collection('users').doc(creatorId)
+        .collection('MinhaGaleria').doc(currentAlbum.id)
+        .collection('photos').doc(currentPhoto.id);
+    
+    const likeRef = photoRef.collection('likes').doc(auth.currentUser.uid);
+    const likeDoc = await likeRef.get();
+    
+    if (likeDoc.exists) {
+        await likeRef.delete();
+    } else {
+        await likeRef.set({
+            userId: auth.currentUser.uid,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+    
+    // Atualiza a contagem
+    await loadPhotoInteractions(currentPhoto.id);
+});
+
+// Evento para adicionar comentário
+document.getElementById('postCommentBtn').addEventListener('click', async () => {
+    const commentInput = document.getElementById('commentInput');
+    const commentText = commentInput.value.trim();
+    
+    if (!commentText) return;
+    if (!auth.currentUser) {
+        alert('Você precisa estar logado para comentar.');
+        return;
+    }
+    
+    try {
+        const userDoc = await db.collection('users').doc(auth.currentUser.uid).get();
+        const userName = userDoc.data().name || 'Anônimo';
+        
+        await db.collection('users').doc(creatorId)
+            .collection('MinhaGaleria').doc(currentAlbum.id)
+            .collection('photos').doc(currentPhoto.id)
+            .collection('comments')
+            .add({
+                text: commentText,
+                authorId: auth.currentUser.uid,
+                authorName: userName,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        
+        commentInput.value = '';
+        await loadPhotoInteractions(currentPhoto.id);
+    } catch (error) {
+        console.error('Erro ao postar comentário:', error);
+        alert('Erro ao postar comentário.');
+    }
+});
+
+// Evento para voltar aos álbuns
+document.getElementById('closeAlbumView').addEventListener('click', () => {
+    document.getElementById('albumsGrid').style.display = 'grid';
+    document.getElementById('albumViewContainer').style.display = 'none';
+    document.getElementById('photoDetailContainer').style.display = 'none';
+    currentAlbum = null;
+    currentPhoto = null;
+});
+
+// Função para mostrar prompt de assinatura
+function showSubscribePrompt() {
+    // Aqui você pode usar o modal de assinatura que já criamos anteriormente
+    subscriptionModal.style.display = 'block';
+}
+
+// Variáveis globais
+let currentRating = 0;
+let hasRatedBefore = false;
+
+
+// Evento para abrir o modal de avaliação
+document.getElementById('rateUserBtn').addEventListener('click', () => {
+    if (!isSubscribed) {
+        alert('Você precisa ser assinante para avaliar este perfil.');
+        return;
+    }
+    
+    // Reseta a seleção ao abrir o modal
+    currentRating = 0;
+    const stars = document.querySelectorAll('.rating-stars i');
+    stars.forEach(star => {
+        star.classList.remove('fas', 'active');
+        star.classList.add('far');
+    });
+    
+    document.getElementById('ratingText').textContent = 'Selecione sua avaliação';
+    document.getElementById('ratingModal').style.display = 'flex';
+    
+    // Configura as estrelas
+    setupRatingStars();
+});
+
+// Evento para selecionar as estrelas
+document.querySelectorAll('.rating-stars i').forEach(star => {
+  star.addEventListener('click', () => {
+    const rating = parseInt(star.dataset.rating);
+    currentRating = rating;
+    
+    // Atualiza a visualização das estrelas
+    document.querySelectorAll('.rating-stars i').forEach((s, index) => {
+      if (index < rating) {
+        s.classList.replace('far', 'fas');
+        s.classList.add('active');
+      } else {
+        s.classList.replace('fas', 'far');
+        s.classList.remove('active');
+      }
+    });
+  });
+});
+
+// Evento para enviar avaliação
+document.getElementById('submitRating').addEventListener('click', async () => {
+  if (currentRating === 0) {
+    alert('Por favor, selecione uma classificação com estrelas.');
+    return;
+  }
+
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+
+  const comment = document.getElementById('ratingComment').value.trim();
+  
+  try {
+    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+    const userName = userDoc.data()?.name || 'Anônimo';
+    
+    const batch = db.batch();
+    
+    // 1. Adiciona/atualiza a avaliação
+    const ratingRef = db.collection('users').doc(creatorId)
+      .collection('ratings').doc(currentUser.uid);
+    
+    batch.set(ratingRef, {
+      rating: currentRating,
+      comment: comment || null,
+      reviewerId: currentUser.uid,
+      reviewerName: userName,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // 2. Atualiza a contagem de avaliações
+    const userRef = db.collection('users').doc(creatorId);
+    if (!hasRatedBefore) {
+      batch.update(userRef, {
+        reviewsCount: firebase.firestore.FieldValue.increment(1)
+      });
+    }
+    
+    await batch.commit();
+    
+    // Atualiza a UI
+    document.getElementById('ratingModal').style.display = 'none';
+    hasRatedBefore = true;
+    document.getElementById('rateUserBtn').disabled = true;
+    document.getElementById('rateUserBtn').innerHTML = 
+      '<i class="fas fa-star"></i> Já Avaliado';
+    
+    // Atualiza o contador de avaliações
+    const reviewsCountElement = document.getElementById('reviewsCount');
+    if (!hasRatedBefore) {
+      reviewsCountElement.textContent = parseInt(reviewsCountElement.textContent) + 1;
+    }
+    
+    // Mostra confirmação
+    Swal.fire({
+      title: 'Avaliação Enviada!',
+      html: `<div style="text-align: center;">
+        <i class="fas fa-star" style="color: #ffd700; font-size: 48px;"></i>
+        <p style="margin-top: 15px;">Obrigado por sua avaliação de ${currentRating} estrelas!</p>
+      </div>`,
+      confirmButtonColor: '#D4AF37',
+      background: '#2A2A2A'
+    });
+    
+  } catch (error) {
+    console.error('Erro ao enviar avaliação:', error);
+    alert('Erro ao enviar avaliação. Tente novamente.');
+  }
+});
+
+// Fechar modal
+document.querySelector('.close-modal').addEventListener('click', () => {
+  document.getElementById('ratingModal').style.display = 'none';
+});
+
+
+
+
+
+
+
+async function submitRating() {
+    if (currentRating === 0) {
+        alert('Por favor, selecione uma classificação com estrelas.');
+        return;
+    }
+
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        alert('Você precisa estar logado para avaliar.');
+        return;
+    }
+
+    showLoading("Enviando sua avaliação...");
+    
+    try {
+        const comment = document.getElementById('ratingComment').value.trim();
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userName = userDoc.data()?.name || 'Anônimo';
+        
+        const batch = db.batch();
+        const ratingRef = db.collection('users').doc(creatorId)
+            .collection('ratings').doc(currentUser.uid);
+        
+        batch.set(ratingRef, {
+            rating: currentRating,
+            comment: comment || null,
+            reviewerId: currentUser.uid,
+            reviewerName: userName,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        if (!hasRatedBefore) {
+            const userRef = db.collection('users').doc(creatorId);
+            batch.update(userRef, {
+                reviewsCount: firebase.firestore.FieldValue.increment(1)
+            });
+        }
+        
+        await batch.commit();
+        
+        // Fecha o modal e atualiza a UI
+        document.getElementById('ratingModal').style.display = 'none';
+          hasRatedBefore = true;
+        updateRateButtonUI(true);
+        
+        if (document.getElementById('rateUserBtn')) {
+            document.getElementById('rateUserBtn').disabled = true;
+            document.getElementById('rateUserBtn').innerHTML = 
+                '<i class="fas fa-star"></i> Já Avaliado';
+        }
+        
+        const reviewsCountElement = document.getElementById('reviewsCount');
+        if (reviewsCountElement && !hasRatedBefore) {
+            reviewsCountElement.textContent = parseInt(reviewsCountElement.textContent) + 1;
+        }
+        
+        // Recarrega as avaliações se o modal estiver aberto
+        if (document.getElementById('reviewsModal').style.display === 'flex') {
+            loadReviewsPaginated(creatorId, currentReviewsPage);
+        }
+        
+        Swal.fire({
+            title: 'Avaliação Enviada!',
+            html: `<div style="text-align: center;">
+                <i class="fas fa-star" style="color: #ffd700; font-size: 48px;"></i>
+                <p style="margin-top: 15px;">Obrigado por sua avaliação de ${currentRating} estrela${currentRating > 1 ? 's' : ''}!</p>
+            </div>`,
+            confirmButtonColor: '#D4AF37'
+        });
+        
+    } catch (error) {
+        console.error('Erro ao enviar avaliação:', error);
+        Swal.fire({
+            title: 'Erro',
+            text: 'Não foi possível enviar sua avaliação. Tente novamente.',
+            icon: 'error',
+            confirmButtonColor: '#D4AF37'
+        });
+    } finally {
+        hideLoading(); // Agora esta função está definida
+    }
+}
+async function checkUserRating(userId) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    try {
+        const ratingDoc = await db.collection('users').doc(userId)
+            .collection('ratings').doc(currentUser.uid).get();
+        
+        hasRatedBefore = ratingDoc.exists;
+        
+        if (hasRatedBefore) {
+            updateRateButtonUI(true);
+        } else {
+            updateRateButtonUI(false);
+        }
+    } catch (error) {
+        console.error('Erro ao verificar avaliação:', error);
+    }
+}
+
+function updateRateButtonUI(hasRated) {
+    const rateButton = document.getElementById('rateUserBtn');
+    if (!rateButton) return;
+    
+    if (hasRated) {
+        rateButton.disabled = true;
+        rateButton.innerHTML = '<i class="fas fa-star"></i> Já Avaliado';
+        rateButton.classList.add('rated');
+    } else {
+        rateButton.disabled = false;
+        rateButton.innerHTML = '<i class="fas fa-star"></i> Avaliar';
+        rateButton.classList.remove('rated');
+    }
+}
+
+// Função para carregar avaliações existentes (nova)
+async function loadUserRatings(userId) {
+    try {
+        const ratingsSnapshot = await db.collection('users').doc(userId)
+            .collection('ratings')
+            .orderBy('createdAt', 'desc')
+            .limit(5)
+            .get();
+        
+        const ratingsContainer = document.getElementById('ratingsContainer');
+        if (ratingsContainer) {
+            ratingsContainer.innerHTML = '';
+            
+            if (ratingsSnapshot.empty) {
+                ratingsContainer.innerHTML = '<p>Nenhuma avaliação ainda.</p>';
+                return;
+            }
+            
+            ratingsSnapshot.forEach(doc => {
+                const ratingData = doc.data();
+                ratingsContainer.innerHTML += `
+                    <div class="rating-item">
+                        <div class="rating-header">
+                            <span class="rating-user">${ratingData.reviewerName}</span>
+                            <div class="rating-stars">
+                                ${'<i class="fas fa-star"></i>'.repeat(ratingData.rating)}
+                                ${'<i class="far fa-star"></i>'.repeat(5 - ratingData.rating)}
+                            </div>
+                        </div>
+                        ${ratingData.comment ? `<p class="rating-comment">"${ratingData.comment}"</p>` : ''}
+                        <small class="rating-date">${new Date(ratingData.createdAt?.toDate()).toLocaleDateString()}</small>
+                    </div>
+                `;
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar avaliações:', error);
+    }
+}
+
+function setupRatingStars() {
+    const stars = document.querySelectorAll('.rating-stars i');
+    const ratingText = document.getElementById('ratingText');
+    
+    stars.forEach(star => {
+        star.addEventListener('click', (e) => {
+            const rating = parseInt(e.target.getAttribute('data-rating'));
+            currentRating = rating;
+            
+            // Atualiza o texto conforme a avaliação
+            const ratingMessages = [
+                "",
+                "Péssimo",
+                "Ruim",
+                "Bom",
+                "Muito Bom",
+                "Excelente"
+            ];
+            ratingText.textContent = `${rating} estrela${rating > 1 ? 's' : ''} - ${ratingMessages[rating]}`;
+            
+            // Atualiza a visualização das estrelas
+            stars.forEach((s, index) => {
+                if (index < rating) {
+                    s.classList.remove('far');
+                    s.classList.add('fas', 'active');
+                } else {
+                    s.classList.remove('fas', 'active');
+                    s.classList.add('far');
+                }
+            });
+        });
+        
+        // Efeito hover
+        star.addEventListener('mouseover', (e) => {
+            const hoverRating = parseInt(e.target.getAttribute('data-rating'));
+            stars.forEach((s, index) => {
+                s.classList.toggle('hover', index < hoverRating);
+            });
+        });
+        
+        star.addEventListener('mouseout', () => {
+            stars.forEach(s => s.classList.remove('hover'));
+        });
+    });
+}
+
+
+
+// Variáveis para paginação
+function openReviewsModal() {
+    document.getElementById('reviewsModal').style.display = 'flex';
+    currentReviewsPage = 1;
+    lastVisible = null;
+    firstVisible = null;
+    loadReviewsPaginated(creatorId, 'first');
+}
+
+// Função para fechar o modal
+function closeReviewsModal() {
+    document.getElementById('reviewsModal').style.display = 'none';
+}
+
+// Função para carregar avaliações com paginação
+async function loadReviewsPaginated(userId, direction = 'next') {
+    showLoading("Carregando avaliações...");
+    
+    try {
+        let query = db.collection('users').doc(userId)
+            .collection('ratings')
+            .orderBy('createdAt', 'desc')
+            .limit(reviewsPerPage);
+
+        // Aplica o cursor conforme a direção da paginação
+        if (direction === 'next' && lastVisible) {
+            query = query.startAfter(lastVisible);
+        } else if (direction === 'prev' && firstVisible) {
+            query = query.endBefore(firstVisible);
+        }
+
+        const reviewsSnapshot = await query.get();
+        
+        const reviewsList = document.getElementById('reviewsList');
+        reviewsList.innerHTML = '';
+        
+        if (reviewsSnapshot.empty) {
+            reviewsList.innerHTML = '<p>Nenhuma avaliação encontrada.</p>';
+            updatePaginationControls();
+            return;
+        }
+        
+        // Armazena os documentos para paginação
+        const docs = reviewsSnapshot.docs;
+        firstVisible = docs[0];
+        lastVisible = docs[docs.length - 1];
+        
+        // Limpa a lista atual
+        reviewsList.innerHTML = '';
+        
+        // Adiciona as avaliações ao DOM
+        docs.forEach(doc => {
+            const review = doc.data();
+            const reviewDate = review.createdAt?.toDate();
+            
+            reviewsList.innerHTML += `
+                <div class="review-item">
+                    <div class="review-header">
+                        <span class="review-user">${review.reviewerName}</span>
+                        <div class="review-stars">
+                            ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
+                        </div>
+                    </div>
+                    ${review.comment ? `<div class="review-comment">"${review.comment}"</div>` : ''}
+                    <div class="review-date">
+                        ${reviewDate.toLocaleDateString('pt-BR')} às ${reviewDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                    </div>
+                </div>
+            `;
+        });
+        
+        // Atualiza os controles de paginação
+        updatePaginationControls(direction);
+        
+    } catch (error) {
+        console.error('Erro ao carregar avaliações:', error);
+        document.getElementById('reviewsList').innerHTML = 
+            '<p>Erro ao carregar avaliações. Tente novamente.</p>';
+    } finally {
+        hideLoading();
+    }
+}
+
+
+async function updatePaginationControls(direction) {
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+    
+    // Atualiza o número da página
+    if (direction === 'next') {
+        currentReviewsPage++;
+    } else if (direction === 'prev') {
+        currentReviewsPage = Math.max(1, currentReviewsPage - 1);
+    }
+    
+    pageInfo.textContent = `Página ${currentReviewsPage}`;
+    
+    // Verifica se há mais páginas
+    try {
+        const nextQuery = db.collection('users').doc(creatorId)
+            .collection('ratings')
+            .orderBy('createdAt', 'desc')
+            .startAfter(lastVisible)
+            .limit(1);
+        
+        const nextSnapshot = await nextQuery.get();
+        nextBtn.disabled = nextSnapshot.empty;
+        
+        prevBtn.disabled = currentReviewsPage <= 1;
+    } catch (error) {
+        console.error('Erro ao verificar paginação:', error);
+        nextBtn.disabled = true;
+    }
+}
+
+// Configura os listeners de paginação
+document.getElementById('prevPageBtn').addEventListener('click', () => {
+    loadReviewsPaginated(creatorId, 'prev');
+});
+
+document.getElementById('nextPageBtn').addEventListener('click', () => {
+    loadReviewsPaginated(creatorId, 'next');
+});
+
+
+// Atualize a função setupReviewsStatListener para abrir o modal de listagem
+function setupReviewsStatListener() {
+    const reviewsStatElement = document.getElementById('reviewsStat');
+    if (reviewsStatElement) {
+        reviewsStatElement.addEventListener('click', function() {
+            currentReviewsPage = 1; // Reset para primeira página
+            openReviewsModal();
+        });
+    }
+}
+
+
+// Adicione estas funções no seu código (se já não existirem)
+function showLoading(message = "") {
+    // Cria ou atualiza o elemento de loading
+    let loadingDiv = document.getElementById('loadingOverlay');
+    if (!loadingDiv) {
+        loadingDiv = document.createElement('div');
+        loadingDiv.id = 'loadingOverlay';
+        loadingDiv.style.position = 'fixed';
+        loadingDiv.style.top = '0';
+        loadingDiv.style.left = '0';
+        loadingDiv.style.width = '100%';
+        loadingDiv.style.height = '100%';
+        loadingDiv.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        loadingDiv.style.display = 'flex';
+        loadingDiv.style.justifyContent = 'center';
+        loadingDiv.style.alignItems = 'center';
+        loadingDiv.style.zIndex = '1000';
+        loadingDiv.innerHTML = `
+            <div style="background: #2A2A2A; padding: 20px; border-radius: 8px; text-align: center;">
+                <div class="spinner"></div>
+                <p>${message}</p>
+            </div>
+        `;
+        document.body.appendChild(loadingDiv);
+    } else {
+        loadingDiv.style.display = 'flex';
+        if (message) {
+            loadingDiv.querySelector('p').textContent = message;
+        }
+    }
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('loadingOverlay');
+    if (loadingDiv) {
+        loadingDiv.style.display = 'none';
+    }
+}
+
+
+
+    </script>
+</body>
+</html>

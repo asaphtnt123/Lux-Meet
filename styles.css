@@ -1599,6 +1599,14 @@ border: 3px solid var(--lux-primary);
   align-items: center;
   margin-bottom: 30px;
   text-align: center;
+
+  background: linear-gradient(135deg, rgba(26, 26, 26, 0.9), rgba(45, 45, 45, 0.9));
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
 }
 
 .lux-avatar-container {
@@ -4969,9 +4977,7 @@ body.modal-open {
     100% { opacity: 0.5; }
 }
 
-
-
-/* Modal principal de presentes */
+/* Estilos para o modal de presentes */
 .lux-gift-modal {
   display: none;
   position: fixed;
@@ -4979,108 +4985,127 @@ body.modal-open {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.9);
-  z-index: 10001;
-  backdrop-filter: blur(8px);
-  animation: fadeIn 0.4s ease-out;
+  background-color: rgba(0,0,0,0.8);
+  z-index: 1000;
   overflow-y: auto;
 }
 
 .lux-gift-modal-content {
-  position: relative;
-  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+  background-color: #fff;
   margin: 5% auto;
-  padding: 40px;
+  padding: 25px;
   width: 90%;
-  max-width: 1200px;
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  color: #fff;
+  max-width: 800px;
+  border-radius: 10px;
+  box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+  position: relative;
 }
 
 .lux-gift-close {
   position: absolute;
-  top: 25px;
-  right: 30px;
-  color: #ffd700;
-  font-size: 32px;
+  top: 15px;
+  right: 15px;
+  font-size: 28px;
   cursor: pointer;
-  transition: all 0.3s;
-}
-
-.lux-gift-close:hover {
-  transform: rotate(90deg);
-  color: #fff;
+  color: #888;
 }
 
 .lux-gift-title {
   text-align: center;
-  font-size: 28px;
-  margin-bottom: 30px;
-  color: #ffd700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
+  color: #d4af37;
+  margin-bottom: 25px;
 }
 
-.lux-gift-title i {
-  font-size: 32px;
-}
-
-/* Categorias */
 .lux-gift-categories {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
-
-.lux-gift-category:hover, .lux-gift-category.active {
-  background: linear-gradient(135deg, #ffd700, #ffaa00);
-  color: #1a1a2e;
-  border-color: transparent;
-  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+.lux-gift-category {
+  padding: 8px 15px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
+.lux-gift-category.active {
+  background: #d4af37;
+  color: white;
+  border-color: #d4af37;
+}
 
+.lux-gifts-container {
+  min-height: 300px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  padding: 10px 0;
+}
 
-.lux-gift-card:hover {
+.lux-gift-item {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.lux-gift-item:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-
-
-
-.lux-gift-name {
-  font-size: 16px;
-  margin: 0 0 5px 0;
-  font-weight: 500;
+.lux-gift-image-container {
+  height: 160px;
+  position: relative;
 }
 
-.lux-gift-price {
-  color: #ffd700;
-  font-weight: 600;
-  margin: 0;
+.lux-gift-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.lux-gift-category-tag {
+.lux-featured-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 3px 10px;
+  background: #d4af37;
+  color: white;
+  padding: 3px 8px;
   border-radius: 12px;
   font-size: 12px;
 }
 
-/* Modal de ações */
+.lux-gift-info {
+  padding: 12px;
+}
+
+.lux-gift-name {
+  font-size: 16px;
+  margin: 0 0 5px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lux-gift-price {
+  color: #d4af37;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.lux-gift-category {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Estilos para o modal de ações */
 .lux-gift-actions-modal {
   display: none;
   position: fixed;
@@ -5088,92 +5113,107 @@ body.modal-open {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  z-index: 10002;
-  backdrop-filter: blur(5px);
+  background-color: rgba(0,0,0,0.8);
+  z-index: 1001;
 }
 
 .lux-gift-actions-content {
-  position: relative;
-  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+  background-color: #fff;
   margin: 10% auto;
-  padding: 40px;
+  padding: 25px;
   width: 90%;
   max-width: 500px;
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 10px;
   text-align: center;
-}
-
-.lux-actions-close {
-  position: absolute;
-  top: 15px;
-  right: 25px;
-  color: #ffd700;
-  font-size: 28px;
-  cursor: pointer;
+  position: relative;
 }
 
 .lux-selected-gift-image {
   max-width: 200px;
   max-height: 200px;
-  border-radius: 8px;
   margin: 15px auto;
-  border: 2px solid #ffd700;
-}
-
-.lux-gift-price {
-  font-size: 24px;
-  color: #ffd700;
-  margin: 15px 0;
+  display: block;
+  border-radius: 8px;
 }
 
 .lux-gift-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  margin-top: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
 }
 
 .lux-action-btn {
-  padding: 12px;
-  border-radius: 8px;
+  padding: 10px 15px;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  border-radius: 5px;
+  background: #f0f0f0;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 14px;
-}
-
-.lux-action-btn i {
-  font-size: 16px;
-}
-
-.lux-action-send {
-  background: linear-gradient(135deg, #00b4db, #0083b0);
-}
-
-.lux-action-wishlist {
-  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
-}
-
-.lux-action-custom {
-  background: linear-gradient(135deg, #8e2de2, #4a00e0);
-}
-
-.lux-action-schedule {
-  background: linear-gradient(135deg, #f46b45, #eea849);
+  gap: 8px;
 }
 
 .lux-action-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  background: #e0e0e0;
+}
+
+.lux-action-send {
+  background: #d4af37;
+  color: white;
+}
+
+.lux-action-send:hover {
+  background: #c5a030;
+}
+
+/* Estilos para a seção de personalização */
+#customizeSection {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+#customizeSection .form-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+#customizeSection label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+#customizeSection .form-control {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+#customizeSection .action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+#customizeSection .btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#customizeSection .btn-primary {
+  background: #d4af37;
+  color: white;
+}
+
+#customizeSection .btn-secondary {
+  background: #f0f0f0;
 }
 
 /* Loader */
@@ -5537,8 +5577,8 @@ body.modal-open {
 /* Container da miniatura */
 .lux-gift-item {
   position: relative;
-  width: 80px; /* Tamanho reduzido */
-  height: 80px;
+  width: 130px; /* Tamanho reduzido */
+  height: 130px;
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
@@ -5621,11 +5661,19 @@ body.modal-open {
   text-shadow: 0 0 5px #000;
 }
 
+.swal2-select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  margin: 10px 0;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
   .lux-gift-item {
-    width: 70px;
-    height: 70px;
+    width: 130px;
+    height: 130px;
   }
   
   .gift-viewer-content {
@@ -5916,7 +5964,7 @@ body.modal-open {
   color: #e91e63;
 }
 
-/* Estilos específicos para a loja - substitua os existentes */
+/* Estilos  para a loja */
 .lux-gift-shop {
   position: fixed;
   top: 0;
@@ -6091,7 +6139,7 @@ body.modal-open {
 
 .lux-gift-card {
   width: 100% !important;
-  height: auto !important;
+  height: 310px !important;
   min-height: 250px !important;
   display: block !important;
 }
@@ -6164,4 +6212,841 @@ body.modal-open {
   display: none;
 }
 
+
+/* Estilo específico para a loja */
+#giftShopSection {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#giftShopSection.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.lux-gifts-shop-container {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px;
+  position: relative;
+}
+
+.lux-close-shop {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+/* Ajuste o grid para a loja */
+#giftShopSection .lux-gifts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+/* Estilo principal da loja - tema luxuoso */
+#giftShopSection {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+#giftShopSection.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.lux-gifts-shop-container {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Cabeçalho da loja */
+.lux-shop-header {
+  padding: 25px 30px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lux-shop-header h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.lux-close-shop {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 28px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.lux-close-shop:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(90deg);
+}
+
+/* Container dos presentes */
+.lux-gifts-container {
+  padding: 25px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 25px;
+  overflow-y: auto;
+  max-height: calc(90vh - 100px);
+}
+
+/* Estilo da barra de rolagem */
+.lux-gifts-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lux-gifts-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.lux-gifts-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Cartão de presente */
+
+
+.lux-gift-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.lux-gift-image-container {
+  height: 180px;
+  overflow: hidden;
+  position: relative;
+}
+
+.lux-gift-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.lux-gift-card:hover .lux-gift-image {
+  transform: scale(1.05);
+}
+
+/* Informações do presente */
+.lux-gift-info {
+  padding: 15px;
+  color: #fff;
+}
+
+.lux-gift-name {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lux-gift-price {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #f3a4ff;
+  display: flex;
+  align-items: center;
+}
+
+.lux-gift-price:before {
+  content: "♥";
+  margin-right: 5px;
+  color: #ff6b9d;
+}
+
+/* Menu de contexto */
+.gift-context-menu {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 30, 50, 0.95);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: none;
+  z-index: 10;
+  min-width: 160px;
+}
+
+.gift-context-menu.show {
+  display: block;
+  animation: fadeInUp 0.3s ease;
+}
+
+/* Animações */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .lux-gifts-container {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  .lux-gifts-shop-container {
+    width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  .lux-gifts-container {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  
+  .lux-gift-image-container {
+    height: 140px;
+  }
+  
+  .lux-shop-header h2 {
+    font-size: 22px;
+  }
+}
+
+.luxury-gratitude-container {
+  font-family: 'Playfair Display', serif;
+  max-width: 700px;
+  margin: 0 auto;
+  color: #e0e0e0;
+}
+
+.luxury-gift-image {
+  height: 200px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 25px;
+  border: 1px solid #8b6e4b;
+  box-shadow: 0 0 20px rgba(139, 110, 75, 0.3);
+}
+
+.luxury-message {
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.luxury-message h3 {
+  color: #8b6e4b;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.luxury-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #8b6e4b, transparent);
+  margin: 25px 0;
+}
+
+.luxury-highlight {
+  font-style: italic;
+  color: #8b6e4b;
+  font-size: 18px;
+  margin: 25px 0;
+}
+
+.luxury-next-steps {
+  text-align: left;
+  background: rgba(139, 110, 75, 0.1);
+  padding: 20px;
+  border-radius: 5px;
+  margin-top: 30px;
+}
+
+.luxury-next-steps ul {
+  padding-left: 20px;
+  margin-top: 10px;
+}
+
+.luxury-next-steps li {
+  margin-bottom: 8px;
+}
+
+.luxury-swal-popup {
+  border: 1px solid #8b6e4b !important;
+  box-shadow: 0 0 30px rgba(139, 110, 75, 0.5) !important;
+}
+
+@keyframes fadeInLuxury {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.luxury-swal-popup {
+  animation: fadeInLuxury 0.6s ease-out forwards;
+}
+
+.swal2-popup {
+  border: 1px solid #d4af37 !important;
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.3) !important;
+}
+
+.gift-item {
+  position: relative;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  border: 1px solid #e0e0e0;
+}
+
+.gift-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.gift-item.accepted {
+  border-left: 4px solid #4CAF50;
+}
+
+.new-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #FF5722;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.accepted-badge {
+  color: #4CAF50;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.btn-accept-gift {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-decline-gift {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-left: 10px;
+}
+
+.gift-price {
+  color: #8B6E4B;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.sent-gifts-section {
+  padding: 25px;
+  background: #f9f9f9;
+  border-radius: 12px;
+  margin-top: 30px;
+}
+
+.sent-gift-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  position: relative;
+}
+
+.sent-gift-item.accepted {
+  border-left: 4px solid #4CAF50;
+}
+
+.sent-gift-item.declined {
+  border-left: 4px solid #f44336;
+}
+
+.sent-gift-item.pending {
+  border-left: 4px solid #FFC107;
+}
+
+.gift-info {
+  flex: 1;
+  padding: 0 20px;
+}
+
+.gift-meta {
+  color: #666;
+  font-size: 0.9em;
+  margin: 5px 0;
+}
+
+.gift-status {
+  margin-top: 10px;
+}
+
+.status-badge {
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.8em;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-badge i {
+  margin-right: 5px;
+}
+
+.status-badge.accepted {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.status-badge.declined {
+  background: #FFEBEE;
+  color: #C62828;
+}
+
+.status-badge.pending {
+  background: #FFF8E1;
+  color: #F57F17;
+}
+
+.btn-cancel-gift {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #666;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-cancel-gift:hover {
+  background: #f44336;
+  color: white;
+  border-color: #f44336;
+}
+
+/* Estilo para o cabeçalho e botão */
+.gifts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-view-sent {
+  background: #8b6e4b;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.3s;
+}
+
+.btn-view-sent:hover {
+  background: #6b5436;
+}
+
+/* Estilo para botão de recusar */
+.btn-decline-gift {
+  background: #f8f8f8;
+  color: #f44336;
+  border: 1px solid #f44336;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-left: 10px;
+}
+
+.btn-decline-gift:hover {
+  background: #f44336;
+  color: white;
+}
+
+
+
+
+
+/* Estilo para os botões na página inicial */
+.gifts-buttons {
+  display: flex;
+  gap: 10px;
+  margin-left: auto; /* Alinha à direita */
+}
+
+.btn-received-gifts, .btn-sent-gifts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-received-gifts {
+  background-color: #8b6e4b;
+  color: white;
+  border: 2px solid #8b6e4b;
+}
+
+.btn-sent-gifts {
+  background-color: transparent;
+  color: #8b6e4b;
+  border: 2px solid #8b6e4b;
+}
+
+.btn-received-gifts:hover {
+  background-color: #6b5436;
+  transform: translateY(-2px);
+}
+
+.btn-sent-gifts:hover {
+  background-color: #f8f4f0;
+  transform: translateY(-2px);
+}
+
+/* Estilo para o dropdown menu */
+.gifts-menu {
+  position: relative;
+  display: inline-block;
+  margin-left: auto;
+}
+
+.gifts-dropbtn {
+  background-color: #8b6e4b;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.gifts-dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: #f9f9f9;
+  min-width: 180px;
+  box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  z-index: 1;
+}
+
+.gifts-dropdown-content a {
+  color: #333;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gifts-dropdown-content a:hover {
+  background-color: #f1f1f1;
+  color: #8b6e4b;
+}
+
+.gifts-menu:hover .gifts-dropdown-content {
+  display: block;
+}
+
+/* Ícones */
+.fas {
+  color: burlywood;
+    font-size: 35px;
+}
+
+@media (max-width: 768px) {
+  .gifts-buttons {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    flex-direction: column;
+    z-index: 100;
+  }
+  
+  .btn-received-gifts, .btn-sent-gifts {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    justify-content: center;
+    padding: 0;
+  }
+  
+  .btn-received-gifts span, .btn-sent-gifts span {
+    display: none;
+  }
+  
+  .gifts-buttons i {
+    font-size: 20px;
+  }
+}
+
+
+/* Estilos para agradecimentos e mensagens */
+.thank-you-note, .decline-message {
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid var(--luxury-gold);
+}
+
+.thank-you-image, .decline-image {
+  margin-top: 10px;
+}
+
+.thank-you-image img, .decline-image img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-thank-you {
+  background: rgba(139, 110, 75, 0.2);
+  color: var(--luxury-gold);
+  border: 1px solid var(--luxury-gold);
+  padding: 8px 15px;
+  border-radius: 20px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9em;
+}
+
+.btn-thank-you:hover {
+  background: var(--luxury-gold);
+  color: white;
+}
+
+/* Melhorias nos modais */
+.swal2-textarea {
+  min-height: 100px;
+  margin-bottom: 15px;
+}
+
+.swal2-file {
+  margin-top: 10px;
+}
+
+
+/* Estilos para a prévia da galeria */
+.lux-profile-gallery-preview {
+    margin: 2rem 0;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.lux-gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.lux-gallery-header h3 {
+    color: var(--gold);
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lux-view-all {
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.lux-view-all:hover {
+    color: var(--platinum);
+    text-decoration: underline;
+}
+
+.lux-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.2rem;
+}
+
+.lux-album-preview {
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.lux-album-preview:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+}
+
+.lux-album-cover {
+    position: relative;
+    height: 140px;
+    width: 100%;
+}
+
+.lux-album-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.lux-album-preview:hover .lux-album-cover img {
+    transform: scale(1.05);
+}
+
+.lux-album-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.8rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+    color: white;
+}
+
+.lux-album-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lux-album-count {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .lux-gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.8rem;
+    }
+    
+    .lux-album-cover {
+        height: 100px;
+    }
+}
+
+.fas.fa-camera {
+color: #d4af37; /* Ouro mais vivo */
+  font-size: 35px;
+  text-shadow: 0 0 8px burlywood, 0 0 15px burlywood;
+  animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 5px burlywood, 0 0 10px burlywood;
+  }
+  to {
+    text-shadow: 0 0 15px burlywood, 0 0 25px burlywood;
+  }
+}
 
