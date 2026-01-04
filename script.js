@@ -1818,6 +1818,17 @@ function showErrorState() {
 
 // 3. CONTROLE DE EVENTOS
 function setupEventListeners() {
+
+  // Adicionar evento para o item do menu Live
+const liveNavItem = document.querySelector('.lux-nav-item[data-section="live"]');
+if (liveNavItem) {
+    liveNavItem.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.location.href = 'lux-meet-live.html';
+    });
+}
+
+
   // Elementos de filtro
   const filterElements = [
     'filtroTipo', 'filtroGenero', 'filtroCidade',
