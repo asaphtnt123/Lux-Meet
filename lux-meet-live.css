@@ -409,27 +409,194 @@ body {
     width: 100%;
     height: 100%;
 }
-
+/* Container de vídeo principal */
 .lux-video-container {
-    flex: 1;
     position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
     background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
 }
 
-#liveVideo, .remote-video {
+#liveVideo {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    background: #000;
+    z-index: 1;
 }
 
-.remote-video {
-    width: 200px;
-    height: 150px;
+/* Vídeo local (para host/cohost) */
+#localVideo {
     position: absolute;
     bottom: 20px;
     right: 20px;
+    width: 180px;
+    height: 135px;
     border-radius: 8px;
-    border: 2px solid var(--primary-color);
+    border: 3px solid var(--primary-color);
+    z-index: 10;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    background: #000;
+    object-fit: cover;
+    display: none; /* Oculto por padrão */
+}
+
+/* Placeholder quando não há vídeo */
+.video-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none; /* Oculto por padrão */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: var(--text-secondary);
+    z-index: 2;
+}
+
+.video-placeholder i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+    opacity: 0.7;
+}
+
+.video-placeholder h3 {
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+}
+
+.video-placeholder p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Controles de vídeo */
+.lux-video-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 12px 24px;
+    border-radius: 30px;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+}
+
+.lux-control-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.lux-control-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+}
+
+.lux-control-btn.active {
+    background: var(--primary-color);
+    color: #000;
+}
+
+/* Status do streaming */
+.lux-stream-status {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 20px;
+    color: white;
+    font-size: 0.9rem;
+    backdrop-filter: blur(10px);
+}
+
+.lux-status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: pulse 1.5s infinite;
+}
+
+.lux-status-indicator.live {
+    background: #10b981;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+/* Animação de entrada do vídeo */
+@keyframes fadeInVideo {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#liveVideo.loading {
+    opacity: 0;
+}
+
+#liveVideo.playing {
+    animation: fadeInVideo 0.5s ease-out;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    #localVideo {
+        width: 120px;
+        height: 90px;
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    .lux-video-controls {
+        padding: 10px 20px;
+        gap: 10px;
+    }
+    
+    .lux-control-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .video-placeholder i {
+        font-size: 3rem;
+    }
+    
+    .video-placeholder h3 {
+        font-size: 1.2rem;
+    }
 }
 
 .lux-live-overlay {

@@ -287,72 +287,41 @@
                         </div>
                         
                         <!-- Container de Vídeo -->
-                        <div class="lux-video-container">
-                            <!-- Vídeo Principal (Host) -->
-                            <div class="lux-main-video">
-                                <video id="liveVideo" autoplay playsinline></video>
-                                <div class="lux-video-overlay">
-                                    <div class="lux-host-info">
-                                        <img id="liveHostAvatar" src="https://via.placeholder.com/50" alt="Host">
-                                        <div class="lux-host-details">
-                                            <h3 id="liveHostName">Host Name</h3>
-                                            <div class="lux-host-stats">
-                                                <span class="lux-host-followers">
-                                                    <i class="fas fa-users"></i> <span id="hostFollowers">0</span>
-                                                </span>
-                                                <span class="lux-host-level">
-                                                    Nível <span id="hostLevel">1</span>
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <button class="lux-btn lux-btn-primary" id="followHostBtn">
-                                            <i class="fas fa-plus"></i> Seguir
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Vídeos dos Co-hosts -->
-                            <div class="lux-cohosts-container" id="cohostsContainer">
-                                <!-- Co-hosts serão adicionados aqui dinamicamente -->
-                            </div>
-                            
-                            <!-- Controles do Vídeo -->
-                            <div class="lux-video-controls">
-                                <button class="lux-control-btn" id="toggleVideoBtn" title="Desativar vídeo">
-                                    <i class="fas fa-video"></i>
-                                </button>
-                                <button class="lux-control-btn" id="toggleAudioBtn" title="Desativar áudio">
-                                    <i class="fas fa-microphone"></i>
-                                </button>
-                                <button class="lux-control-btn" id="toggleChatBtn" title="Alternar chat">
-                                    <i class="fas fa-comments"></i>
-                                </button>
-                                <button class="lux-control-btn" id="fullscreenBtn" title="Tela cheia">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Estatísticas em Tempo Real -->
-                            <div class="lux-live-stats">
-                                <div class="lux-stat-item">
-                                    <i class="fas fa-eye"></i>
-                                    <span id="viewerCount">0</span>
-                                </div>
-                                <div class="lux-stat-item">
-                                    <i class="fas fa-heart"></i>
-                                    <span id="likeCount">0</span>
-                                </div>
-                                <div class="lux-stat-item">
-                                    <i class="fas fa-gift"></i>
-                                    <span id="giftCount">0</span>
-                                </div>
-                                <div class="lux-stat-item">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                    <span id="earningsCount">R$ 0</span>
-                                </div>
-                            </div>
-                        </div>
+                       <!-- Atualize o container de vídeo no lux-meet-live.html -->
+
+<div class="lux-video-container">
+    <!-- Vídeo principal -->
+    <video id="liveVideo" autoplay playsinline class="loading"></video>
+    
+    <!-- Vídeo local (para host/cohost) -->
+    <video id="localVideo" autoplay playsinline muted></video>
+    
+    <!-- Placeholder quando não há vídeo -->
+    <div class="video-placeholder" id="videoPlaceholder">
+        <i class="fas fa-broadcast-tower"></i>
+        <h3>Aguardando transmissão</h3>
+        <p>A live começará em breve</p>
+    </div>
+    
+    <!-- Status do streaming -->
+    <div class="lux-stream-status" id="streamStatus">
+        <div class="lux-status-indicator" id="statusIndicator"></div>
+        <span id="statusText">Conectando...</span>
+    </div>
+    
+    <!-- Controles de vídeo -->
+    <div class="lux-video-controls">
+        <button class="lux-control-btn" id="toggleVideoBtn" title="Ativar/Desativar Câmera">
+            <i class="fas fa-video"></i>
+        </button>
+        <button class="lux-control-btn" id="toggleAudioBtn" title="Ativar/Desativar Microfone">
+            <i class="fas fa-microphone"></i>
+        </button>
+        <button class="lux-control-btn" id="toggleFullscreenBtn" title="Tela Cheia">
+            <i class="fas fa-expand"></i>
+        </button>
+    </div>
+</div>
                         
                         <!-- Chat da Live -->
                         <div class="lux-live-chat">
