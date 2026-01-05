@@ -927,3 +927,20 @@ body.dark-theme {
   margin-bottom: 15px;
   opacity: 0.5;
 }
+/* Adicione esta regra CSS para garantir que modais fechados fiquem ocultos */
+.lux-modal[style*="display: none"] {
+    display: none !important;
+}
+
+.lux-modal.hidden {
+    display: none !important;
+}
+
+/* Garantir que o body não tenha overflow hidden permanente */
+body.modal-open {
+    overflow: hidden;
+}
+
+body:not(.modal-open) {
+    overflow: auto !important;
+}
