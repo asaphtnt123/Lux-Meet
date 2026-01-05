@@ -63,60 +63,128 @@ async function initializeApp() {
     }
 }
 
+// ============================================
+// MANIPULADOR DE MUDANÇA DE AUTENTICAÇÃO (CORRIGIDO)
+// ============================================
 
 async function handleAuthStateChange(user) {
-    if (user) {
-        // Usuário está logado
-        console.log('Usuário autenticado:', user.uid);
-        currentUser = user;
-        
-        // Validar e carregar dados do usuário
-        const userValid = await validateUserData();
-        
-        if (userValid) {
-            updateUserUI();
-            await loadActiveLives();
-            setupEventListeners();
-            showApp();
+    try {
+        if (user) {
+            // Usuário está logado
+            console.log('✅ Usuário autenticado:', user.uid);
+            currentUser = user;
+            
+            // Carregar dados do usuário
+            const userDataLoaded = await loadUserData();
+            
+            if (userDataLoaded) {
+                // Atualizar UI
+                updateUserUI();
+                
+                // Carregar conteúdo da página
+                await loadPageContent();
+                
+                // Configurar listeners
+                setupEventListeners();
+                
+                // Mostrar aplicação
+                showApp();
+            } else {
+                showToast('Erro ao carregar dados do usuário. Recarregue a página.', 'error');
+            }
         } else {
-            showToast('Erro ao carregar dados do usuário', 'error');
+            // Usuário não está logado
+            console.log('⚠️ Usuário não autenticado');
+            
+            // Redirecionar para página de login
+            redirectToLogin();
         }
-    } else {
-        // Usuário não está logado, redirecionar para login
-        console.log('Usuário não autenticado, redirecionando...');
-        window.location.href = 'login.html'; // Ajuste para sua página de login
+    } catch (error) {
+        console.error('❌ Erro em handleAuthStateChange:', error);
+        showToast('Erro ao processar autenticação', 'error');
     }
 }
+// ============================================
+// CARREGAR DADOS DO USUÁRIO (CORRIGIDA)
+// ============================================
 
 async function loadUserData() {
     try {
+        console.log('Carregando dados do usuário...');
+        
+        if (!currentUser || !currentUser.uid) {
+            throw new Error('Usuário não autenticado');
+        }
+        
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
         
         if (userDoc.exists) {
             userData = userDoc.data();
-            console.log('Dados do usuário carregados:', userData);
+            
+            // Garantir que todos os campos necessários existam
+            userData = {
+                // Dados básicos
+                uid: userData.uid || currentUser.uid,
+                displayName: userData.displayName || currentUser.displayName || 'Usuário',
+                email: userData.email || currentUser.email || '',
+                photoURL: userData.photoURL || currentUser.photoURL || 'https://via.placeholder.com/150',
+                
+                // Sistema de economia
+                balance: typeof userData.balance === 'number' ? userData.balance : 0,
+                diamonds: typeof userData.diamonds === 'number' ? userData.diamonds : 100,
+                
+                // Sistema de progressão
+                role: userData.role || 'user',
+                level: typeof userData.level === 'number' ? userData.level : 1,
+                experience: typeof userData.experience === 'number' ? userData.experience : 0,
+                
+                // Sistema social
+                followers: typeof userData.followers === 'number' ? userData.followers : 0,
+                following: Array.isArray(userData.following) ? userData.following : [],
+                
+                // Sistema de monetização
+                totalEarnings: typeof userData.totalEarnings === 'number' ? userData.totalEarnings : 0,
+                isVerified: userData.isVerified === true,
+                
+                // Metadados
+                createdAt: userData.createdAt || firebase.firestore.FieldValue.serverTimestamp(),
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            console.log('✅ Dados do usuário carregados:', userData);
+            
         } else {
-            // Criar novo perfil de usuário
+            // Criar novo perfil de usuário com estrutura completa
             userData = {
                 uid: currentUser.uid,
-                displayName: currentUser.displayName || 'Usuário',
-                email: currentUser.email,
+                displayName: currentUser.displayName || 'Usuário ' + currentUser.uid.substring(0, 8),
+                email: currentUser.email || '',
                 photoURL: currentUser.photoURL || 'https://via.placeholder.com/150',
+                
+                // Sistema de economia
                 balance: 0,
-                diamonds: 100, // Diamantes iniciais
+                diamonds: 100,
+                
+                // Sistema de progressão
                 role: 'user',
                 level: 1,
                 experience: 0,
+                
+                // Sistema social
                 followers: 0,
                 following: [],
+                
+                // Sistema de monetização
                 totalEarnings: 0,
                 isVerified: false,
+                
+                // Metadados
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             };
             
             await db.collection('users').doc(currentUser.uid).set(userData);
-            console.log('Novo perfil de usuário criado');
+            console.log('✅ Novo perfil de usuário criado:', userData);
         }
         
         // Atualizar último login
@@ -124,41 +192,97 @@ async function loadUserData() {
             lastLogin: firebase.firestore.FieldValue.serverTimestamp()
         });
         
+        return true;
+        
     } catch (error) {
-        console.error('Erro ao carregar dados do usuário:', error);
+        console.error('❌ Erro ao carregar dados do usuário:', error);
+        
+        // Criar objeto userData mínimo em caso de erro
+        userData = {
+            uid: currentUser?.uid || 'unknown',
+            displayName: currentUser?.displayName || 'Usuário',
+            photoURL: currentUser?.photoURL || 'https://via.placeholder.com/150',
+            balance: 0,
+            diamonds: 100,
+            level: 1,
+            isVerified: false
+        };
+        
+        showToast('Erro ao carregar dados do usuário. Alguns recursos podem não funcionar.', 'warning');
+        return false;
     }
 }
 
+// ============================================
+// ATUALIZAR INTERFACE DO USUÁRIO (CORRIGIDA)
+// ============================================
+
 function updateUserUI() {
-    if (!currentUser || !userData) return;
-    
-    // Atualizar informações do usuário no header
-    const userNameElements = document.querySelectorAll('#userName, .lux-user-name');
-    userNameElements.forEach(el => {
-        el.textContent = userData.displayName;
-    });
-    
-    const userAvatarElements = document.querySelectorAll('#userAvatar, .lux-user-avatar');
-    userAvatarElements.forEach(el => {
-        el.src = userData.photoURL;
-        el.onerror = function() {
-            this.src = 'https://via.placeholder.com/150';
-        };
-    });
-    
-    // Atualizar saldo
-    document.getElementById('userBalance').textContent = userData.balance.toFixed(2);
-    document.getElementById('userDiamonds').textContent = userData.diamonds;
-    document.getElementById('userLevel').textContent = `Nível ${userData.level}`;
-    document.getElementById('modalDiamonds').textContent = userData.diamonds;
-    
-    // Mostrar badge de verificação se for criador verificado
-    const verifiedBadge = document.getElementById('verifiedBadge');
-    if (verifiedBadge) {
-        verifiedBadge.style.display = userData.isVerified ? 'inline-block' : 'none';
+    if (!currentUser || !userData) {
+        console.error('Erro: currentUser ou userData não definidos');
+        return;
     }
     
-    console.log('UI do usuário atualizada');
+    try {
+        // Atualizar nome do usuário
+        const userNameElements = document.querySelectorAll('#userName, .lux-user-name');
+        userNameElements.forEach(el => {
+            if (el) {
+                el.textContent = userData.displayName || currentUser.displayName || 'Usuário';
+            }
+        });
+        
+        // Atualizar avatar do usuário
+        const userAvatarElements = document.querySelectorAll('#userAvatar, .lux-user-avatar');
+        userAvatarElements.forEach(el => {
+            if (el) {
+                el.src = userData.photoURL || currentUser.photoURL || 'https://via.placeholder.com/40';
+                el.onerror = function() {
+                    this.src = 'https://via.placeholder.com/40';
+                };
+            }
+        });
+        
+        // Atualizar saldo com verificação segura
+        const balanceElement = document.getElementById('userBalance');
+        if (balanceElement) {
+            const balance = userData.balance || 0;
+            balanceElement.textContent = balance.toFixed(2);
+        }
+        
+        // Atualizar diamantes com verificação segura
+        const diamondsElement = document.getElementById('userDiamonds');
+        if (diamondsElement) {
+            const diamonds = userData.diamonds || 0;
+            diamondsElement.textContent = diamonds;
+        }
+        
+        // Atualizar diamantes no modal
+        const modalDiamondsElement = document.getElementById('modalDiamonds');
+        if (modalDiamondsElement) {
+            const diamonds = userData.diamonds || 0;
+            modalDiamondsElement.textContent = diamonds;
+        }
+        
+        // Atualizar nível
+        const levelElement = document.getElementById('userLevel');
+        if (levelElement) {
+            const level = userData.level || 1;
+            levelElement.textContent = `Nível ${level}`;
+        }
+        
+        // Atualizar badge de verificação
+        const verifiedBadge = document.getElementById('verifiedBadge');
+        if (verifiedBadge) {
+            verifiedBadge.style.display = userData.isVerified ? 'inline-block' : 'none';
+        }
+        
+        console.log('UI do usuário atualizada com sucesso');
+        
+    } catch (error) {
+        console.error('Erro ao atualizar UI do usuário:', error);
+        showToast('Erro ao carregar dados do usuário', 'error');
+    }
 }
 
 function showApp() {
@@ -1761,3 +1885,131 @@ async function testFirebaseConnection() {
     }
 }
 
+
+
+// ============================================
+// FUNÇÕES AUXILIARES ADICIONAIS
+// ============================================
+
+async function loadPageContent() {
+    try {
+        console.log('Carregando conteúdo da página...');
+        
+        // Carregar lives ativas
+        await loadActiveLives();
+        
+        // Carregar estatísticas da plataforma
+        await loadPlatformStats();
+        
+        // Carregar amigos online
+        await loadOnlineFriends();
+        
+        console.log('✅ Conteúdo da página carregado');
+    } catch (error) {
+        console.error('❌ Erro ao carregar conteúdo:', error);
+    }
+}
+
+async function loadPlatformStats() {
+    try {
+        // Carregar estatísticas gerais da plataforma
+        const platformDoc = await db.collection('platform').doc('stats').get();
+        
+        if (platformDoc.exists) {
+            const stats = platformDoc.data();
+            
+            // Atualizar elementos na UI
+            const totalOnlineElement = document.getElementById('totalOnline');
+            const todayGiftsElement = document.getElementById('todayGifts');
+            const footerOnlineElement = document.getElementById('footerOnline');
+            const footerLivesElement = document.getElementById('footerLives');
+            const footerGiftsElement = document.getElementById('footerGifts');
+            
+            if (totalOnlineElement) {
+                totalOnlineElement.textContent = stats.totalOnline || 0;
+            }
+            
+            if (todayGiftsElement) {
+                todayGiftsElement.textContent = stats.todayGifts || 0;
+            }
+            
+            if (footerOnlineElement) {
+                footerOnlineElement.textContent = stats.totalOnline || 0;
+            }
+            
+            if (footerLivesElement) {
+                footerLivesElement.textContent = stats.activeLives || 0;
+            }
+            
+            if (footerGiftsElement) {
+                footerGiftsElement.textContent = stats.todayGifts || 0;
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+    }
+}
+
+async function loadOnlineFriends() {
+    try {
+        // Em produção, carregue amigos do Firestore
+        // Por enquanto, usaremos dados mockados
+        const friendsList = document.getElementById('friendsList');
+        
+        if (!friendsList) return;
+        
+        // Dados mockados para demonstração
+        const onlineFriends = [
+            { id: 1, name: 'João Silva', avatar: 'https://via.placeholder.com/40' },
+            { id: 2, name: 'Maria Santos', avatar: 'https://via.placeholder.com/40' },
+            { id: 3, name: 'Pedro Costa', avatar: 'https://via.placeholder.com/40' }
+        ];
+        
+        friendsList.innerHTML = '';
+        
+        onlineFriends.forEach(friend => {
+            const friendElement = document.createElement('div');
+            friendElement.className = 'lux-friend-item';
+            friendElement.innerHTML = `
+                <img src="${friend.avatar}" alt="${friend.name}" class="lux-friend-avatar">
+                <span class="lux-friend-name">${friend.name}</span>
+                <span class="lux-friend-status online"></span>
+            `;
+            friendsList.appendChild(friendElement);
+        });
+        
+        // Atualizar contador
+        const onlineCountElement = document.getElementById('onlineFriendsCount');
+        if (onlineCountElement) {
+            onlineCountElement.textContent = onlineFriends.length;
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar amigos:', error);
+    }
+}
+
+function redirectToLogin() {
+    // Verificar se estamos na página de login
+    if (!window.location.pathname.includes('login.html')) {
+        window.location.href = 'login.html';
+    }
+}
+
+function showApp() {
+    // Ocultar tela de loading e mostrar aplicação
+    const loadingScreen = document.getElementById('loadingScreen');
+    const app = document.querySelector('.lux-live-app');
+    
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+    }
+    
+    if (app) {
+        app.style.display = 'block';
+        // Adicionar classe para animação de entrada
+        app.classList.add('app-loaded');
+    }
+    
+    console.log('🚀 Aplicação carregada com sucesso!');
+}

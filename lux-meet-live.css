@@ -1483,3 +1483,119 @@ body {
 .lux-form-group.error .lux-form-error {
     display: block;
 }
+
+
+/* Adicione ao final do lux-meet-live.css */
+
+/* Animações de entrada */
+.app-loaded {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estilos para amigos online */
+.lux-friend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.lux-friend-item:hover {
+    background: rgba(212, 175, 55, 0.1);
+    transform: translateX(5px);
+}
+
+.lux-friend-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.lux-friend-name {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.lux-friend-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.lux-friend-status.online {
+    background: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.lux-friend-status.offline {
+    background: #64748b;
+}
+
+/* Estilos para elementos de loading */
+.lux-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+}
+
+.lux-loading i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.lux-error {
+    text-align: center;
+    padding: 20px;
+    color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.lux-error i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+/* Placeholders para imagens que falham ao carregar */
+img[src*="placeholder.com"] {
+    background: linear-gradient(45deg, var(--card-bg), var(--darker-bg));
+}
+
+/* Estilos para elementos que podem ser undefined */
+.lux-user-balance,
+.lux-user-diamonds {
+    min-width: 60px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.lux-user-balance:empty::before,
+.lux-user-diamonds:empty::before {
+    content: '0';
+    color: var(--text-secondary);
+}
