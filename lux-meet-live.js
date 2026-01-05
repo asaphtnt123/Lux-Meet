@@ -3198,136 +3198,101 @@ async function createLive(event) {
 // ============================================
 // SHOW LIVE PLAYER - CORRIGIR VÍDEO PRETO
 // ============================================
+// ============================================
+// SHOW LIVE PLAYER - VERSÃO CORRIGIDA
+// ============================================
 
 function showLivePlayer(liveData, isHost = false) {
-    console.log('🎬 [DEBUG] Mostrando player da live, isHost:', isHost);
+    console.log('🎬 Mostrando player da live - isHost:', isHost);
+    
+    // Função segura para atualizar elementos
+    function safeUpdate(id, value, attr = 'textContent') {
+        try {
+            const element = document.getElementById(id);
+            if (element) {
+                if (attr === 'src') {
+                    element.src = value;
+                } else if (attr === 'className') {
+                    element.className = value;
+                } else {
+                    element[attr] = value || '';
+                }
+                return true;
+            }
+            console.warn(`⚠️ Elemento não encontrado: ${id}`);
+            return false;
+        } catch (error) {
+            console.error(`❌ Erro ao atualizar ${id}:`, error);
+            return false;
+        }
+    }
     
     // 1. Mostrar player e ocultar grade
-    const player = document.getElementById('livePlayer');
-    const grid = document.getElementById('liveGrid');
-    
-    if (player) {
-        player.style.display = 'block';
-        player.classList.remove('hidden');
-        console.log('✅ [DEBUG] Player exibido');
-    }
-    
-    if (grid) {
-        grid.style.display = 'none';
-    }
-    
-    // 2. Atualizar informações
-    document.querySelectorAll('#livePlayerTitle').forEach(el => {
-        if (el) el.textContent = liveData.title || 'Live sem título';
-    });
-    
-    const hostNameElement = document.getElementById('liveHostName');
-    if (hostNameElement) {
-        hostNameElement.textContent = liveData.hostName || 'Host';
-    }
-    
-    // 3. ATUALIZAR VÍDEO - CORREÇÃO PARA TELA PRETA
-    const mainVideo = document.getElementById('liveVideo');
-    const localVideo = document.getElementById('localVideo');
-    const placeholder = document.getElementById('videoPlaceholder');
-    
-    console.log('🎥 [DEBUG] Estado dos elementos de vídeo:', {
-        mainVideo: !!mainVideo,
-        localVideo: !!localVideo,
-        placeholder: !!placeholder,
-        hasLocalStream: !!localStream,
-        isHost: isHost
-    });
-    
-    if (isHost) {
-        console.log('👑 [DEBUG] Configurando para HOST');
+    try {
+        const player = document.getElementById('livePlayer');
+        const grid = document.getElementById('liveGrid');
         
-        if (localStream && localVideo) {
-            console.log('📹 [DEBUG] Host tem stream local, configurando vídeo...');
-            
-            // Configurar vídeo local
-            localVideo.srcObject = localStream;
-            localVideo.muted = true;
-            
-            // Tentar reproduzir
-            localVideo.play().then(() => {
-                console.log('✅ [DEBUG] Vídeo local reproduzindo');
-                localVideo.style.display = 'block';
-                
-                // Se tiver vídeo principal, configurar também
-                if (mainVideo) {
-                    mainVideo.srcObject = localStream;
-                    mainVideo.muted = false;
-                    mainVideo.play().then(() => {
-                        console.log('✅ [DEBUG] Vídeo principal reproduzindo');
-                        mainVideo.style.display = 'block';
-                    }).catch(e => {
-                        console.log('⚠️ [DEBUG] Auto-play do vídeo principal prevenido');
-                        mainVideo.setAttribute('controls', 'true');
-                        mainVideo.style.display = 'block';
-                    });
+        if (player) {
+            player.classList.remove('hidden');
+            player.style.display = 'block';
+        }
+        
+        if (grid) {
+            grid.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('❌ Erro ao mostrar/ocultar elementos:', error);
+    }
+    
+    // 2. Atualizar informações básicas (com fallbacks)
+    safeUpdate('livePlayerTitle', liveData.title || 'Live sem título');
+    safeUpdate('liveHostName', liveData.hostName || 'Host');
+    safeUpdate('liveHostAvatar', liveData.hostPhoto || 'https://via.placeholder.com/50', 'src');
+    
+    // Configurar fallback para imagem
+    const hostAvatar = document.getElementById('liveHostAvatar');
+    if (hostAvatar) {
+        hostAvatar.onerror = function() {
+            this.src = 'https://via.placeholder.com/50';
+        };
+    }
+    
+    // 3. Atualizar badge da live
+    const badgeElements = document.querySelectorAll('#liveBadge');
+    if (badgeElements.length > 0) {
+        badgeElements.forEach(badge => {
+            if (badge) {
+                if (liveData.privacy === 'ticket' || liveData.privacy === 'subscription' || liveData.privacy === 'paid') {
+                    badge.textContent = 'EXCLUSIVO';
+                    badge.className = 'lux-live-badge exclusive';
+                } else {
+                    badge.textContent = 'AO VIVO';
+                    badge.className = 'lux-live-badge live';
                 }
-                
-            }).catch(e => {
-                console.log('⚠️ [DEBUG] Auto-play do vídeo local prevenido:', e);
-                localVideo.setAttribute('controls', 'true');
-                localVideo.style.display = 'block';
-            });
-            
-        } else {
-            console.log('❌ [DEBUG] Host não tem stream local');
-            
-            // Mostrar placeholder para host sem stream
-            if (placeholder) {
-                placeholder.innerHTML = `
-                    <i class="fas fa-video-slash"></i>
-                    <h3>Câmera não disponível</h3>
-                    <p>Ative a câmera nas configurações</p>
-                    <button class="lux-btn lux-btn-primary" onclick="enableCameraForHost()">
-                        <i class="fas fa-camera"></i> Ativar Câmera
-                    </button>
-                `;
-                placeholder.style.display = 'flex';
             }
-        }
-        
-        // Ocultar placeholder se estiver visível
-        if (placeholder && placeholder.style.display !== 'none') {
-            placeholder.style.display = 'none';
-        }
-        
-    } else {
-        console.log('👀 [DEBUG] Configurando para ESPECTADOR');
-        
-        // Espectador: mostrar placeholder
-        if (placeholder) {
-            placeholder.style.display = 'flex';
-            placeholder.innerHTML = `
-                <i class="fas fa-broadcast-tower"></i>
-                <h3>Aguardando transmissão...</h3>
-                <p>O host está configurando a live</p>
-            `;
-        }
-        
-        // Ocultar vídeos
-        if (mainVideo) {
-            mainVideo.style.display = 'none';
-            mainVideo.srcObject = null;
-        }
-        if (localVideo) {
-            localVideo.style.display = 'none';
-        }
+        });
     }
     
-    // 4. Atualizar contadores
-    updateLiveUI(liveData);
+    // 4. Atualizar contadores (com verificações)
+    const viewerCount = document.getElementById('viewerCount');
+    const likeCount = document.getElementById('likeCount');
+    const giftCount = document.getElementById('giftCount');
+    const earningsCount = document.getElementById('earningsCount');
     
-    // 5. Configurar botão de saída
+    if (viewerCount) viewerCount.textContent = formatNumber(liveData.viewerCount || 0);
+    if (likeCount) likeCount.textContent = liveData.likes || 0;
+    if (giftCount) giftCount.textContent = liveData.giftCount || 0;
+    if (earningsCount) {
+        earningsCount.textContent = `R$ ${(liveData.totalEarnings || 0).toFixed(2)}`;
+    }
+    
+    // 5. Configurar botão de saída/encerramento
     const exitBtn = document.getElementById('exitLiveBtn');
     if (exitBtn) {
         if (isHost) {
             exitBtn.innerHTML = '<i class="fas fa-stop"></i> Encerrar Live';
             exitBtn.className = 'lux-btn lux-btn-danger';
+            // Remover event listener anterior para evitar duplicação
             exitBtn.onclick = endLive;
         } else {
             exitBtn.innerHTML = '<i class="fas fa-times"></i> Sair';
@@ -3336,8 +3301,200 @@ function showLivePlayer(liveData, isHost = false) {
         }
     }
     
-    console.log('✅ [DEBUG] Player configurado para', isHost ? 'host' : 'espectador');
+    // 6. Configurar vídeo
+    const mainVideo = document.getElementById('liveVideo');
+    const localVideo = document.getElementById('localVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    console.log('🎥 Elementos de vídeo:', {
+        mainVideo: !!mainVideo,
+        localVideo: !!localVideo,
+        placeholder: !!placeholder,
+        hasLocalStream: !!localStream
+    });
+    
+    if (isHost) {
+        // HOST: Mostrar stream local
+        if (localStream && localVideo) {
+            console.log('📹 Configurando vídeo local para host');
+            try {
+                localVideo.srcObject = localStream;
+                localVideo.muted = true;
+                localVideo.play().catch(e => {
+                    console.log('⚠️ Auto-play do vídeo local bloqueado');
+                    localVideo.setAttribute('controls', 'true');
+                });
+                localVideo.style.display = 'block';
+                
+                // Também mostrar no vídeo principal
+                if (mainVideo) {
+                    mainVideo.srcObject = localStream;
+                    mainVideo.muted = false;
+                    mainVideo.play().catch(e => {
+                        console.log('⚠️ Auto-play do vídeo principal bloqueado');
+                        mainVideo.setAttribute('controls', 'true');
+                    });
+                    mainVideo.style.display = 'block';
+                }
+                
+                if (placeholder) placeholder.style.display = 'none';
+                
+            } catch (videoError) {
+                console.error('❌ Erro ao configurar vídeo:', videoError);
+                if (placeholder) {
+                    placeholder.style.display = 'flex';
+                    placeholder.innerHTML = '<i class="fas fa-exclamation-triangle"></i><h3>Erro ao carregar vídeo</h3>';
+                }
+            }
+        } else {
+            console.log('⚠️ Host não tem stream local');
+            if (placeholder) {
+                placeholder.style.display = 'flex';
+                placeholder.innerHTML = `
+                    <i class="fas fa-video-slash"></i>
+                    <h3>Câmera não disponível</h3>
+                    <p>Clique para ativar a câmera</p>
+                    <button class="lux-btn lux-btn-primary" onclick="requestCameraForHost()">
+                        <i class="fas fa-camera"></i> Ativar Câmera
+                    </button>
+                `;
+            }
+        }
+    } else {
+        // ESPECTADOR: Mostrar placeholder
+        console.log('👀 Configurando para espectador');
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = `
+                <i class="fas fa-broadcast-tower"></i>
+                <h3>Conectando à transmissão...</h3>
+                <p>Aguarde enquanto o vídeo é carregado</p>
+            `;
+        }
+        
+        if (mainVideo) {
+            mainVideo.style.display = 'none';
+            mainVideo.srcObject = null;
+        }
+        if (localVideo) localVideo.style.display = 'none';
+    }
+    
+    // 7. Configurar chat inicial
+    const chatMessages = document.getElementById('liveChatMessages');
+    if (chatMessages && chatMessages.children.length <= 1) {
+        chatMessages.innerHTML = `
+            <div class="lux-chat-welcome">
+                <i class="fas fa-comment-dots"></i>
+                <p>Bem-vindo ao chat da live!<br>Seja respeitoso.</p>
+            </div>
+        `;
+    }
+    
+    // 8. Configurar eventos
+    if (isHost) {
+        setupMediaControls(true);
+    }
+    setupChatEvents();
+    
+    // 9. Iniciar tracker de tempo (apenas espectadores)
+    if (!isHost) {
+        startWatchTimeTracker();
+    }
+    
+    console.log('✅ Player configurado com sucesso para', isHost ? 'host' : 'espectador');
 }
+
+// ============================================
+// FUNÇÃO AUXILIAR PARA ATIVAR CÂMERA
+// ============================================
+
+async function requestCameraForHost() {
+    console.log('📹 Solicitando câmera para host...');
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+        
+        localStream = stream;
+        
+        // Atualizar UI do vídeo
+        const localVideo = document.getElementById('localVideo');
+        const mainVideo = document.getElementById('liveVideo');
+        const placeholder = document.getElementById('videoPlaceholder');
+        
+        if (localVideo) {
+            localVideo.srcObject = stream;
+            localVideo.muted = true;
+            localVideo.play();
+            localVideo.style.display = 'block';
+        }
+        
+        if (mainVideo) {
+            mainVideo.srcObject = stream;
+            mainVideo.play();
+            mainVideo.style.display = 'block';
+        }
+        
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+        
+        // Atualizar Firestore
+        if (currentLiveId) {
+            await db.collection('liveStreams').doc(currentLiveId).update({
+                hasActiveStream: true,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        
+        showToast('🎥 Câmera ativada com sucesso!', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao ativar câmera:', error);
+        showToast('Não foi possível ativar a câmera: ' + error.message, 'error');
+    }
+}
+
+// ============================================
+// FUNÇÃO PARA DIAGNÓSTICO DE ELEMENTOS
+// ============================================
+
+function diagnosePlayerElements() {
+    console.log('🔍 Diagnóstico dos elementos do player:');
+    
+    const elementsToCheck = [
+        'livePlayer', 'liveGrid', 'livePlayerTitle', 'liveHostName', 
+        'liveHostAvatar', 'liveBadge', 'exitLiveBtn', 'liveVideo',
+        'localVideo', 'videoPlaceholder', 'viewerCount', 'likeCount',
+        'giftCount', 'earningsCount', 'chatUserCount'
+    ];
+    
+    elementsToCheck.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            console.log(`✅ ${id}: encontrado`);
+        } else {
+            console.log(`❌ ${id}: NÃO encontrado`);
+        }
+    });
+    
+    // Verificar se há elementos com mesmo ID
+    const allElements = document.querySelectorAll('[id]');
+    const ids = {};
+    allElements.forEach(el => {
+        if (ids[el.id]) {
+            console.warn(`⚠️ ID duplicado: ${el.id} (${ids[el.id]} ocorrências)`);
+            ids[el.id]++;
+        } else {
+            ids[el.id] = 1;
+        }
+    });
+}
+
+// Executar diagnóstico após o DOM carregar
+setTimeout(diagnosePlayerElements, 1000);
 
 // ============================================
 // ATIVAR CÂMERA PARA HOST
