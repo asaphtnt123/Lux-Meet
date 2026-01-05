@@ -993,8 +993,7 @@ async function setupSimpleWebRTC(liveId) {
         // Para um MVP, usaremos um sistema simplificado
         // Em produção, implemente WebRTC completo com servidor de sinalização
         
-        // Criar URL de streaming simulada (apenas para demonstração)
-        const streamUrl = `webrtc://luxmeet.live/${liveId}/${currentUser.uid}`;
+       
         
         // Salvar no Firestore para espectadores acessarem
         await db.collection('liveStreams').doc(liveId).update({
