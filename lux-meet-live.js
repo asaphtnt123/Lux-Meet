@@ -2344,6 +2344,11 @@ async function joinLive(liveId) {
 async function connectToLiveStream(liveData) {
     console.log('📡 [CORRECTED] Conectando à live');
     
+     // SE FOR HOST, NÃO FAZER NADA - o setupVideoElements já configurou
+    if (liveData.hostId === currentUser.uid) {
+        console.log('👑 Host detectado - pulando connectToLiveStream');
+        return;
+    }
     try {
         const videoElement = document.getElementById('liveVideo');
         const localVideo = document.getElementById('localVideo');
@@ -4166,96 +4171,398 @@ function updateElementSafely(elementId, value) {
         return false;
     }
 }
+// ============================================
+// SETUP VIDEO ELEMENTS - VERSÃO CORRIGIDA
+// ============================================
 
 function setupVideoElements(liveData, isHost) {
-    console.log('🎥 Configurando vídeo, isHost:', isHost);
+    console.log('🎥 [CORRIGIDO] Configurando vídeo, isHost:', isHost);
     
     try {
         const mainVideo = document.getElementById('liveVideo');
         const localVideo = document.getElementById('localVideo');
         const placeholder = document.getElementById('videoPlaceholder');
         
-        // Verificar quais elementos existem
-        console.log('Elementos encontrados:', {
+        console.log('📊 Estado atual:', {
             mainVideo: !!mainVideo,
             localVideo: !!localVideo,
             placeholder: !!placeholder,
-            localStream: !!localStream
+            localStream: !!localStream,
+            isHost: isHost
         });
         
+        // 1. SEMPRE limpar primeiro
+        if (mainVideo) {
+            mainVideo.pause();
+            mainVideo.src = '';
+            mainVideo.srcObject = null;
+        }
+        
+        if (localVideo) {
+            localVideo.pause();
+            localVideo.src = '';
+            localVideo.srcObject = null;
+        }
+        
+        // 2. HOST
         if (isHost) {
-            // HOST
-            if (localStream && localVideo) {
-                console.log('📹 Host com stream, configurando...');
+            console.log('👑 CONFIGURANDO HOST');
+            
+            if (localStream) {
+                console.log('✅ Host TEM stream local');
                 
-                // Configurar vídeo local
-                localVideo.srcObject = localStream;
-                localVideo.muted = true;
+                // Mostrar vídeo local (pequeno)
+                if (localVideo) {
+                    localVideo.srcObject = localStream;
+                    localVideo.muted = true;
+                    localVideo.style.display = 'block';
+                    
+                    localVideo.play().catch(e => {
+                        console.log('Auto-play local bloqueado');
+                        localVideo.setAttribute('controls', 'true');
+                    });
+                }
                 
-                localVideo.play().catch(e => {
-                    console.log('Auto-play local bloqueado');
-                    localVideo.setAttribute('controls', 'true');
-                });
-                
-                localVideo.style.display = 'block';
-                
-                // Configurar vídeo principal também
+                // Mostrar vídeo principal (grande) 
                 if (mainVideo) {
                     mainVideo.srcObject = localStream;
                     mainVideo.muted = false;
+                    mainVideo.style.display = 'block';
                     
                     mainVideo.play().catch(e => {
                         console.log('Auto-play principal bloqueado');
                         mainVideo.setAttribute('controls', 'true');
                     });
-                    
-                    mainVideo.style.display = 'block';
                 }
                 
-                // Ocultar placeholder
+                // OCULTAR placeholder completamente
                 if (placeholder) {
+                    console.log('🚫 Ocultando placeholder para host');
                     placeholder.style.display = 'none';
+                    placeholder.innerHTML = ''; // Limpar conteúdo
                 }
+                
+                // Mostrar status
+                updateHostStatus('🎬 Transmitindo ao vivo!');
                 
             } else {
-                console.log('⚠️ Host sem stream local');
+                console.log('⚠️ Host SEM stream local');
+                
+                // Mostrar interface especial para host sem câmera
                 if (placeholder) {
                     placeholder.style.display = 'flex';
                     placeholder.innerHTML = `
-                        <i class="fas fa-video-slash"></i>
-                        <h3>Sem transmissão de vídeo</h3>
-                        <p>Ative a câmera para transmitir</p>
+                        <div class="lux-host-no-camera">
+                            <i class="fas fa-microphone-alt fa-3x"></i>
+                            <h3>🎤 VOCÊ ESTÁ AO VIVO!</h3>
+                            <p>Sua transmissão de áudio está ativa</p>
+                            <div class="lux-host-info">
+                                <span><i class="fas fa-eye"></i> ${liveData.viewerCount || 0} espectadores</span>
+                                <span><i class="fas fa-heart"></i> ${liveData.likes || 0} curtidas</span>
+                            </div>
+                            <button class="lux-btn lux-btn-primary" onclick="enableCameraForHost()">
+                                <i class="fas fa-camera"></i> Ativar Câmera
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                // Garantir que vídeos estão ocultos
+                if (mainVideo) mainVideo.style.display = 'none';
+                if (localVideo) localVideo.style.display = 'none';
+            }
+            
+        } 
+        // 3. ESPECTADOR
+        else {
+            console.log('👀 CONFIGURANDO ESPECTADOR');
+            
+            // ESPECTADOR NUNCA deve ver "Conectando..."
+            // Mostrar interface de live imediatamente
+            
+            if (placeholder) {
+                placeholder.style.display = 'flex';
+                
+                // Verificar se host tem stream
+                const hostHasVideo = localStream !== null && localStream !== undefined;
+                
+                if (hostHasVideo) {
+                    // Host está transmitindo vídeo
+                    placeholder.innerHTML = `
+                        <div class="lux-audience-live">
+                            <div class="lux-live-indicator">
+                                <span class="lux-pulse-dot"></span>
+                                <span class="lux-live-text">🔴 AO VIVO AGORA</span>
+                            </div>
+                            <div class="lux-audience-host">
+                                <img src="${liveData.hostPhoto || 'https://via.placeholder.com/80'}" 
+                                     alt="${liveData.hostName}"
+                                     class="lux-audience-avatar">
+                                <div>
+                                    <h3>${liveData.hostName || 'Host'}</h3>
+                                    <p>${liveData.title || 'Transmissão ao vivo'}</p>
+                                </div>
+                            </div>
+                            <div class="lux-audience-message">
+                                <i class="fas fa-satellite"></i>
+                                <p>Conectado à transmissão de <strong>${liveData.hostName || 'host'}</strong></p>
+                            </div>
+                            <div class="lux-audience-stats">
+                                <div>
+                                    <i class="fas fa-users"></i>
+                                    <span>${formatNumber(liveData.viewerCount || 1)} online</span>
+                                </div>
+                                <div>
+                                    <i class="fas fa-heart"></i>
+                                    <span>${liveData.likes || 0} curtidas</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Host só tem áudio
+                    placeholder.innerHTML = `
+                        <div class="lux-audience-audio">
+                            <i class="fas fa-headphones-alt fa-3x"></i>
+                            <h3>🎧 Transmissão de Áudio</h3>
+                            <p>${liveData.hostName || 'O host'} está ao vivo</p>
+                            <div class="lux-audio-info">
+                                <span><i class="fas fa-user"></i> ${liveData.hostName}</span>
+                                <span><i class="fas fa-volume-up"></i> Áudio ao vivo</span>
+                            </div>
+                        </div>
                     `;
                 }
             }
             
-        } else {
-            // ESPECTADOR
-            console.log('👀 Configurando para espectador');
-            
-            if (placeholder) {
-                placeholder.style.display = 'flex';
-                placeholder.innerHTML = `
-                    <i class="fas fa-broadcast-tower"></i>
-                    <h3>Conectando...</h3>
-                    <p>Aguarde a transmissão</p>
-                `;
-            }
-            
-            // Ocultar vídeos
+            // Ocultar vídeos para espectador
             if (mainVideo) {
                 mainVideo.style.display = 'none';
                 mainVideo.srcObject = null;
             }
-            if (localVideo) {
-                localVideo.style.display = 'none';
-            }
+            if (localVideo) localVideo.style.display = 'none';
         }
         
+        console.log('✅ Configuração de vídeo concluída');
+        
     } catch (error) {
-        console.error('❌ Erro ao configurar vídeo:', error);
+        console.error('❌ Erro em setupVideoElements:', error);
     }
 }
+
+// ============================================
+// FUNÇÕES AUXILIARES
+// ============================================
+
+function updateHostStatus(message) {
+    console.log('📢 Status do host:', message);
+    
+    // Atualizar algum elemento na UI se necessário
+    const statusElement = document.getElementById('hostStatus');
+    if (statusElement) {
+        statusElement.textContent = message;
+    }
+}
+
+// ============================================
+// CSS PARA AS NOVAS INTERFACES
+// ============================================
+
+function injectVideoCSS() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Host sem câmera */
+        .lux-host-no-camera {
+            text-align: center;
+            padding: 30px;
+            color: white;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .lux-host-no-camera i {
+            color: #d4af37;
+            margin-bottom: 20px;
+        }
+        
+        .lux-host-no-camera h3 {
+            color: #ff4757;
+            margin: 15px 0;
+            font-size: 1.4rem;
+        }
+        
+        .lux-host-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            color: #aaa;
+        }
+        
+        .lux-host-info span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Interface de live para espectadores */
+        .lux-audience-live {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .lux-live-indicator {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 71, 87, 0.15);
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .lux-pulse-dot {
+            width: 10px;
+            height: 10px;
+            background: #ff4757;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: luxPulse 1.5s infinite;
+        }
+        
+        @keyframes luxPulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .lux-live-text {
+            color: #ff4757;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+        
+        .lux-audience-host {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .lux-audience-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid #d4af37;
+            object-fit: cover;
+        }
+        
+        .lux-audience-host h3 {
+            margin: 0;
+            color: white;
+            font-size: 1.3rem;
+        }
+        
+        .lux-audience-host p {
+            margin: 5px 0 0;
+            color: #ccc;
+            font-size: 0.95rem;
+        }
+        
+        .lux-audience-message {
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .lux-audience-message i {
+            color: #d4af37;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .lux-audience-message p {
+            color: #ddd;
+            margin: 0;
+        }
+        
+        .lux-audience-message strong {
+            color: #d4af37;
+        }
+        
+        .lux-audience-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 25px;
+        }
+        
+        .lux-audience-stats div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .lux-audience-stats i {
+            color: #d4af37;
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+        
+        .lux-audience-stats span {
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        /* Interface de áudio para espectadores */
+        .lux-audience-audio {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .lux-audience-audio i {
+            color: #d4af37;
+            margin-bottom: 20px;
+        }
+        
+        .lux-audience-audio h3 {
+            color: white;
+            margin: 15px 0;
+            font-size: 1.4rem;
+        }
+        
+        .lux-audience-audio p {
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        
+        .lux-audio-info {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 20px;
+            color: #888;
+        }
+        
+        .lux-audio-info span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+    `;
+    
+    document.head.appendChild(style);
+    console.log('✅ CSS de vídeo injetado');
+}
+
+// Executar após um pequeno delay
+setTimeout(injectVideoCSS, 50);
 
 // ============================================
 // FUNÇÃO PARA ENCONTRAR O ELEMENTO PROBLEMÁTICO
