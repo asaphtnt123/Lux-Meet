@@ -1046,59 +1046,6 @@ async function stopBroadcast() {
 // ASSISTIR LIVE (ATUALIZADA)
 // ============================================
 
-async function joinLive(liveId) {
-    try {
-        console.log(`🎯 Entrando na live ${liveId}...`);
-        
-        // Obter dados da live
-        const liveDoc = await db.collection('liveStreams').doc(liveId).get();
-        
-        if (!liveDoc.exists) {
-            showToast('Live não encontrada', 'error');
-            return;
-        }
-        
-        const liveData = liveDoc.data();
-        currentLiveId = liveId;
-        
-        // Verificar status
-        if (liveData.status !== 'active') {
-            showToast('Esta live já foi encerrada', 'warning');
-            return;
-        }
-        
-        // Verificar acesso (se for paga)
-        if (liveData.privacy === 'ticket' && liveData.ticketPrice > 0) {
-            const hasAccess = await checkLiveAccess(liveId);
-            if (!hasAccess) {
-                showTicketPurchaseModal(liveData);
-                return;
-            }
-        }
-        
-        // Registrar viewer (com retry em caso de concorrência)
-        await registerViewerWithRetry(liveId, 3);
-        
-        // Mostrar player
-        showLivePlayer(liveData, false);
-        isWatching = true;
-        
-        // Configurar chat
-        setupLiveChat(liveId);
-        
-        // Configurar listener para atualizações em tempo real
-        setupLiveRealtimeListener(liveId, false);
-        
-        // Tentar conectar ao stream
-        await connectToLiveStream(liveData);
-        
-        showToast('✅ Entrou na live com sucesso!', 'success');
-        
-    } catch (error) {
-        console.error('❌ Erro ao entrar na live:', error);
-        showToast('Erro ao entrar na live', 'error');
-    }
-}
 
 async function registerViewerWithRetry(liveId, maxRetries) {
     let retries = 0;
@@ -2301,99 +2248,276 @@ function showApp() {
 // ============================================
 // CONECTAR AO STREAM DA LIVE (COM TRATAMENTO DE ERROS)
 // ============================================
+// ============================================
+// CONECTAR AO STREAM DA LIVE - VERSÃO CORRIGIDA
+// ============================================
 
 async function connectToLiveStream(liveData) {
     try {
         console.log('📡 Conectando ao stream da live...');
         
         const videoElement = document.getElementById('liveVideo');
+        const placeholder = document.getElementById('videoPlaceholder');
+        
         if (!videoElement) {
-            console.error('❌ Elemento de vídeo principal não encontrado');
-            showVideoPlaceholder('Elemento de vídeo não encontrado');
+            console.error('Elemento de vídeo não encontrado');
             return;
         }
         
-        // Resetar estado do vídeo
-        videoElement.srcObject = null;
-        videoElement.src = '';
-        videoElement.removeAttribute('controls');
-        
-        // Mostrar placeholder inicial
-        showVideoPlaceholder('🔗 Conectando à transmissão...');
-        
-        // Verificar se o host tem stream ativo
+        // 1. Verificar se o host tem stream ativo
         if (!liveData.hasActiveStream) {
+            console.log('⚠️ Host não tem stream ativo');
             showVideoPlaceholder('⌛ Aguardando transmissão...');
             return;
         }
         
-        // Se o host for o próprio usuário (modo co-host)
-        if (liveData.hostId === currentUser?.uid) {
-            console.log('👤 Usuário é o host, usando stream local');
-            
-            if (localStream) {
+        // 2. Se for o próprio host, usar stream local
+        if (liveData.hostId === currentUser.uid) {
+            console.log('👑 Usuário é o host, usando stream local');
+            if (localStream && videoElement) {
                 videoElement.srcObject = localStream;
+                videoElement.muted = false;
                 videoElement.play().catch(e => {
-                    console.log('⚠️ Auto-play do stream local bloqueado:', e);
+                    console.log('Auto-play bloqueado para host');
                     videoElement.setAttribute('controls', 'true');
                 });
-                hideVideoPlaceholder();
+                videoElement.style.display = 'block';
+                
+                if (placeholder) placeholder.style.display = 'none';
             }
             return;
         }
         
-        // Tentar métodos de streaming
-        const success = await tryStreamingMethods(liveData, videoElement);
+        // 3. Para espectadores: mostrar placeholder
+        console.log('👀 Espectador: configurando visualização');
+        showVideoPlaceholder('📡 Conectando à transmissão...');
         
-        if (!success) {
-            showVideoPlaceholder('❌ Não foi possível conectar à transmissão');
-        }
+        // 4. Tentar métodos de conexão REAL (não simulação)
+        await tryRealStreamingMethods(liveData, videoElement);
         
     } catch (error) {
         console.error('❌ Erro ao conectar ao stream:', error);
-        showVideoPlaceholder('⚠️ Erro na conexão com a transmissão');
+        showVideoPlaceholder('❌ Erro na transmissão');
     }
+}
+
+// ============================================
+// TENTAR MÉTODOS DE STREAMING REAL
+// ============================================
+
+async function tryRealStreamingMethods(liveData, videoElement) {
+    console.log('🔄 Tentando conectar ao stream real...');
+    
+    // Método 1: Verificar se há streamUrl configurado
+    if (liveData.streamUrl) {
+        console.log('🌐 Stream URL disponível:', liveData.streamUrl);
+        // Aqui você implementaria a conexão WebRTC real
+        // Por enquanto, manteremos o placeholder
+        return false;
+    }
+    
+    // Método 2: Verificar se há configuração WebRTC
+    if (liveData.webrtcConfig) {
+        console.log('⚡ Configuração WebRTC disponível');
+        // Implementar conexão WebRTC aqui
+        return false;
+    }
+    
+    // Método 3: Se não houver stream real, mostrar mensagem apropriada
+    console.log('⚠️ Nenhum método de streaming disponível');
+    showVideoPlaceholder('📹 Transmissão não iniciada');
+    
+    return false;
+}
+
+// ============================================
+// MOSTRAR PLACEHOLDER DO VÍDEO (CORRIGIDA)
+// ============================================
+
+function showVideoPlaceholder(message) {
+    console.log('🖼️ Mostrando placeholder:', message);
+    
+    const placeholder = document.getElementById('videoPlaceholder');
+    const mainVideo = document.getElementById('liveVideo');
+    
+    if (placeholder) {
+        // REMOVER O VÍDEO DE DEMONSTRAÇÃO!
+        placeholder.innerHTML = `
+            <i class="fas fa-broadcast-tower"></i>
+            <h3>${message}</h3>
+            <p>Aguarde enquanto o host inicia a transmissão</p>
+        `;
+        placeholder.style.display = 'flex';
+    }
+    
+    if (mainVideo) {
+        // PARAR QUALQUER VÍDEO QUE ESTEJA RODANDO
+        mainVideo.pause();
+        mainVideo.src = '';
+        mainVideo.srcObject = null;
+        mainVideo.style.display = 'none';
+        mainVideo.removeAttribute('src');
+        mainVideo.load(); // Forçar recarregar
+        
+        // Remover atributos de vídeo de demonstração
+        mainVideo.removeAttribute('loop');
+        mainVideo.removeAttribute('controls');
+    }
+    
+    console.log('✅ Placeholder configurado');
+}
+
+// ============================================
+// CORRIGIR A FUNÇÃO joinLive
+// ============================================
+
+async function joinLive(liveId) {
+    try {
+        console.log(`🎯 Entrando na live ${liveId}...`);
+        
+        // Obter dados da live
+        const liveDoc = await db.collection('liveStreams').doc(liveId).get();
+        
+        if (!liveDoc.exists) {
+            showToast('Live não encontrada', 'error');
+            return;
+        }
+        
+        const liveData = liveDoc.data();
+        currentLiveId = liveId;
+        
+        // Verificar status
+        if (liveData.status !== 'active') {
+            showToast('Esta live já foi encerrada', 'warning');
+            return;
+        }
+        
+        // Registrar viewer
+        await registerViewer(liveId);
+        
+        // Mostrar player
+        showLivePlayer(liveData, false);
+        isWatching = true;
+        
+        // Configurar chat
+        setupLiveChat(liveId);
+        
+        // Configurar listener para atualizações
+        setupLiveRealtimeListener(liveId, false);
+        
+        // CONECTAR AO STREAM REAL (sem simulação!)
+        await connectToLiveStream(liveData);
+        
+        showToast('✅ Entrou na live!', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao entrar na live:', error);
+        showToast('Erro ao entrar na live', 'error');
+    }
+}
+
+
+// ============================================
+// ATUALIZAR FUNÇÃO tryStreamingMethods
+// ============================================
+
+async function tryStreamingMethods(liveData, videoElement) {
+    const methods = [
+        { name: 'WebRTC Real', func: tryRealWebRTCConnection }
+        // Remover a simulação da lista
+    ];
+    
+    for (const method of methods) {
+        try {
+            console.log(`🔄 Tentando método: ${method.name}`);
+            const success = await method.func(liveData, videoElement);
+            
+            if (success) {
+                console.log(`✅ Conectado via ${method.name}`);
+                return;
+            }
+        } catch (error) {
+            console.log(`⚠️ Método ${method.name} falhou:`, error.message);
+        }
+    }
+    
+    // Fallback para placeholder informativo
+    showVideoPlaceholder('📺 Aguardando transmissão do host');
+}
+
+// ============================================
+// IMPLEMENTAÇÃO BÁSICA DE WEBRTC REAL
+// ============================================
+
+async function tryRealWebRTCConnection(liveData, videoElement) {
+    console.log('⚡ Tentando conexão WebRTC real...');
+    
+    try {
+        // Verificar se temos configuração
+        if (!liveData.webrtcConfig) {
+            console.log('⚠️ Sem configuração WebRTC');
+            return false;
+        }
+        
+        // Aqui você implementaria a conexão WebRTC real
+        // Por enquanto, vamos apenas mostrar que estamos tentando
+        console.log('🔧 Configuração WebRTC disponível, implementação necessária');
+        
+        // Mostrar mensagem informativa
+        showVideoPlaceholder('🔗 Estabelecendo conexão...');
+        
+        return false; // Retornar false até implementar
+        
+    } catch (error) {
+        console.error('❌ Erro na conexão WebRTC:', error);
+        return false;
+    }
+}
+
+// ============================================
+// ATUALIZAR showLivePlayer PARA ESPECTADORES
+// ============================================
+
+// Na função showLivePlayer, na parte do espectador, modifique:
+
+function showLivePlayer(liveData, isHost = false) {
+    // ... código anterior ...
+    
+    if (isHost) {
+        // ... configuração para host ...
+    } else {
+        // ESPECTADOR: mostrar placeholder informativo
+        console.log('👀 Configurando para espectador');
+        
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = `
+                <i class="fas fa-broadcast-tower"></i>
+                <h3>Aguardando transmissão</h3>
+                <p>O host está preparando a live</p>
+                <small>Transmissão ao vivo em breve</small>
+            `;
+        }
+        
+        // GARANTIR que nenhum vídeo de demonstração está rodando
+        if (mainVideo) {
+            mainVideo.style.display = 'none';
+            mainVideo.srcObject = null;
+            mainVideo.src = '';
+            mainVideo.pause();
+        }
+        
+        if (localVideo) {
+            localVideo.style.display = 'none';
+        }
+    }
+    
+    // ... resto do código ...
 }
 
 // ============================================
 // FUNÇÕES PARA GERENCIAR PLACEHOLDER DE VÍDEO
 // ============================================
-
-function showVideoPlaceholder(message) {
-    try {
-        const placeholder = document.getElementById('videoPlaceholder');
-        const mainVideo = document.getElementById('liveVideo');
-        const statusText = document.getElementById('statusText');
-        
-        if (placeholder) {
-            // Atualizar conteúdo do placeholder
-            const icon = placeholder.querySelector('i') || document.createElement('i');
-            const title = placeholder.querySelector('h3') || document.createElement('h3');
-            const description = placeholder.querySelector('p') || document.createElement('p');
-            
-            icon.className = 'fas fa-broadcast-tower';
-            title.textContent = message;
-            description.textContent = 'Aguarde enquanto a transmissão é carregada';
-            
-            if (!placeholder.contains(icon)) placeholder.appendChild(icon);
-            if (!placeholder.contains(title)) placeholder.appendChild(title);
-            if (!placeholder.contains(description)) placeholder.appendChild(description);
-            
-            placeholder.style.display = 'flex';
-        }
-        
-        if (mainVideo) {
-            mainVideo.style.display = 'none';
-        }
-        
-        if (statusText) {
-            statusText.textContent = message;
-        }
-        
-    } catch (error) {
-        console.error('❌ Erro ao mostrar placeholder:', error);
-    }
-}
 
 function hideVideoPlaceholder() {
     try {
@@ -2431,72 +2555,6 @@ function hideVideoPlaceholder() {
 // TENTAR MÉTODOS DE STREAMING (COM TRATAMENTO DE ERROS)
 // ============================================
 
-async function tryStreamingMethods(liveData, videoElement) {
-    const methods = [
-        { name: 'Simulação', func: simulateStream },
-        { name: 'Fallback', func: fallbackStream }
-    ];
-    
-    for (const method of methods) {
-        try {
-            console.log(`🔄 Tentando método: ${method.name}`);
-            const success = await method.func(liveData, videoElement);
-            
-            if (success) {
-                console.log(`✅ Conectado via ${method.name}`);
-                hideVideoPlaceholder();
-                return true;
-            }
-        } catch (error) {
-            console.log(`⚠️ Método ${method.name} falhou:`, error.message);
-        }
-    }
-    
-    return false;
-}
-
-async function simulateStream(liveData, videoElement) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // Para demonstração, usar vídeo de placeholder
-            // Em produção, substitua por WebRTC real
-            
-            // Criar elemento canvas para simular vídeo
-            const canvas = document.createElement('canvas');
-            canvas.width = 640;
-            canvas.height = 360;
-            const ctx = canvas.getContext('2d');
-            
-            // Desenhar fundo
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Desenhar texto
-            ctx.fillStyle = '#d4af37';
-            ctx.font = 'bold 24px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('TRANSMISSÃO AO VIVO', canvas.width / 2, canvas.height / 2 - 20);
-            
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '16px Arial';
-            ctx.fillText(liveData.title || 'Live em andamento', canvas.width / 2, canvas.height / 2 + 20);
-            
-            // Criar stream a partir do canvas
-            const stream = canvas.captureStream(30);
-            videoElement.srcObject = stream;
-            
-            videoElement.play().then(() => {
-                console.log('🎬 Stream simulado iniciado');
-                resolve(true);
-            }).catch(error => {
-                console.log('⚠️ Auto-play bloqueado:', error);
-                videoElement.setAttribute('controls', 'true');
-                resolve(true);
-            });
-        }, 1000);
-    });
-}
-
 async function fallbackStream(liveData, videoElement) {
     // Método de fallback usando vídeo estático
     return new Promise((resolve) => {
@@ -2526,29 +2584,6 @@ async function fallbackStream(liveData, videoElement) {
         }, 5000);
     });
 }
-async function simulateStream(liveData, videoElement) {
-    // Para demonstração, simularemos um stream
-    // Em produção, substitua por WebRTC real
-    
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // Mostrar vídeo de demonstração
-            videoElement.src = 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-            videoElement.loop = true;
-            videoElement.muted = false;
-            
-            videoElement.play().then(() => {
-                console.log('🎬 Vídeo de demonstração iniciado');
-                resolve(true);
-            }).catch(error => {
-                console.log('⚠️ Auto-play bloqueado:', error);
-                videoElement.setAttribute('controls', 'true');
-                resolve(true);
-            });
-        }, 500);
-    });
-}
-
 async function tryWebRTCStream(liveData, videoElement) {
     // Implementação básica de WebRTC
     // Em produção, use um servidor de sinalização completo
@@ -2581,25 +2616,6 @@ async function tryWebRTCStream(liveData, videoElement) {
         return false;
     }
 }
-
-function showVideoPlaceholder(message) {
-    const placeholder = document.getElementById('videoPlaceholder');
-    const mainVideo = document.getElementById('liveVideo');
-    
-    if (placeholder) {
-        placeholder.innerHTML = `
-            <i class="fas fa-broadcast-tower"></i>
-            <h3>${message}</h3>
-            <p>Aguarde enquanto a transmissão é carregada</p>
-        `;
-        placeholder.style.display = 'flex';
-    }
-    
-    if (mainVideo) {
-        mainVideo.style.display = 'none';
-    }
-}
-
 
 // ============================================
 // ENCERRAR/SAIR DA LIVE
