@@ -4679,3 +4679,171 @@ async function enableCameraForHost() {
         showToast('Erro ao ativar câmera: ' + error.message, 'error');
     }
 }
+
+
+// SOLUÇÃO RÁPIDA PARA TESTAR
+function quickFixForHost() {
+    console.log('🔧 Aplicando correção rápida...');
+    
+    // 1. Verificar estado
+    console.log('Estado atual:');
+    console.log('- currentLiveId:', currentLiveId);
+    console.log('- localStream:', localStream ? '✅ Presente' : '❌ Ausente');
+    console.log('- isBroadcasting:', isBroadcasting);
+    
+    // 2. Se não tem stream, pedir permissão
+    if (!localStream) {
+        console.log('🎥 Solicitando permissões de mídia...');
+        
+        navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        }).then(stream => {
+            console.log('✅ Stream obtido!');
+            localStream = stream;
+            isBroadcasting = true;
+            
+            // 3. Atualizar UI
+            const localVideo = document.getElementById('localVideo');
+            const mainVideo = document.getElementById('liveVideo');
+            const placeholder = document.getElementById('videoPlaceholder');
+            
+            if (localVideo) {
+                localVideo.srcObject = stream;
+                localVideo.muted = true;
+                localVideo.style.display = 'block';
+                localVideo.play();
+                console.log('✅ Vídeo local configurado');
+            }
+            
+            if (mainVideo) {
+                mainVideo.srcObject = stream;
+                mainVideo.muted = false;
+                mainVideo.style.display = 'block';
+                mainVideo.play();
+                console.log('✅ Vídeo principal configurado');
+            }
+            
+            if (placeholder) {
+                placeholder.style.display = 'none';
+                console.log('✅ Placeholder ocultado');
+            }
+            
+            // 4. Atualizar Firestore
+            if (currentLiveId) {
+                db.collection('liveStreams').doc(currentLiveId).update({
+                    hasActiveStream: true,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log('✅ Status atualizado no Firestore');
+            }
+            
+            showToast('🎥 Câmera ativada com sucesso!', 'success');
+            
+        }).catch(error => {
+            console.error('❌ Erro ao obter stream:', error);
+            showToast('Não foi possível ativar a câmera', 'error');
+        });
+    } else {
+        console.log('✅ Já tem stream, apenas configurando...');
+        
+        // Já tem stream, apenas configurar UI
+        const localVideo = document.getElementById('localVideo');
+        const mainVideo = document.getElementById('liveVideo');
+        const placeholder = document.getElementById('videoPlaceholder');
+        
+        if (localVideo && localStream) {
+            localVideo.srcObject = localStream;
+            localVideo.muted = true;
+            localVideo.style.display = 'block';
+            localVideo.play();
+        }
+        
+        if (mainVideo && localStream) {
+            mainVideo.srcObject = localStream;
+            mainVideo.muted = false;
+            mainVideo.style.display = 'block';
+            mainVideo.play();
+        }
+        
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+    }
+}
+
+// CORREÇÃO PARA ESPECTADOR
+function fixAudienceView() {
+    console.log('👀 Corrigindo view do espectador...');
+    
+    const placeholder = document.getElementById('videoPlaceholder');
+    if (!placeholder) return;
+    
+    // Obter dados da live atual
+    if (!currentLiveId) {
+        console.error('❌ Nenhuma live ativa');
+        return;
+    }
+    
+    db.collection('liveStreams').doc(currentLiveId).get()
+        .then(doc => {
+            if (doc.exists) {
+                const liveData = doc.data();
+                
+                // Mostrar interface atualizada
+                placeholder.innerHTML = `
+                    <div class="lux-audience-fixed">
+                        <div class="lux-live-pulse">
+                            <div class="lux-pulse-animation"></div>
+                            <span>🔴 TRANSMISSÃO AO VIVO</span>
+                        </div>
+                        
+                        <div class="lux-audience-content-fixed">
+                            <div class="lux-host-card">
+                                <img src="${liveData.hostPhoto || 'https://via.placeholder.com/80'}" 
+                                     alt="${liveData.hostName}"
+                                     class="lux-host-img">
+                                <div>
+                                    <h3>${liveData.hostName || 'Host'}</h3>
+                                    <p class="lux-live-now">AO VIVO AGORA</p>
+                                </div>
+                            </div>
+                            
+                            <div class="lux-live-info">
+                                <h4>${liveData.title || 'Transmissão ao vivo'}</h4>
+                                <p>${liveData.description || 'Assistindo transmissão ao vivo'}</p>
+                            </div>
+                            
+                            <div class="lux-stats-fixed">
+                                <div class="lux-stat">
+                                    <i class="fas fa-eye"></i>
+                                    <div>
+                                        <strong>${liveData.viewerCount || 1}</strong>
+                                        <span>Espectadores</span>
+                                    </div>
+                                </div>
+                                <div class="lux-stat">
+                                    <i class="fas fa-heart"></i>
+                                    <div>
+                                        <strong>${liveData.likes || 0}</strong>
+                                        <span>Curtidas</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="lux-audience-tip-fixed">
+                                <i class="fas fa-comment"></i>
+                                <p>Participe do chat para interagir!</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                console.log('✅ Interface do espectador atualizada');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro ao obter dados:', error);
+        });
+}
+
