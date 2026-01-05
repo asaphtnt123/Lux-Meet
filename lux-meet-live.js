@@ -2252,55 +2252,6 @@ function showApp() {
 // CONECTAR AO STREAM DA LIVE - VERSÃO CORRIGIDA
 // ============================================
 
-async function connectToLiveStream(liveData) {
-    try {
-        console.log('📡 Conectando ao stream da live...');
-        
-        const videoElement = document.getElementById('liveVideo');
-        const placeholder = document.getElementById('videoPlaceholder');
-        
-        if (!videoElement) {
-            console.error('Elemento de vídeo não encontrado');
-            return;
-        }
-        
-        // 1. Verificar se o host tem stream ativo
-        if (!liveData.hasActiveStream) {
-            console.log('⚠️ Host não tem stream ativo');
-            showVideoPlaceholder('⌛ Aguardando transmissão...');
-            return;
-        }
-        
-        // 2. Se for o próprio host, usar stream local
-        if (liveData.hostId === currentUser.uid) {
-            console.log('👑 Usuário é o host, usando stream local');
-            if (localStream && videoElement) {
-                videoElement.srcObject = localStream;
-                videoElement.muted = false;
-                videoElement.play().catch(e => {
-                    console.log('Auto-play bloqueado para host');
-                    videoElement.setAttribute('controls', 'true');
-                });
-                videoElement.style.display = 'block';
-                
-                if (placeholder) placeholder.style.display = 'none';
-            }
-            return;
-        }
-        
-        // 3. Para espectadores: mostrar placeholder
-        console.log('👀 Espectador: configurando visualização');
-        showVideoPlaceholder('📡 Conectando à transmissão...');
-        
-        // 4. Tentar métodos de conexão REAL (não simulação)
-        await tryRealStreamingMethods(liveData, videoElement);
-        
-    } catch (error) {
-        console.error('❌ Erro ao conectar ao stream:', error);
-        showVideoPlaceholder('❌ Erro na transmissão');
-    }
-}
-
 // ============================================
 // TENTAR MÉTODOS DE STREAMING REAL
 // ============================================
@@ -2333,39 +2284,6 @@ async function tryRealStreamingMethods(liveData, videoElement) {
 // ============================================
 // MOSTRAR PLACEHOLDER DO VÍDEO (CORRIGIDA)
 // ============================================
-
-function showVideoPlaceholder(message) {
-    console.log('🖼️ Mostrando placeholder:', message);
-    
-    const placeholder = document.getElementById('videoPlaceholder');
-    const mainVideo = document.getElementById('liveVideo');
-    
-    if (placeholder) {
-        // REMOVER O VÍDEO DE DEMONSTRAÇÃO!
-        placeholder.innerHTML = `
-            <i class="fas fa-broadcast-tower"></i>
-            <h3>${message}</h3>
-            <p>Aguarde enquanto o host inicia a transmissão</p>
-        `;
-        placeholder.style.display = 'flex';
-    }
-    
-    if (mainVideo) {
-        // PARAR QUALQUER VÍDEO QUE ESTEJA RODANDO
-        mainVideo.pause();
-        mainVideo.src = '';
-        mainVideo.srcObject = null;
-        mainVideo.style.display = 'none';
-        mainVideo.removeAttribute('src');
-        mainVideo.load(); // Forçar recarregar
-        
-        // Remover atributos de vídeo de demonstração
-        mainVideo.removeAttribute('loop');
-        mainVideo.removeAttribute('controls');
-    }
-    
-    console.log('✅ Placeholder configurado');
-}
 
 // ============================================
 // CORRIGIR A FUNÇÃO joinLive
