@@ -2337,73 +2337,487 @@ async function joinLive(liveId) {
 // ============================================
 // CONNECT TO LIVE STREAM - VERSÃO LIMPA E DEFINITIVA
 // ============================================
+// ============================================
+// CONNECT TO LIVE STREAM - VERSÃO CORRIGIDA
+// ============================================
 
 async function connectToLiveStream(liveData) {
-    console.log('📡 [CLEAN] Conectando à live - SEM VÍDEOS EXTERNOS');
+    console.log('📡 [CORRECTED] Conectando à live');
     
     try {
         const videoElement = document.getElementById('liveVideo');
-        const placeholder = document.getElementById('videoPlaceholder');
         const localVideo = document.getElementById('localVideo');
+        const placeholder = document.getElementById('videoPlaceholder');
         
-        // 1. PARAR E LIMPAR TODOS OS VÍDEOS
-        if (videoElement) {
-            videoElement.pause();
-            videoElement.src = '';
-            videoElement.srcObject = null;
-            videoElement.removeAttribute('src');
-            videoElement.removeAttribute('loop');
-            videoElement.style.display = 'none';
-            videoElement.load();
-        }
-        
-        if (localVideo) {
-            localVideo.pause();
-            localVideo.src = '';
-            localVideo.srcObject = null;
-            localVideo.style.display = 'none';
-        }
-        
-        // 2. VERIFICAR SE É HOST OU ESPECTADOR
+        // 1. Determinar se é host ou espectador
         const isHost = liveData.hostId === currentUser.uid;
-        console.log('👤 Tipo de usuário:', isHost ? 'HOST' : 'ESPECTADOR');
+        console.log('👤 Tipo:', isHost ? 'HOST' : 'ESPECTADOR');
         
         if (isHost) {
-            // HOST: mostrar stream local se disponível
-            console.log('🎬 Host configurando transmissão');
-            
-            if (localStream && localVideo) {
-                localVideo.srcObject = localStream;
-                localVideo.muted = true;
-                localVideo.style.display = 'block';
-                
-                localVideo.play().catch(e => {
-                    console.log('Auto-play bloqueado para host');
-                    localVideo.setAttribute('controls', 'true');
-                });
-                
-                if (placeholder) {
-                    placeholder.style.display = 'none';
-                }
-                
-                console.log('✅ Host transmitindo');
-            } else {
-                console.log('⚠️ Host sem stream local');
-                showHostPlaceholder();
-            }
-            
+            console.log('🎬 HOST: Configurando transmissão própria');
+            await setupHostStream(liveData, videoElement, localVideo, placeholder);
         } else {
-            // ESPECTADOR: mostrar interface de live sem vídeo
-            console.log('👀 Espectador assistindo');
-            showAudienceInterface(liveData);
+            console.log('👀 ESPECTADOR: Mostrando interface de live');
+            await setupAudienceView(liveData, videoElement, placeholder);
         }
         
     } catch (error) {
-        console.error('❌ Erro ao conectar:', error);
-        showErrorPlaceholder('Erro na conexão');
+        console.error('❌ Erro em connectToLiveStream:', error);
+        showStreamStatus('Erro na conexão', 'error');
     }
 }
 
+// ============================================
+// CONFIGURAÇÃO PARA HOST
+// ============================================
+
+async function setupHostStream(liveData, mainVideo, localVideo, placeholder) {
+    console.log('🎥 Configurando stream do host');
+    
+    // Limpar estado anterior
+    if (mainVideo) {
+        mainVideo.pause();
+        mainVideo.src = '';
+        mainVideo.srcObject = null;
+    }
+    
+    // Verificar se tem stream local
+    if (localStream && localVideo) {
+        console.log('✅ Host tem stream local, configurando...');
+        
+        // Configurar vídeo local (pequeno, para o host se ver)
+        localVideo.srcObject = localStream;
+        localVideo.muted = true;
+        localVideo.style.display = 'block';
+        
+        localVideo.play().catch(e => {
+            console.log('Auto-play local bloqueado');
+            localVideo.setAttribute('controls', 'true');
+        });
+        
+        // Configurar vídeo principal (grande)
+        if (mainVideo) {
+            mainVideo.srcObject = localStream;
+            mainVideo.muted = false;
+            mainVideo.style.display = 'block';
+            
+            mainVideo.play().catch(e => {
+                console.log('Auto-play principal bloqueado');
+                mainVideo.setAttribute('controls', 'true');
+            });
+        }
+        
+        // Esconder placeholder
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+        
+        // Mostrar status
+        showStreamStatus('🎬 Você está transmitindo AO VIVO!', 'success');
+        
+    } else {
+        console.log('⚠️ Host não tem stream local');
+        
+        // Mostrar interface para host sem câmera
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = `
+                <div class="lux-host-streaming">
+                    <i class="fas fa-broadcast-tower fa-3x"></i>
+                    <h3>🎤 VOCÊ ESTÁ AO VIVO!</h3>
+                    <p>Sua transmissão está ativa</p>
+                    <div class="lux-host-stats">
+                        <span><i class="fas fa-eye"></i> ${liveData.viewerCount || 0} espectadores</span>
+                        <span><i class="fas fa-heart"></i> ${liveData.likes || 0} curtidas</span>
+                    </div>
+                    <small>Os espectadores podem ver sua transmissão</small>
+                    <button class="lux-btn lux-btn-primary" onclick="enableCameraForHost()">
+                        <i class="fas fa-camera"></i> Ativar Câmera
+                    </button>
+                </div>
+            `;
+        }
+        
+        if (mainVideo) mainVideo.style.display = 'none';
+        if (localVideo) localVideo.style.display = 'none';
+    }
+}
+
+// ============================================
+// CONFIGURAÇÃO PARA ESPECTADORES
+// ============================================
+
+async function setupAudienceView(liveData, videoElement, placeholder) {
+    console.log('🎭 Configurando visualização para espectador');
+    
+    // Limpar qualquer vídeo
+    if (videoElement) {
+        videoElement.pause();
+        videoElement.src = '';
+        videoElement.srcObject = null;
+        videoElement.style.display = 'none';
+    }
+    
+    // Verificar se o host está transmitindo
+    const hostHasStream = liveData.hasActiveStream === true;
+    
+    if (hostHasStream) {
+        console.log('✅ Host está transmitindo, mostrando interface...');
+        showLiveAudienceInterface(liveData, placeholder);
+    } else {
+        console.log('⚠️ Host não está transmitindo vídeo');
+        showAudioOnlyInterface(liveData, placeholder);
+    }
+}
+
+// ============================================
+// INTERFACES PARA ESPECTADORES
+// ============================================
+
+function showLiveAudienceInterface(liveData, placeholder) {
+    if (!placeholder) return;
+    
+    placeholder.style.display = 'flex';
+    placeholder.innerHTML = `
+        <div class="lux-live-audience">
+            <div class="lux-live-header">
+                <div class="lux-live-badge-large">
+                    <span class="lux-pulse"></span>
+                    <span>🔴 AO VIVO AGORA</span>
+                </div>
+            </div>
+            
+            <div class="lux-host-presentation">
+                <img src="${liveData.hostPhoto || 'https://via.placeholder.com/120'}" 
+                     alt="${liveData.hostName}"
+                     class="lux-host-avatar-presentation">
+                <div class="lux-host-presentation-info">
+                    <h2>${liveData.hostName || 'Host'}</h2>
+                    <p class="lux-live-title">${liveData.title || 'Transmissão ao vivo'}</p>
+                    <p class="lux-live-category">${liveData.category || 'Social'}</p>
+                </div>
+            </div>
+            
+            <div class="lux-audience-content">
+                <div class="lux-stream-message">
+                    <i class="fas fa-satellite-dish"></i>
+                    <h3>Transmissão em Andamento</h3>
+                    <p>Conectado à live de ${liveData.hostName || 'o host'}</p>
+                </div>
+                
+                <div class="lux-live-stats-audience">
+                    <div class="lux-stat-audience">
+                        <i class="fas fa-users"></i>
+                        <div>
+                            <strong>${formatNumber(liveData.viewerCount || 1)}</strong>
+                            <span>Espectadores</span>
+                        </div>
+                    </div>
+                    <div class="lux-stat-audience">
+                        <i class="fas fa-heart"></i>
+                        <div>
+                            <strong>${liveData.likes || 0}</strong>
+                            <span>Curtidas</span>
+                        </div>
+                    </div>
+                    <div class="lux-stat-audience">
+                        <i class="fas fa-comment"></i>
+                        <div>
+                            <strong>Chat</strong>
+                            <span>Ativo</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="lux-audience-actions">
+                    <p><i class="fas fa-info-circle"></i> Participe do chat para interagir!</p>
+                    <button class="lux-btn lux-btn-small" onclick="sendLike()">
+                        <i class="fas fa-heart"></i> Curtir
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showAudioOnlyInterface(liveData, placeholder) {
+    if (!placeholder) return;
+    
+    placeholder.style.display = 'flex';
+    placeholder.innerHTML = `
+        <div class="lux-audio-only">
+            <i class="fas fa-headphones-alt fa-3x"></i>
+            <h3>🎧 Transmissão de Áudio</h3>
+            <p>${liveData.hostName || 'O host'} está transmitindo apenas áudio</p>
+            <div class="lux-audio-stats">
+                <span><i class="fas fa-user"></i> ${liveData.hostName}</span>
+                <span><i class="fas fa-eye"></i> ${liveData.viewerCount || 0} ouvindo</span>
+            </div>
+            <small>Participe do chat para conversar!</small>
+        </div>
+    `;
+}
+
+// ============================================
+// FUNÇÃO AUXILIAR PARA STATUS
+// ============================================
+
+function showStreamStatus(message, type = 'info') {
+    console.log(`📢 Status: ${message}`);
+    
+    // Pode implementar um toast ou atualizar algum elemento
+    const statusElement = document.getElementById('streamStatus');
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = `lux-stream-status lux-status-${type}`;
+    }
+}
+
+// ============================================
+// CSS PARA AS NOVAS INTERFACES
+// ============================================
+
+function injectStreamingCSS() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Interface do host streaming */
+        .lux-host-streaming {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .lux-host-streaming i {
+            color: #d4af37;
+            margin-bottom: 20px;
+        }
+        
+        .lux-host-streaming h3 {
+            color: #ff4757;
+            margin: 15px 0;
+            font-size: 1.5rem;
+        }
+        
+        .lux-host-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            color: #aaa;
+        }
+        
+        .lux-host-stats span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .lux-host-streaming small {
+            display: block;
+            margin: 15px 0;
+            color: #666;
+        }
+        
+        /* Interface de live para espectadores */
+        .lux-live-audience {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .lux-live-header {
+            margin-bottom: 30px;
+        }
+        
+        .lux-live-badge-large {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 71, 87, 0.15);
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: #ff4757;
+            font-weight: bold;
+        }
+        
+        .lux-pulse {
+            width: 12px;
+            height: 12px;
+            background: #ff4757;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .lux-host-presentation {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .lux-host-avatar-presentation {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #d4af37;
+            object-fit: cover;
+        }
+        
+        .lux-host-presentation-info h2 {
+            margin: 0;
+            color: white;
+            font-size: 1.8rem;
+        }
+        
+        .lux-live-title {
+            color: #ddd;
+            margin: 5px 0;
+            font-size: 1.1rem;
+        }
+        
+        .lux-live-category {
+            color: #d4af37;
+            background: rgba(212, 175, 55, 0.1);
+            padding: 4px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+        
+        .lux-stream-message {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .lux-stream-message i {
+            font-size: 2.5rem;
+            color: #d4af37;
+            margin-bottom: 15px;
+        }
+        
+        .lux-stream-message h3 {
+            color: white;
+            margin: 10px 0;
+        }
+        
+        .lux-stream-message p {
+            color: #aaa;
+            margin: 0;
+        }
+        
+        .lux-live-stats-audience {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+        
+        .lux-stat-audience {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .lux-stat-audience i {
+            font-size: 1.5rem;
+            color: #d4af37;
+            margin-bottom: 10px;
+        }
+        
+        .lux-stat-audience strong {
+            display: block;
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        
+        .lux-stat-audience span {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .lux-audience-actions {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .lux-audience-actions p {
+            color: #888;
+            margin-bottom: 15px;
+        }
+        
+        /* Interface de áudio apenas */
+        .lux-audio-only {
+            text-align: center;
+            padding: 50px 30px;
+            color: white;
+        }
+        
+        .lux-audio-only i {
+            color: #d4af37;
+            margin-bottom: 20px;
+        }
+        
+        .lux-audio-only h3 {
+            color: white;
+            margin: 15px 0;
+        }
+        
+        .lux-audio-only p {
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        
+        .lux-audio-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            color: #888;
+        }
+        
+        /* Status do stream */
+        .lux-stream-status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 100;
+        }
+        
+        .lux-status-success {
+            background: rgba(46, 204, 113, 0.8);
+        }
+        
+        .lux-status-error {
+            background: rgba(255, 71, 87, 0.8);
+        }
+    `;
+    
+    document.head.appendChild(style);
+    console.log('✅ CSS de streaming injetado');
+}
+
+// Injetar CSS
+setTimeout(injectStreamingCSS, 100);
 // ============================================
 // INTERFACE PARA ESPECTADORES
 // ============================================
