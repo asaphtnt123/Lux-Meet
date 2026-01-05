@@ -3201,120 +3201,167 @@ async function createLive(event) {
 // ============================================
 // SHOW LIVE PLAYER - VERSÃO CORRIGIDA
 // ============================================
+// ============================================
+// SHOW LIVE PLAYER - VERSÃO CORRIGIDA
+// ============================================
 
 function showLivePlayer(liveData, isHost = false) {
-    console.log('🎬 showLivePlayer chamado');
+    console.log('🎬 Mostrando player da live');
     
-    try {
-        // 1. Mostrar player, ocultar grade - COM TRY/CATCH INDIVIDUAL
-        try {
-            const player = document.getElementById('livePlayer');
-            if (player) {
-                player.style.display = 'block';
-                player.classList.remove('hidden');
+    // 1. Primeiro: mostrar player e ocultar grid
+    const player = document.getElementById('livePlayer');
+    const grid = document.getElementById('liveGrid');
+    
+    if (player) {
+        player.classList.remove('hidden');
+        player.style.display = 'flex';
+        console.log('✅ Player exibido');
+    } else {
+        console.error('❌ ERRO CRÍTICO: Elemento livePlayer não encontrado!');
+        return; // Não continue se não tiver o player
+    }
+    
+    if (grid) {
+        grid.style.display = 'none';
+        console.log('✅ Grid ocultada');
+    }
+    
+    // 2. Segundo: atualizar elementos com VERIFICAÇÕES
+    console.log('🔄 Atualizando elementos do player...');
+    
+    // Título - COM VERIFICAÇÃO
+    const titleElement = document.getElementById('livePlayerTitle');
+    if (titleElement) {
+        titleElement.textContent = liveData.title || 'Live sem título';
+        console.log('✅ Título atualizado');
+    } else {
+        console.error('❌ ERRO: Elemento livePlayerTitle não encontrado!');
+        // Não interrompe o fluxo, apenas registra o erro
+    }
+    
+    // Nome do host - COM VERIFICAÇÃO
+    const hostNameElement = document.getElementById('liveHostName');
+    if (hostNameElement) {
+        hostNameElement.textContent = liveData.hostName || 'Host';
+        console.log('✅ Nome do host atualizado');
+    } else {
+        console.warn('⚠️ Elemento liveHostName não encontrado');
+    }
+    
+    // Avatar do host - COM VERIFICAÇÃO
+    const hostAvatarElement = document.getElementById('liveHostAvatar');
+    if (hostAvatarElement) {
+        hostAvatarElement.src = liveData.hostPhoto || 'https://via.placeholder.com/50';
+        hostAvatarElement.onerror = function() {
+            this.src = 'https://via.placeholder.com/50';
+        };
+        console.log('✅ Avatar do host atualizado');
+    } else {
+        console.warn('⚠️ Elemento liveHostAvatar não encontrado');
+    }
+    
+    // Badge - pode ter mais de um elemento com mesmo ID
+    const badgeElements = document.querySelectorAll('#liveBadge');
+    if (badgeElements.length > 0) {
+        badgeElements.forEach(badge => {
+            if (badge) {
+                const isExclusive = liveData.privacy === 'ticket' || 
+                                   liveData.privacy === 'subscription' || 
+                                   liveData.privacy === 'paid';
+                badge.textContent = isExclusive ? 'EXCLUSIVO' : 'AO VIVO';
+                badge.className = isExclusive ? 'lux-live-badge exclusive' : 'lux-live-badge live';
             }
-        } catch (e) {
-            console.warn('Erro ao mostrar player:', e);
-        }
-        
-        try {
-            const grid = document.getElementById('liveGrid');
-            if (grid) {
-                grid.style.display = 'none';
-            }
-        } catch (e) {
-            console.warn('Erro ao ocultar grid:', e);
-        }
-        
-        // 2. Atualizar elementos UM POR UM com verificações
-        updateElementSafely('livePlayerTitle', liveData.title || 'Live sem título');
-        updateElementSafely('liveHostName', liveData.hostName || 'Host');
-        
-        // Atualizar imagem com fallback
-        const hostAvatar = document.getElementById('liveHostAvatar');
-        if (hostAvatar) {
-            hostAvatar.src = liveData.hostPhoto || 'https://via.placeholder.com/50';
-            hostAvatar.onerror = function() {
-                this.src = 'https://via.placeholder.com/50';
-            };
+        });
+        console.log(`✅ ${badgeElements.length} badge(s) atualizado(s)`);
+    } else {
+        console.warn('⚠️ Nenhum elemento #liveBadge encontrado');
+    }
+    
+    // 3. Configurar vídeo
+    setupVideoForPlayer(isHost);
+    
+    // 4. Configurar botão de saída
+    const exitBtn = document.getElementById('exitLiveBtn');
+    if (exitBtn) {
+        if (isHost) {
+            exitBtn.innerHTML = '<i class="fas fa-stop"></i> Encerrar Live';
+            exitBtn.className = 'lux-btn lux-btn-danger';
+            exitBtn.onclick = endLive;
         } else {
-            console.warn('Elemento liveHostAvatar não encontrado');
+            exitBtn.innerHTML = '<i class="fas fa-times"></i> Sair';
+            exitBtn.className = 'lux-btn lux-btn-secondary';
+            exitBtn.onclick = leaveLive;
         }
-        
-        // 3. Atualizar badges (pode ter mais de um)
-        const badges = document.querySelectorAll('#liveBadge');
-        if (badges.length > 0) {
-            badges.forEach(badge => {
-                if (badge) {
-                    const isExclusive = liveData.privacy === 'ticket' || 
-                                       liveData.privacy === 'subscription' || 
-                                       liveData.privacy === 'paid';
-                    badge.textContent = isExclusive ? 'EXCLUSIVO' : 'AO VIVO';
-                    badge.className = isExclusive ? 'lux-live-badge exclusive' : 'lux-live-badge live';
-                }
+        console.log('✅ Botão de saída configurado');
+    }
+    
+    console.log('✅ Player configurado com sucesso para', isHost ? 'host' : 'espectador');
+}
+
+// ============================================
+// FUNÇÃO AUXILIAR PARA CONFIGURAR VÍDEO
+// ============================================
+
+function setupVideoForPlayer(isHost) {
+    console.log('🎥 Configurando vídeo, isHost:', isHost);
+    
+    const mainVideo = document.getElementById('liveVideo');
+    const localVideo = document.getElementById('localVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (isHost) {
+        // HOST
+        if (localStream && localVideo) {
+            localVideo.srcObject = localStream;
+            localVideo.muted = true;
+            localVideo.style.display = 'block';
+            
+            localVideo.play().catch(e => {
+                console.log('Auto-play local bloqueado');
+                localVideo.setAttribute('controls', 'true');
             });
-        }
-        
-        // 4. Atualizar contadores INDIVIDUALMENTE
-        const viewerCount = document.getElementById('viewerCount');
-        if (viewerCount) {
-            viewerCount.textContent = formatNumber(liveData.viewerCount || 0);
-        }
-        
-        const likeCount = document.getElementById('likeCount');
-        if (likeCount) {
-            likeCount.textContent = liveData.likes || 0;
-        }
-        
-        const giftCount = document.getElementById('giftCount');
-        if (giftCount) {
-            giftCount.textContent = liveData.giftCount || 0;
-        }
-        
-        const earningsCount = document.getElementById('earningsCount');
-        if (earningsCount) {
-            earningsCount.textContent = `R$ ${(liveData.totalEarnings || 0).toFixed(2)}`;
-        }
-        
-        // 5. Botão de saída
-        const exitBtn = document.getElementById('exitLiveBtn');
-        if (exitBtn) {
-            if (isHost) {
-                exitBtn.innerHTML = '<i class="fas fa-stop"></i> Encerrar Live';
-                exitBtn.className = 'lux-btn lux-btn-danger';
-                exitBtn.onclick = endLive;
-            } else {
-                exitBtn.innerHTML = '<i class="fas fa-times"></i> Sair';
-                exitBtn.className = 'lux-btn lux-btn-secondary';
-                exitBtn.onclick = leaveLive;
+            
+            // Também mostrar no vídeo principal
+            if (mainVideo) {
+                mainVideo.srcObject = localStream;
+                mainVideo.muted = false;
+                mainVideo.style.display = 'block';
+                
+                mainVideo.play().catch(e => {
+                    console.log('Auto-play principal bloqueado');
+                    mainVideo.setAttribute('controls', 'true');
+                });
+            }
+            
+            if (placeholder) placeholder.style.display = 'none';
+            
+        } else {
+            console.log('⚠️ Host sem stream local');
+            if (placeholder) {
+                placeholder.style.display = 'flex';
+                placeholder.innerHTML = `
+                    <i class="fas fa-video-slash"></i>
+                    <h3>Câmera não disponível</h3>
+                    <p>Ative a câmera para transmitir</p>
+                `;
             }
         }
-        
-        // 6. Configurar vídeo - parte crítica
-        setupVideoElements(liveData, isHost);
-        
-        // 7. Iniciar chat básico
-        const chatMessages = document.getElementById('liveChatMessages');
-        if (chatMessages && chatMessages.children.length <= 1) {
-            chatMessages.innerHTML = `
-                <div class="lux-chat-welcome">
-                    <i class="fas fa-comment-dots"></i>
-                    <p>Chat da live iniciado</p>
-                </div>
+    } else {
+        // ESPECTADOR
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = `
+                <i class="fas fa-broadcast-tower"></i>
+                <h3>Conectando à transmissão...</h3>
+                <p>Aguarde enquanto o host inicia a live</p>
             `;
         }
         
-        console.log('✅ showLivePlayer concluído com sucesso');
-        
-    } catch (error) {
-        console.error('❌ ERRO GRAVE em showLivePlayer:', error);
-        console.error('Stack trace:', error.stack);
-        
-        // Tentar pelo menos mostrar o player mesmo com erro
-        const player = document.getElementById('livePlayer');
-        if (player) {
-            player.style.display = 'block';
+        if (mainVideo) {
+            mainVideo.style.display = 'none';
+            mainVideo.srcObject = null;
         }
+        if (localVideo) localVideo.style.display = 'none';
     }
 }
 // ============================================
@@ -3326,122 +3373,6 @@ function showLivePlayer(liveData, isHost = false) {
 // ============================================
 // SHOW LIVE PLAYER - VERSÃO SUPER SEGURA
 // ============================================
-
-function showLivePlayer(liveData, isHost = false) {
-    console.log('🎬 showLivePlayer chamado');
-    
-    try {
-        // 1. Mostrar player, ocultar grade - COM TRY/CATCH INDIVIDUAL
-        try {
-            const player = document.getElementById('livePlayer');
-            if (player) {
-                player.style.display = 'block';
-                player.classList.remove('hidden');
-            }
-        } catch (e) {
-            console.warn('Erro ao mostrar player:', e);
-        }
-        
-        try {
-            const grid = document.getElementById('liveGrid');
-            if (grid) {
-                grid.style.display = 'none';
-            }
-        } catch (e) {
-            console.warn('Erro ao ocultar grid:', e);
-        }
-        
-        // 2. Atualizar elementos UM POR UM com verificações
-        updateElementSafely('livePlayerTitle', liveData.title || 'Live sem título');
-        updateElementSafely('liveHostName', liveData.hostName || 'Host');
-        
-        // Atualizar imagem com fallback
-        const hostAvatar = document.getElementById('liveHostAvatar');
-        if (hostAvatar) {
-            hostAvatar.src = liveData.hostPhoto || 'https://via.placeholder.com/50';
-            hostAvatar.onerror = function() {
-                this.src = 'https://via.placeholder.com/50';
-            };
-        } else {
-            console.warn('Elemento liveHostAvatar não encontrado');
-        }
-        
-        // 3. Atualizar badges (pode ter mais de um)
-        const badges = document.querySelectorAll('#liveBadge');
-        if (badges.length > 0) {
-            badges.forEach(badge => {
-                if (badge) {
-                    const isExclusive = liveData.privacy === 'ticket' || 
-                                       liveData.privacy === 'subscription' || 
-                                       liveData.privacy === 'paid';
-                    badge.textContent = isExclusive ? 'EXCLUSIVO' : 'AO VIVO';
-                    badge.className = isExclusive ? 'lux-live-badge exclusive' : 'lux-live-badge live';
-                }
-            });
-        }
-        
-        // 4. Atualizar contadores INDIVIDUALMENTE
-        const viewerCount = document.getElementById('viewerCount');
-        if (viewerCount) {
-            viewerCount.textContent = formatNumber(liveData.viewerCount || 0);
-        }
-        
-        const likeCount = document.getElementById('likeCount');
-        if (likeCount) {
-            likeCount.textContent = liveData.likes || 0;
-        }
-        
-        const giftCount = document.getElementById('giftCount');
-        if (giftCount) {
-            giftCount.textContent = liveData.giftCount || 0;
-        }
-        
-        const earningsCount = document.getElementById('earningsCount');
-        if (earningsCount) {
-            earningsCount.textContent = `R$ ${(liveData.totalEarnings || 0).toFixed(2)}`;
-        }
-        
-        // 5. Botão de saída
-        const exitBtn = document.getElementById('exitLiveBtn');
-        if (exitBtn) {
-            if (isHost) {
-                exitBtn.innerHTML = '<i class="fas fa-stop"></i> Encerrar Live';
-                exitBtn.className = 'lux-btn lux-btn-danger';
-                exitBtn.onclick = endLive;
-            } else {
-                exitBtn.innerHTML = '<i class="fas fa-times"></i> Sair';
-                exitBtn.className = 'lux-btn lux-btn-secondary';
-                exitBtn.onclick = leaveLive;
-            }
-        }
-        
-        // 6. Configurar vídeo - parte crítica
-        setupVideoElements(liveData, isHost);
-        
-        // 7. Iniciar chat básico
-        const chatMessages = document.getElementById('liveChatMessages');
-        if (chatMessages && chatMessages.children.length <= 1) {
-            chatMessages.innerHTML = `
-                <div class="lux-chat-welcome">
-                    <i class="fas fa-comment-dots"></i>
-                    <p>Chat da live iniciado</p>
-                </div>
-            `;
-        }
-        
-        console.log('✅ showLivePlayer concluído com sucesso');
-        
-    } catch (error) {
-        console.error('❌ ERRO GRAVE em showLivePlayer:', error);
-        console.error('Stack trace:', error.stack);
-        
-        // Tentar pelo menos mostrar o player mesmo com erro
-        const player = document.getElementById('livePlayer');
-        if (player) {
-            player.style.display = 'block';
-        }
-    }
-}
 
 // ============================================
 // FUNÇÕES AUXILIARES
@@ -3613,43 +3544,6 @@ setTimeout(findProblematicElement, 2000);
 // ============================================
 // VERSÃO DE EMERGÊNCIA - MÍNIMA
 // ============================================
-
-function showLivePlayerEmergency(liveData, isHost) {
-    console.log('🚨 Usando versão de emergência do player');
-    
-    // APENAS O MÍNIMO NECESSÁRIO
-    try {
-        // 1. Mostrar player
-        const player = document.getElementById('livePlayer');
-        if (player) {
-            player.style.display = 'block';
-        }
-        
-        // 2. Ocultar grid
-        const grid = document.getElementById('liveGrid');
-        if (grid) {
-            grid.style.display = 'none';
-        }
-        
-        // 3. Configurar título se existir
-        const title = document.getElementById('livePlayerTitle');
-        if (title) {
-            title.textContent = liveData.title || 'Live';
-        }
-        
-        // 4. Configurar botão de saída
-        const exitBtn = document.getElementById('exitLiveBtn');
-        if (exitBtn) {
-            exitBtn.textContent = isHost ? 'Encerrar Live' : 'Sair';
-            exitBtn.onclick = isHost ? endLive : leaveLive;
-        }
-        
-        console.log('✅ Versão de emergência carregada');
-        
-    } catch (error) {
-        console.error('❌ ERRO na versão de emergência:', error);
-    }
-}
 
 // ============================================
 // MODIFICAR CREATE LIVE PARA USAR VERSÃO SEGURA
