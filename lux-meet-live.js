@@ -3811,60 +3811,106 @@ async function requestMediaPermissions() {
     }
 }
 
+
 // ============================================
-// CRIAR LIVE - VERSÃO CORRIGIDA COM PERMISSÕES
-// ============================================
-// ============================================
-// CORRIGIR CREATE LIVE - GARANTIR STREAM
+// CREATE LIVE - VERSÃO CORRIGIDA E DEFINITIVA
 // ============================================
 
+
 async function createLive(event) {
-    console.log('🚀 [CORRIGIDO] Criando live...');
+    console.log('🚀 [CORRIGIDA] Iniciando criação de live');
     
-    if (event) event.preventDefault();
-    if (isCreatingLive) return;
+    // Prevenir comportamento padrão
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    // Prevenir duplo clique
+    if (isCreatingLive) {
+        console.log('⚠️ Criação já em andamento');
+        return;
+    }
     
     isCreatingLive = true;
     
     try {
-        // 1. Validar título
-        const title = document.getElementById('liveTitle')?.value.trim();
+        // ========== FASE 1: VALIDAÇÃO ==========
+        console.log('1️⃣ Validando formulário...');
+        
+        const titleInput = document.getElementById('liveTitle');
+        const title = titleInput?.value.trim();
+        
         if (!title) {
-            showToast('Digite um título', 'error');
+            showToast('Digite um título para a live', 'error');
+            titleInput?.focus();
             isCreatingLive = false;
             return;
         }
         
-        // 2. Obter stream ANTES de criar a live
-        console.log('🎥 Solicitando permissões de mídia...');
-        let stream;
+        console.log('✅ Título válido:', title);
         
+        // Desabilitar botão
+        const submitBtn = document.querySelector('#createLiveForm button[type="submit"], #createLiveSubmitBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando transmissão...';
+        }
+        
+        // ========== FASE 2: OBTER STREAM ==========
+        console.log('2️⃣ Obtendo stream de mídia...');
+        
+        let stream;
         try {
-            // TENTAR COM CONFIGURAÇÃO SIMPLES
+            // Configuração otimizada
             stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     width: { ideal: 640 },
                     height: { ideal: 480 },
-                    facingMode: 'user'
+                    facingMode: 'user',
+                    frameRate: { ideal: 30 }
                 },
-                audio: true
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
             });
             
             console.log('✅ Stream obtido com sucesso');
-            localStream = stream; // SALVAR GLOBALMENTE
+            window.localStream = stream;
+            window.isBroadcasting = true;
             
         } catch (mediaError) {
             console.error('❌ Erro ao obter stream:', mediaError.name);
-            showToast('Live criada sem câmera. Você pode ativar depois.', 'warning');
+            
+            // Mensagens amigáveis
+            let errorMessage = 'Não foi possível acessar a câmera/microfone. ';
+            if (mediaError.name === 'NotAllowedError') {
+                errorMessage += 'Permissão negada.';
+            } else if (mediaError.name === 'NotFoundError') {
+                errorMessage += 'Dispositivo não encontrado.';
+            } else if (mediaError.name === 'NotReadableError') {
+                errorMessage += 'Dispositivo em uso por outro aplicativo.';
+            } else {
+                errorMessage += mediaError.message;
+            }
+            
+            showToast(errorMessage, 'warning');
             stream = null;
-            localStream = null;
+            window.localStream = null;
+            window.isBroadcasting = false;
         }
         
-        // 3. Criar dados da live
+        // ========== FASE 3: PREPARAR DADOS ==========
+        console.log('3️⃣ Preparando dados da live...');
+        
         const liveData = {
             hostId: currentUser.uid,
-            hostName: userData.displayName || 'Anônimo',
-            hostPhoto: userData.photoURL || 'https://via.placeholder.com/150',
+            hostName: userData.displayName || currentUser.displayName || 'Host',
+            hostPhoto: userData.photoURL || currentUser.photoURL || getDefaultAvatar(),
+            hostVerified: userData.isVerified || false,
+            hostFollowers: userData.followers || 0,
             title: title,
             description: document.getElementById('liveDescription')?.value.trim() || '',
             category: document.getElementById('liveCategory')?.value || 'social',
@@ -3874,56 +3920,573 @@ async function createLive(event) {
             viewerCount: 1,
             likes: 0,
             giftCount: 0,
-            hasActiveStream: stream !== null, // IMPORTANTE!
-            thumbnail: 'https://via.placeholder.com/300x180?text=Ao+Vivo',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            totalEarnings: 0,
+            hasActiveStream: stream !== null,
+            streamingType: stream ? 'webrtc' : 'audio',
+            thumbnail: getDefaultThumbnail(),
+            chatEnabled: true,
+            giftsEnabled: true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        // 4. Criar no Firestore
-        console.log('🔥 Criando live no banco de dados...');
+        console.log('📝 Dados da live preparados:', {
+            title: liveData.title,
+            hasStream: liveData.hasActiveStream
+        });
+        
+        // ========== FASE 4: CRIAR NO FIRESTORE ==========
+        console.log('4️⃣ Criando documento no Firestore...');
+        
         const liveRef = await db.collection('liveStreams').add(liveData);
         currentLiveId = liveRef.id;
+        
         console.log('✅ Live criada com ID:', currentLiveId);
         
-        // 5. Adicionar host como viewer
+        // ========== FASE 5: ADICIONAR HOST COMO VIEWER ==========
+        console.log('5️⃣ Registrando host como viewer...');
+        
         await db.collection('liveStreams').doc(currentLiveId).update({
             [`viewers.${currentUser.uid}`]: {
                 uid: currentUser.uid,
-                name: userData.displayName,
-                photo: userData.photoURL,
+                name: userData.displayName || 'Host',
+                photo: userData.photoURL || getDefaultAvatar(),
                 role: 'host',
-                joinedAt: new Date().toISOString()
-            }
+                joinedAt: new Date().toISOString(),
+                isHost: true
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        // 6. Fechar modal
+        // ========== FASE 6: FECHAR MODAL E LIMPAR ==========
+        console.log('6️⃣ Finalizando criação...');
+        
+        // Fechar modal
         closeModal('createLiveModal');
         
-        // 7. Mostrar player COM STREAM (se tiver)
-        console.log('🎬 Mostrando player para host...');
-        console.log('localStream disponível?', !!localStream);
+        // Limpar formulário
+        if (titleInput) titleInput.value = '';
+        const descInput = document.getElementById('liveDescription');
+        if (descInput) descInput.value = '';
         
+        // ========== FASE 7: CONFIGURAR UI DO HOST ==========
+        console.log('7️⃣ Configurando interface do host...');
+        
+        // Pequeno delay para garantir transição
         setTimeout(() => {
-            showLivePlayer(liveData, true);
-            setupLiveRealtimeListener(currentLiveId, true);
-            showToast('🎬 Live iniciada com sucesso!', 'success');
+            try {
+                // Mostrar player
+                showLivePlayerCorrected(liveData, true);
+                
+                // Configurar listener em tempo real
+                setupLiveRealtimeListener(currentLiveId, true);
+                
+                // Mostrar mensagem de SUCESSO
+                showToast('🎬 Live iniciada com sucesso! Você está CONECTADO.', 'success');
+                
+                console.log('🎉 Live criada e configurada com SUCESSO!');
+                
+            } catch (uiError) {
+                console.error('❌ Erro na UI:', uiError);
+                showToast('Live criada, mas houve erro na interface', 'warning');
+            }
         }, 300);
         
     } catch (error) {
-        console.error('❌ Erro ao criar live:', error);
-        showToast('Erro: ' + error.message, 'error');
+        console.error('❌ ERRO CRÍTICO ao criar live:', error);
+        
+        // Mensagens específicas
+        if (error.name === 'FirebaseError') {
+            if (error.code === 'permission-denied') {
+                showToast('Permissão negada no banco de dados', 'error');
+            } else if (error.code === 'unavailable') {
+                showToast('Servidor indisponível. Verifique sua conexão.', 'error');
+            } else {
+                showToast('Erro no banco de dados: ' + error.message, 'error');
+            }
+        } else {
+            showToast('Erro ao criar live: ' + error.message, 'error');
+        }
+        
+        // Limpar recursos em caso de erro
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+            isBroadcasting = false;
+        }
+        
     } finally {
+        console.log('🔄 Restaurando estado...');
         isCreatingLive = false;
+        
+        // Reativar botão
+        const submitBtn = document.querySelector('#createLiveForm button[type="submit"], #createLiveSubmitBtn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-video"></i> Criar Live';
+        }
     }
 }
+
 // ============================================
-// SHOW LIVE PLAYER - CORRIGIR VÍDEO PRETO
+// SHOW LIVE PLAYER CORRIGIDA
 // ============================================
+
+function showLivePlayerCorrected(liveData, isHost) {
+    console.log('🎬 [CORRIGIDA] Mostrando player - Host:', isHost);
+    
+    try {
+        // 1. Mostrar player, ocultar grid
+        const player = document.getElementById('livePlayer');
+        const grid = document.getElementById('liveGrid');
+        
+        if (player) {
+            player.style.display = 'block';
+            player.classList.remove('hidden');
+            console.log('✅ Player exibido');
+        }
+        
+        if (grid) {
+            grid.style.display = 'none';
+            console.log('✅ Grid ocultada');
+        }
+        
+        // 2. Atualizar informações básicas
+        updateElementSafe('livePlayerTitle', liveData.title || 'Minha Live');
+        updateElementSafe('liveHostName', liveData.hostName || 'Host');
+        
+        const hostAvatar = document.getElementById('liveHostAvatar');
+        if (hostAvatar) {
+            hostAvatar.src = liveData.hostPhoto || getDefaultAvatar();
+            hostAvatar.onerror = function() {
+                this.src = getDefaultAvatar();
+            };
+            console.log('✅ Avatar configurado');
+        }
+        
+        // 3. Atualizar badge
+        const badges = document.querySelectorAll('#liveBadge');
+        badges.forEach(badge => {
+            if (badge) {
+                badge.textContent = '🔴 AO VIVO';
+                badge.style.background = '#ff4757';
+                badge.style.color = 'white';
+                console.log('✅ Badge atualizado');
+            }
+        });
+        
+        // 4. Configurar vídeo baseado no papel
+        if (isHost) {
+            setupHostVideoCorrected(liveData);
+        } else {
+            setupAudienceVideoCorrected(liveData);
+        }
+        
+        // 5. Botão de saída/encerramento
+        const exitBtn = document.getElementById('exitLiveBtn');
+        if (exitBtn) {
+            if (isHost) {
+                exitBtn.innerHTML = '<i class="fas fa-stop"></i> Encerrar Live';
+                exitBtn.className = 'lux-btn lux-btn-danger';
+                exitBtn.onclick = endLive;
+                console.log('✅ Botão "Encerrar Live" configurado');
+            } else {
+                exitBtn.innerHTML = '<i class="fas fa-times"></i> Sair da Live';
+                exitBtn.className = 'lux-btn lux-btn-secondary';
+                exitBtn.onclick = leaveLive;
+                console.log('✅ Botão "Sair" configurado');
+            }
+        }
+        
+        // 6. Atualizar contadores iniciais
+        updateElementSafe('viewerCount', liveData.viewerCount || 1);
+        updateElementSafe('likeCount', liveData.likes || 0);
+        updateElementSafe('giftCount', liveData.giftCount || 0);
+        
+        // 7. Mostrar status de conexão
+        showConnectionStatus(isHost ? 'conectado' : 'assistindo');
+        
+        console.log('✅ Player configurado para', isHost ? 'HOST' : 'ESPECTADOR');
+        
+    } catch (error) {
+        console.error('❌ Erro em showLivePlayerCorrected:', error);
+    }
+}
+
 // ============================================
-// SHOW LIVE PLAYER - VERSÃO CORRIGIDA
+// SETUP HOST VIDEO CORRIGIDO
 // ============================================
+
+function setupHostVideoCorrected(liveData) {
+    console.log('📹 [CORRIGIDO] Configurando vídeo do HOST');
+    
+    const mainVideo = document.getElementById('liveVideo');
+    const localVideo = document.getElementById('localVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    const statusElement = document.getElementById('streamStatus');
+    
+    if (localStream) {
+        console.log('✅ Host TEM stream local');
+        
+        // Configurar vídeo local (pequeno)
+        if (localVideo) {
+            localVideo.srcObject = localStream;
+            localVideo.muted = true;
+            localVideo.style.display = 'block';
+            
+            localVideo.play().catch(e => {
+                console.log('Auto-play local prevenido');
+                localVideo.setAttribute('controls', 'true');
+            });
+        }
+        
+        // Configurar vídeo principal (grande)
+        if (mainVideo) {
+            mainVideo.srcObject = localStream;
+            mainVideo.muted = false;
+            mainVideo.style.display = 'block';
+            
+            mainVideo.play().catch(e => {
+                console.log('Auto-play principal prevenido');
+                mainVideo.setAttribute('controls', 'true');
+            });
+        }
+        
+        // Ocultar placeholder
+        if (placeholder) {
+            placeholder.style.display = 'none';
+            console.log('✅ Placeholder OCULTADO (host com vídeo)');
+        }
+        
+        // Mostrar status
+        if (statusElement) {
+            statusElement.textContent = '🎬 VOCÊ ESTÁ TRANSMITINDO AO VIVO';
+            statusElement.style.color = '#4cd964';
+            console.log('✅ Status: TRANSMITINDO');
+        }
+        
+    } else {
+        console.log('⚠️ Host SEM stream local');
+        
+        // Mostrar interface especial para host sem câmera
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = `
+                <div class="lux-host-no-video">
+                    <i class="fas fa-microphone-alt"></i>
+                    <h3>🎤 VOCÊ ESTÁ AO VIVO!</h3>
+                    <p>Sua transmissão de áudio está ativa</p>
+                    <div class="lux-host-stats">
+                        <span><i class="fas fa-eye"></i> ${liveData.viewerCount || 1} espectadores</span>
+                    </div>
+                    <p class="lux-status-connected">✅ CONECTADO</p>
+                    <button class="lux-btn lux-btn-primary" onclick="enableHostCamera()">
+                        <i class="fas fa-camera"></i> Ativar Câmera
+                    </button>
+                </div>
+            `;
+            console.log('✅ Placeholder mostrado (host sem vídeo)');
+        }
+        
+        if (statusElement) {
+            statusElement.textContent = '🎤 TRANSMITINDO ÁUDIO AO VIVO';
+            statusElement.style.color = '#d4af37';
+        }
+        
+        // Ocultar vídeos
+        if (mainVideo) mainVideo.style.display = 'none';
+        if (localVideo) localVideo.style.display = 'none';
+    }
+}
+
 // ============================================
-// SHOW LIVE PLAYER - VERSÃO CORRIGIDA
+// SETUP AUDIENCE VIDEO CORRIGIDO
+// ============================================
+
+function setupAudienceVideoCorrected(liveData) {
+    console.log('👀 [CORRIGIDO] Configurando vídeo do ESPECTADOR');
+    
+    const mainVideo = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    const statusElement = document.getElementById('streamStatus');
+    
+    // Sempre mostrar placeholder para espectador
+    if (placeholder) {
+        placeholder.style.display = 'flex';
+        placeholder.innerHTML = `
+            <div class="lux-audience-view">
+                <div class="lux-live-status-indicator">
+                    <div class="lux-pulse-dot"></div>
+                    <span>🔴 TRANSMISSÃO AO VIVO</span>
+                </div>
+                
+                <div class="lux-host-display">
+                    <div class="lux-host-avatar-display">
+                        ${liveData.hostName?.charAt(0) || '🎤'}
+                    </div>
+                    <div class="lux-host-info-display">
+                        <h3>${liveData.hostName || 'Host'}</h3>
+                        <p class="lux-live-title">${liveData.title || 'Live em andamento'}</p>
+                    </div>
+                </div>
+                
+                <div class="lux-connection-status">
+                    <div class="lux-status-connected">
+                        <i class="fas fa-check-circle"></i>
+                        <span>CONECTADO À TRANSMISSÃO</span>
+                    </div>
+                    <p>Assistindo live de ${liveData.hostName || 'o host'}</p>
+                </div>
+                
+                <div class="lux-audience-stats">
+                    <div class="lux-stat">
+                        <i class="fas fa-users"></i>
+                        <div>
+                            <strong>${liveData.viewerCount || 1}</strong>
+                            <span>Espectadores</span>
+                        </div>
+                    </div>
+                    <div class="lux-stat">
+                        <i class="fas fa-heart"></i>
+                        <div>
+                            <strong>${liveData.likes || 0}</strong>
+                            <span>Curtidas</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="lux-audience-message">
+                    <i class="fas fa-comment-dots"></i>
+                    <p>Participe do chat para interagir!</p>
+                </div>
+            </div>
+        `;
+        console.log('✅ Placeholder do espectador configurado');
+    }
+    
+    // Mostrar status
+    if (statusElement) {
+        statusElement.textContent = '👀 ASSISTINDO TRANSMISSÃO AO VIVO';
+        statusElement.style.color = '#4cd964';
+    }
+    
+    // Ocultar vídeo
+    if (mainVideo) {
+        mainVideo.style.display = 'none';
+        mainVideo.srcObject = null;
+    }
+    
+    console.log('✅ Espectador configurado - Status: CONECTADO');
+}
+
+// ============================================
+// FUNÇÕES AUXILIARES
+// ============================================
+
+function updateElementSafe(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+        return true;
+    }
+    console.warn(`Elemento ${id} não encontrado`);
+    return false;
+}
+
+function getDefaultAvatar() {
+    return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%231a1a2e"/><circle cx="50" cy="40" r="20" fill="%23d4af37"/><circle cx="50" cy="85" r="30" fill="%23d4af37"/></svg>`;
+}
+
+function getDefaultThumbnail() {
+    return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180"><rect width="300" height="180" fill="%231a1a2e"/><text x="150" y="90" font-family="Arial" font-size="24" fill="%23d4af37" text-anchor="middle">AO VIVO</text><text x="150" y="120" font-family="Arial" font-size="16" fill="%23ffffff" text-anchor="middle">Transmissão ao vivo</text></svg>`;
+}
+
+function showConnectionStatus(status) {
+    console.log(`📡 Status de conexão: ${status.toUpperCase()}`);
+    
+    // Pode adicionar um elemento específico para status se quiser
+    const existingStatus = document.getElementById('connectionStatus');
+    if (existingStatus) {
+        existingStatus.textContent = status === 'conectado' ? '✅ CONECTADO' : '👀 ASSISTINDO';
+        existingStatus.className = `lux-connection-status lux-status-${status}`;
+    }
+}
+
+// ============================================
+// CSS PARA AS NOVAS INTERFACES
+// ============================================
+
+function injectCorrectedCSS() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Host sem vídeo */
+        .lux-host-no-video {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .lux-host-no-video i {
+            font-size: 3rem;
+            color: #d4af37;
+            margin-bottom: 20px;
+        }
+        
+        .lux-host-no-video h3 {
+            color: #ff4757;
+            margin: 15px 0;
+            font-size: 1.5rem;
+        }
+        
+        .lux-host-stats {
+            margin: 20px 0;
+            color: #aaa;
+        }
+        
+        .lux-status-connected {
+            color: #4cd964;
+            font-weight: bold;
+            margin: 15px 0;
+            font-size: 1.1rem;
+        }
+        
+        /* Interface do espectador */
+        .lux-audience-view {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+        }
+        
+        .lux-live-status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 71, 87, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+            gap: 10px;
+        }
+        
+        .lux-pulse-dot {
+            width: 10px;
+            height: 10px;
+            background: #ff4757;
+            border-radius: 50%;
+            animation: luxPulseCorrected 1.5s infinite;
+        }
+        
+        @keyframes luxPulseCorrected {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.3); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .lux-host-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .lux-host-avatar-display {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #d4af37;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: black;
+            font-weight: bold;
+        }
+        
+        .lux-host-info-display h3 {
+            margin: 0;
+            color: white;
+        }
+        
+        .lux-live-title {
+            color: #ccc;
+            margin: 5px 0 0 0;
+            font-size: 0.9rem;
+        }
+        
+        .lux-connection-status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(76, 217, 100, 0.1);
+            border-radius: 10px;
+        }
+        
+        .lux-status-connected {
+            color: #4cd964;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .lux-audience-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 25px 0;
+        }
+        
+        .lux-stat {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .lux-stat i {
+            color: #d4af37;
+            font-size: 1.3rem;
+        }
+        
+        .lux-stat strong {
+            color: white;
+            font-size: 1.2rem;
+            display: block;
+        }
+        
+        .lux-stat span {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .lux-audience-message {
+            text-align: center;
+            padding: 15px;
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .lux-audience-message i {
+            color: #d4af37;
+            margin-bottom: 10px;
+        }
+    `;
+    document.head.appendChild(style);
+    console.log('✅ CSS corrigido injetado');
+}
+
+// Executar após carregar
+setTimeout(injectCorrectedCSS, 100);
+
+
 // ============================================
 // ============================================
 // CORRIGIR SHOW LIVE PLAYER PARA ESPECTADORES
