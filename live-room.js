@@ -246,6 +246,27 @@ await db.collection('lives')
         }
     }, { merge: true })
 
+    // 🔥 HOST recebe ICE dos viewers
+db.collection('lives')
+    .doc(liveId)
+    .collection('signals')
+    .where('type', '==', 'viewer-ice')
+    .onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+                const data = change.doc.data()
+                if (peerConnection.remoteDescription) {
+    peerConnection.addIceCandidate(
+        new RTCIceCandidate(data.candidate)
+    )
+}
+
+            }
+        })
+    })
+
+
+
 }
 
 
@@ -268,6 +289,26 @@ async function startViewerRTC() {
                 })
         }
     }
+
+    // 🔥 Viewer recebe ICE do host
+db.collection('lives')
+    .doc(liveId)
+    .collection('signals')
+    .where('type', '==', 'host-ice')
+    .onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+                const data = change.doc.data()
+                if (peerConnection.remoteDescription) {
+    peerConnection.addIceCandidate(
+        new RTCIceCandidate(data.candidate)
+    )
+}
+
+            }
+        })
+    })
+
 
     const liveRef = db.collection('lives').doc(liveId)
 
