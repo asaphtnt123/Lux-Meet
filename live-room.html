@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Live Room</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <link rel="stylesheet" href="live-room.css" />
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading" class="loading">
+    Entrando na live...
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+    <!-- HEADER -->
+    <header class="live-header">
+        <div class="host-info">
+            <img id="hostAvatar" />
+            <div>
+                <span id="hostName"></span>
+                <small id="liveTitle"></small>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <span id="viewerCount">👁 0</span>
+            <button id="leaveBtn">Sair</button>
+        </div>
+    </header>
+
+    <!-- VIDEO AREA -->
+    <main class="live-stage">
+        <div class="video-placeholder">
+            🎥 Vídeo da live
+        </div>
+    </main>
+
+</div>
+
+<script src="live-room.js"></script>
+</body>
+</html>

@@ -1,1846 +1,208 @@
-/* Estilos para o Lux Meet Live - Sistema de Live Streaming */
-
-:root {
-    --primary-color: #d4af37;
-    --primary-dark: #b8941f;
-    --secondary-color: #6a11cb;
-    --accent-color: #2575fc;
-    --dark-bg: #0f172a;
-    --darker-bg: #0a0f1d;
-    --card-bg: #1e293b;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --success-color: #10b981;
-    --error-color: #ef4444;
-    --warning-color: #f59e0b;
-    --gradient-primary: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-    --gradient-gold: linear-gradient(135deg, #d4af37 0%, #f7ef8a 100%);
-}
-
-/* Reset e Base */
+/* RESET */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--dark-bg);
-    color: var(--text-primary);
-    overflow-x: hidden;
+    background: #0f1115;
+    color: #ffffff;
 }
 
-.lux-live-app {
+/* APP */
+.app {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
-/* Header */
-.lux-live-header {
-    background: var(--darker-bg);
-    padding: 1rem 2rem;
+.hidden {
+    display: none;
+}
+
+/* LOADING */
+.loading {
+    height: 100vh;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #ccc;
+}
+
+/* HEADER */
+.app-header {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    padding: 16px;
+    background: #161a22;
+    border-bottom: 1px solid #222;
 }
 
-.lux-live-brand h1 {
-    background: var(--gradient-gold);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-size: 1.8rem;
-    font-weight: 700;
-}
-
-.lux-live-brand i {
-    margin-right: 10px;
-}
-
-.lux-live-user {
+.user-info {
     display: flex;
     align-items: center;
-    gap: 15px;
-}
-
-.lux-user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.lux-user-balance {
-    background: var(--card-bg);
-    padding: 8px 15px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.lux-user-balance i {
-    color: var(--primary-color);
-}
-
-/* Container Principal */
-.lux-live-container {
-    display: flex;
-    flex: 1;
-    min-height: calc(100vh - 70px);
-}
-
-/* Sidebar */
-.lux-live-sidebar {
-    width: 280px;
-    background: var(--darker-bg);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1.5rem;
-    overflow-y: auto;
-}
-
-.lux-live-create {
-    margin-bottom: 2rem;
-}
-
-.lux-live-categories {
-    margin-bottom: 2rem;
-}
-
-.lux-live-categories h3 {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 1rem;
-}
-
-.lux-live-categories ul {
-    list-style: none;
-}
-
-.lux-live-categories li {
-    margin-bottom: 8px;
-}
-
-.lux-live-categories a {
-    color: var(--text-secondary);
-    text-decoration: none;
-    padding: 8px 12px;
-    border-radius: 8px;
-    display: block;
-    transition: all 0.3s ease;
-}
-
-.lux-live-categories a:hover,
-.lux-live-categories a.active {
-    background: rgba(212, 175, 55, 0.1);
-    color: var(--primary-color);
-}
-
-.lux-live-active h3 {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#activeCount {
-    background: var(--primary-color);
-    color: var(--dark-bg);
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.8rem;
-}
-
-.lux-live-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.lux-live-list-item {
-    background: var(--card-bg);
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.lux-live-list-item:hover {
-    background: rgba(212, 175, 55, 0.1);
-    transform: translateX(5px);
-}
-
-.lux-live-list-item h4 {
-    font-size: 0.9rem;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.lux-live-list-item p {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-
-/* Conteúdo Principal */
-.lux-live-main {
-    flex: 1;
-    padding: 1.5rem;
-    overflow-y: auto;
-}
-
-/* Grade de Lives */
-.lux-live-grid {
-    width: 100%;
-}
-
-.lux-live-grid h2 {
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-    color: var(--text-primary);
-}
-
-.lux-grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-    padding: 1rem 0;
-}
-
-/* Card de Live */
-.lux-live-card {
-    background: var(--card-bg);
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.lux-live-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-}
-
-.lux-live-thumbnail {
-    position: relative;
-    height: 180px;
-    overflow: hidden;
-}
-
-.lux-live-thumbnail img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.lux-live-card:hover .lux-live-thumbnail img {
-    transform: scale(1.05);
-}
-
-.lux-live-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(239, 68, 68, 0.9);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.lux-live-badge.live {
-    background: rgba(239, 68, 68, 0.9);
-}
-
-.lux-live-badge.exclusive {
-    background: linear-gradient(135deg, #d4af37, #f7ef8a);
-    color: #000;
-}
-
-.lux-live-badge i {
-    font-size: 0.6rem;
-}
-
-.lux-live-viewers {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.lux-live-ticket {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(212, 175, 55, 0.9);
-    color: #000;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.lux-live-content {
-    padding: 1rem;
-}
-
-.lux-live-title-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
-}
-
-.lux-live-title {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 8px;
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.lux-multi-host-badge {
-    background: var(--secondary-color);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.lux-live-description {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    line-height: 1.4;
-    margin-bottom: 1rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.lux-live-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.lux-live-host {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.lux-host-avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.lux-live-host span {
-    font-size: 0.85rem;
-}
-
-.lux-live-host .verified {
-    color: var(--primary-color);
-    font-size: 0.8rem;
-}
-
-.lux-live-stats {
-    display: flex;
     gap: 12px;
 }
 
-.lux-live-stats span {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-/* Player de Live */
-.lux-live-player {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--darker-bg);
-    z-index: 2000;
-    display: flex;
-}
-
-.lux-player-container {
-    display: flex;
-    width: 100%;
-    height: 100%;
-}
-/* Container de vídeo principal */
-.lux-video-container {
-    position: relative;
-    width: 100%;
-    height: 0;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
-    background: #000;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 1rem;
-}
-
-#liveVideo {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #000;
-    z-index: 1;
-}
-
-/* Vídeo local (para host/cohost) */
-#localVideo {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 180px;
-    height: 135px;
-    border-radius: 8px;
-    border: 3px solid var(--primary-color);
-    z-index: 10;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-    background: #000;
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
     object-fit: cover;
-    display: none; /* Oculto por padrão */
+    border: 2px solid #ff3d3d;
 }
 
-/* Placeholder quando não há vídeo */
-.video-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none; /* Oculto por padrão */
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    color: var(--text-secondary);
-    z-index: 2;
-}
-
-.video-placeholder i {
-    font-size: 4rem;
-    margin-bottom: 20px;
-    color: var(--primary-color);
-    opacity: 0.7;
-}
-
-.video-placeholder h3 {
-    margin-bottom: 10px;
-    color: var(--text-primary);
-    font-size: 1.5rem;
-}
-
-.video-placeholder p {
-    color: var(--text-secondary);
-    font-size: 1rem;
-}
-
-/* Controles de vídeo */
-.lux-video-controls {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+.user-meta {
     display: flex;
-    gap: 15px;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 12px 24px;
-    border-radius: 30px;
-    z-index: 20;
-    backdrop-filter: blur(10px);
+    flex-direction: column;
 }
 
-.lux-control-btn {
-    background: rgba(255, 255, 255, 0.15);
+.user-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.user-balance {
+    font-size: 13px;
+    color: #aaa;
+}
+
+/* BUTTONS */
+.btn-primary {
+    background: #ff3d3d;
     border: none;
-    color: white;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
+    font-weight: bold;
 }
 
-.lux-control-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.1);
+.btn-primary:hover {
+    background: #ff1f1f;
 }
 
-.lux-control-btn.active {
-    background: var(--primary-color);
-    color: #000;
-}
-
-/* Status do streaming */
-.lux-stream-status {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 20;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: rgba(0, 0, 0, 0.8);
-    border-radius: 20px;
-    color: white;
-    font-size: 0.9rem;
-    backdrop-filter: blur(10px);
-}
-
-.lux-status-indicator {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #ef4444;
-    animation: pulse 1.5s infinite;
-}
-
-.lux-status-indicator.live {
-    background: #10b981;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.1); }
-}
-
-/* Animação de entrada do vídeo */
-@keyframes fadeInVideo {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-#liveVideo.loading {
-    opacity: 0;
-}
-
-#liveVideo.playing {
-    animation: fadeInVideo 0.5s ease-out;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    #localVideo {
-        width: 120px;
-        height: 90px;
-        bottom: 10px;
-        right: 10px;
-    }
-    
-    .lux-video-controls {
-        padding: 10px 20px;
-        gap: 10px;
-    }
-    
-    .lux-control-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-    
-    .video-placeholder i {
-        font-size: 3rem;
-    }
-    
-    .video-placeholder h3 {
-        font-size: 1.2rem;
-    }
-}
-
-.lux-live-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 1rem;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-}
-
-.lux-live-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-}
-
-.lux-live-host {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.lux-live-host img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid var(--primary-color);
-}
-
-.lux-live-stats {
-    display: flex;
-    gap: 15px;
-}
-
-.lux-live-viewers,
-.lux-live-likes {
-    background: rgba(0, 0, 0, 0.7);
+.btn-secondary {
+    background: #2a2f3a;
+    border: none;
+    color: #fff;
     padding: 8px 12px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
-/* Chat da Live */
-.lux-live-chat {
-    width: 350px;
-    background: var(--card-bg);
+.btn-secondary:hover {
+    background: #3a3f4a;
+}
+
+/* CONTENT */
+.app-content {
+    padding: 16px;
+    flex: 1;
+}
+
+.section-title {
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+/* LIVE LIST */
+.live-list {
     display: flex;
     flex-direction: column;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 12px;
 }
 
-.lux-chat-header {
-    padding: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.lux-chat-header h4 {
+.live-card {
     display: flex;
     align-items: center;
-    gap: 8px;
-}
-
-.lux-chat-header span {
-    background: var(--primary-color);
-    color: #000;
-    padding: 2px 8px;
+    justify-content: space-between;
+    background: #161a22;
+    padding: 12px;
     border-radius: 10px;
-    font-size: 0.8rem;
-    font-weight: 600;
+    border: 1px solid #222;
 }
 
-.lux-chat-messages {
+.live-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.live-info {
     flex: 1;
-    padding: 1rem;
-    overflow-y: auto;
+    margin-left: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.live-host-name {
+    font-weight: bold;
+}
+
+.live-status {
+    font-size: 12px;
+    color: #ff3d3d;
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+    .app-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .btn-primary {
+        width: 100%;
+    }
+}
+
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: #121212;
+    color: #fff;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 14px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.lux-chat-message {
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    font-size: 0.9rem;
-}
-
-.lux-chat-message.system {
-    background: rgba(212, 175, 55, 0.1);
-    color: var(--primary-color);
-    text-align: center;
-}
-
-.lux-chat-message.gift {
-    background: linear-gradient(135deg, rgba(106, 17, 203, 0.2), rgba(37, 117, 252, 0.2));
-    border-left: 3px solid var(--secondary-color);
-}
-
-.lux-chat-input {
-    padding: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    gap: 10px;
-}
-
-.lux-chat-input input {
-    flex: 1;
-    padding: 10px 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-}
-
-.lux-chat-input input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-}
-
-/* Botões */
-.lux-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.lux-btn-primary {
-    background: var(--gradient-primary);
-    color: white;
-}
-
-.lux-btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
-}
-
-.lux-btn-secondary {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.lux-btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.lux-btn-gold {
-    background: var(--gradient-gold);
-    color: #000;
-    font-weight: 700;
-}
-
-.lux-btn-gold:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
-}
-
-.lux-btn-small {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-}
-
-.lux-btn-gift {
-    background: linear-gradient(135deg, #ff6b6b, #ffa726);
-    color: white;
-}
-
-.lux-btn-like {
-    background: linear-gradient(135deg, #ef4444, #f97316);
-    color: white;
-}
-
-/* Modais */
-.lux-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
     width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 3000;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.lux-modal-content {
-    background: var(--darker-bg);
-    border-radius: 12px;
-    max-width: 500px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.lux-modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.lux-modal-header h2 {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1.3rem;
-}
-
-.lux-modal-close {
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--text-secondary);
-    transition: color 0.3s ease;
-}
-
-.lux-modal-close:hover {
-    color: var(--primary-color);
-}
-
-.lux-modal-body {
-    padding: 1.5rem;
-}
-
-/* Formulários */
-.lux-form-group {
-    margin-bottom: 1.5rem;
-}
-
-.lux-form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.lux-form-group input,
-.lux-form-group select,
-.lux-form-group textarea {
-    width: 100%;
-    padding: 12px 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    transition: all 0.3s ease;
-}
-
-.lux-form-group input:focus,
-.lux-form-group select:focus,
-.lux-form-group textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    background: rgba(212, 175, 55, 0.05);
-}
-
-.lux-form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-/* Presentes */
-.lux-gifts-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    padding: 1rem 0;
-}
-
-.lux-gift-item {
-    background: var(--card-bg);
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 1px solid transparent;
-}
-
-.lux-gift-item:hover {
-    border-color: var(--primary-color);
-    transform: translateY(-5px);
-}
-
-.lux-gift-image {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 10px;
-}
-
-.lux-gift-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.lux-gift-info h4 {
-    font-size: 0.9rem;
-    margin-bottom: 5px;
-}
-
-.lux-gift-info p {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-/* Missões */
-.lux-mission-card {
-    background: var(--card-bg);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-left: 4px solid var(--primary-color);
-}
-
-.lux-mission-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.lux-mission-reward {
-    background: rgba(212, 175, 55, 0.1);
-    color: var(--primary-color);
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.lux-mission-description {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    margin-bottom: 15px;
-    line-height: 1.4;
-}
-
-.lux-mission-progress {
-    margin-bottom: 15px;
-}
-
-.lux-progress-bar {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 8px;
-}
-
-.lux-progress-fill {
-    height: 100%;
-    background: var(--gradient-primary);
-    border-radius: 4px;
-    transition: width 0.3s ease;
-}
-
-.lux-progress-text {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    text-align: right;
-    display: block;
-}
-
-/* Batalhas */
-.lux-battle-card {
-    background: var(--card-bg);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border: 1px solid rgba(106, 17, 203, 0.3);
-}
-
-.lux-battle-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.lux-battle-timer {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.lux-battle-participants {
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    margin: 1rem 0;
-}
-
-.lux-battle-participant {
-    text-align: center;
-}
-
-.lux-battle-participant img {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: 3px solid var(--primary-color);
-    margin-bottom: 8px;
-}
-
-.lux-battle-vs {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    margin: 0 20px;
-}
-
-.lux-battle-prize {
-    text-align: center;
-    margin: 1rem 0;
-}
-
-.lux-battle-prize span {
-    display: inline-block;
-    background: var(--gradient-gold);
-    color: #000;
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 1.1rem;
-}
-
-/* Toast Notifications */
-.lux-toast {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--card-bg);
-    color: var(--text-primary);
-    padding: 12px 20px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.3s ease;
-    z-index: 4000;
-    border-left: 4px solid var(--primary-color);
-}
-
-.lux-toast.show {
-    transform: translateY(0);
-    opacity: 1;
-}
-
-.lux-toast.success {
-    border-left-color: var(--success-color);
-}
-
-.lux-toast.error {
-    border-left-color: var(--error-color);
-}
-
-.lux-toast.warning {
-    border-left-color: var(--warning-color);
-}
-
-/* Animação de Presentes */
-@keyframes giftAnimation {
-    0% {
-        transform: scale(0) rotate(0deg);
-        opacity: 0;
-    }
-    50% {
-        transform: scale(1.5) rotate(180deg);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1) rotate(360deg) translateY(-100px);
-        opacity: 0;
-    }
-}
-
-.lux-gift-animation {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 100px;
-    z-index: 5000;
-    pointer-events: none;
-    animation: giftAnimation 2s ease-out forwards;
-}
-
-/* Responsividade */
-@media (max-width: 1024px) {
-    .lux-live-container {
-        flex-direction: column;
-    }
-    
-    .lux-live-sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 1rem;
-    }
-    
-    .lux-live-list {
-        flex-direction: row;
-        overflow-x: auto;
-        padding-bottom: 10px;
-    }
-    
-    .lux-live-list-item {
-        min-width: 200px;
-    }
-    
-    .lux-player-container {
-        flex-direction: column;
-    }
-    
-    .lux-live-chat {
-        width: 100%;
-        height: 300px;
-    }
-}
-
-@media (max-width: 768px) {
-    .lux-live-header {
-        padding: 1rem;
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .lux-grid-container {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 1rem;
-    }
-    
-    .lux-gifts-container {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .lux-modal-content {
-        margin: 1rem;
-        max-height: 80vh;
-    }
-}
-
-@media (max-width: 480px) {
-    .lux-grid-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .lux-gifts-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .lux-live-main {
-        padding: 1rem;
-    }
-}
-
-/* Estilos Adicionais para Correções */
-
-/* Loading Screen */
-.lux-loading-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-.lux-loading-content {
-    text-align: center;
-    color: white;
-}
-
-.lux-spinner {
-    font-size: 60px;
-    color: #d4af37;
-    margin-bottom: 20px;
-    animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Toast Notifications */
-.lux-toast {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--card-bg);
-    color: var(--text-primary);
-    padding: 12px 20px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.3s ease;
-    z-index: 10000;
-    border-left: 4px solid var(--primary-color);
-    max-width: 300px;
-}
-
-.lux-toast.show {
-    transform: translateY(0);
-    opacity: 1;
-}
-
-.lux-toast.success {
-    border-left-color: #10b981;
-}
-
-.lux-toast.error {
-    border-left-color: #ef4444;
-}
-
-.lux-toast.warning {
-    border-left-color: #f59e0b;
-}
-
-.lux-toast.info {
-    border-left-color: #3b82f6;
-}
-
-/* Gift Animation */
-@keyframes giftAnimation {
-    0% {
-        transform: translate(-50%, -50%) scale(0) rotate(0deg);
-        opacity: 0;
-    }
-    50% {
-        transform: translate(-50%, -50%) scale(1.5) rotate(180deg);
-        opacity: 1;
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(1) rotate(360deg) translateY(-100px);
-        opacity: 0;
-    }
-}
-
-/* Dropdown Menu */
-.lux-dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--darker-bg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 8px 0;
-    min-width: 200px;
-    z-index: 1000;
-    margin-top: 10px;
-}
-
-.lux-dropdown-item {
-    display: block;
-    padding: 10px 15px;
-    color: var(--text-primary);
-    text-decoration: none;
-    transition: background 0.3s ease;
-}
-
-.lux-dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.lux-dropdown-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 8px 0;
-}
-
-/* Botões */
-.lux-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.lux-btn-primary {
-    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-    color: white;
-}
-
-.lux-btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
-}
-
-.lux-btn-secondary {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.lux-btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.lux-btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
-    color: white;
-}
-
-.lux-btn-gold {
-    background: linear-gradient(135deg, #d4af37 0%, #f7ef8a 100%);
-    color: #000;
-    font-weight: 700;
-}
-
-.lux-btn-gold:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
-}
-
-.lux-btn-block {
-    width: 100%;
-}
-
-.lux-btn-small {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-}
-
-/* Modais */
-.lux-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 9998;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.lux-modal-content {
-    background: var(--darker-bg);
-    border-radius: 12px;
-    max-width: 800px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.lux-modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.lux-modal-body {
-    padding: 1.5rem;
-}
-
-.lux-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 1.5rem;
-}
-
-/* Formulários */
-.lux-form-group {
-    margin-bottom: 1.5rem;
-}
-
-.lux-form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.lux-form-group input,
-.lux-form-group select,
-.lux-form-group textarea {
-    width: 100%;
-    padding: 12px 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    transition: all 0.3s ease;
-}
-
-.lux-form-group input:focus,
-.lux-form-group select:focus,
-.lux-form-group textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    background: rgba(212, 175, 55, 0.05);
-}
-
-.lux-form-row {
-    display: flex;
-    gap: 15px;
-}
-
-.lux-form-row .lux-form-group {
-    flex: 1;
-}
-
-/* Presentes */
-.lux-gift-item {
-    background: var(--card-bg);
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-}
-
-.lux-gift-item:hover {
-    border-color: var(--primary-color);
-    transform: translateY(-5px);
-}
-
-.lux-gift-item.selected {
-    border-color: var(--primary-color);
-    background: rgba(212, 175, 55, 0.1);
-}
-
-.lux-gift-icon {
-    font-size: 48px;
-    margin-bottom: 10px;
-}
-
-/* Chat */
-.lux-chat-message {
-    margin-bottom: 10px;
     padding: 10px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    background: #1f1f1f;
+    color: #fff;
 }
 
-.lux-system-message {
+.modal-actions {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+    justify-content: space-between;
+    margin-top: 15px;
 }
-
-.lux-gift-message {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--primary-color);
-    font-size: 0.9rem;
-}
-
-.lux-user-message {
-    display: flex;
-    gap: 10px;
-}
-
-.lux-message-avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.lux-message-content {
-    flex: 1;
-}
-
-.lux-message-sender {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--text-primary);
-    margin-right: 8px;
-}
-
-.lux-message-text {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .lux-live-container {
-        flex-direction: column;
-    }
-    
-    .lux-live-sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .lux-player-container {
-        flex-direction: column;
-    }
-    
-    .lux-live-chat {
-        width: 100%;
-        height: 300px;
-    }
-    
-    .lux-modal-content {
-        margin: 10px;
-        max-height: 80vh;
-    }
-}
-
-/* Adicione ao final do lux-meet-live.css */
-
-/* Tela de Erro */
-.lux-error-screen {
-    text-align: center;
-    padding: 40px;
-    color: white;
-}
-
-.lux-error-screen i {
-    color: #ef4444;
-    margin-bottom: 20px;
-}
-
-.lux-error-screen h2 {
-    margin-bottom: 10px;
-    color: #ef4444;
-}
-
-.lux-error-screen p {
-    margin-bottom: 20px;
-    color: #94a3b8;
-}
-
-.lux-error-screen small {
-    font-size: 0.8rem;
-    color: #64748b;
-}
-
-/* Loading aprimorado */
-.lux-loading-lives {
-    text-align: center;
-    padding: 40px;
-    color: #94a3b8;
-}
-
-.lux-loading-lives i {
-    font-size: 2rem;
-    margin-bottom: 20px;
-    color: #d4af37;
-}
-
-.lux-no-lives {
-    text-align: center;
-    padding: 40px;
-    background: rgba(30, 41, 59, 0.5);
-    border-radius: 12px;
-    border: 2px dashed rgba(212, 175, 55, 0.3);
-}
-
-.lux-no-lives i {
-    font-size: 3rem;
-    color: #d4af37;
-    margin-bottom: 20px;
-}
-
-.lux-no-lives h3 {
-    margin-bottom: 10px;
-    color: #f8fafc;
-}
-
-.lux-no-lives p {
-    margin-bottom: 20px;
-    color: #94a3b8;
-}
-
-/* Validação de formulário */
-.lux-form-help {
-    display: block;
-    margin-top: 5px;
-    font-size: 0.8rem;
-    color: #94a3b8;
-}
-
-.lux-form-error {
-    color: #ef4444;
-    font-size: 0.9rem;
-    margin-top: 5px;
-    display: none;
-}
-
-.lux-form-group.error input,
-.lux-form-group.error select,
-.lux-form-group.error textarea {
-    border-color: #ef4444;
-}
-
-.lux-form-group.error .lux-form-error {
-    display: block;
-}
-
-
-/* Adicione ao final do lux-meet-live.css */
-
-/* Animações de entrada */
-.app-loaded {
-    animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Estilos para amigos online */
-.lux-friend-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
-}
-
-.lux-friend-item:hover {
-    background: rgba(212, 175, 55, 0.1);
-    transform: translateX(5px);
-}
-
-.lux-friend-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.lux-friend-name {
-    flex: 1;
-    font-size: 0.9rem;
-    color: var(--text-primary);
-}
-
-.lux-friend-status {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-}
-
-.lux-friend-status.online {
-    background: #10b981;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-}
-
-.lux-friend-status.offline {
-    background: #64748b;
-}
-
-/* Estilos para elementos de loading */
-.lux-loading {
-    text-align: center;
-    padding: 20px;
-    color: var(--text-secondary);
-}
-
-.lux-loading i {
-    font-size: 2rem;
-    margin-bottom: 10px;
-    color: var(--primary-color);
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.lux-error {
-    text-align: center;
-    padding: 20px;
-    color: var(--error-color);
-    background: rgba(239, 68, 68, 0.1);
-    border-radius: 8px;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.lux-error i {
-    font-size: 2rem;
-    margin-bottom: 10px;
-}
-
-/* Placeholders para imagens que falham ao carregar */
-img[src*="placeholder.com"] {
-    background: linear-gradient(45deg, var(--card-bg), var(--darker-bg));
-}
-
-/* Estilos para elementos que podem ser undefined */
-.lux-user-balance,
-.lux-user-diamonds {
-    min-width: 60px;
-    text-align: center;
-    font-weight: 600;
-}
-
-.lux-user-balance:empty::before,
-.lux-user-diamonds:empty::before {
-    content: '0';
-    color: var(--text-secondary);
-}
-
-
-/* Áudio apenas */
-.lux-audio-only {
-    text-align: center;
-    padding: 40px;
-    color: white;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.lux-audio-wave {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-    margin-top: 20px;
-    height: 40px;
-    align-items: flex-end;
-}
-
-.lux-wave-bar {
-    width: 6px;
-    background: #d4af37;
-    border-radius: 3px;
-    animation: luxWave 1.5s infinite ease-in-out;
-}
-
-.lux-wave-bar:nth-child(2) { animation-delay: 0.1s; height: 70%; }
-.lux-wave-bar:nth-child(3) { animation-delay: 0.2s; height: 100%; }
-.lux-wave-bar:nth-child(4) { animation-delay: 0.3s; height: 70%; }
-.lux-wave-bar:nth-child(5) { animation-delay: 0.4s; height: 50%; }
-
-@keyframes luxWave {
-    0%, 100% { transform: scaleY(1); }
-    50% { transform: scaleY(1.5); }
-}
-
-/* Botão de play requerido */
-.lux-play-required {
-    text-align: center;
-    padding: 30px;
-    color: white;
-}
-
-.lux-play-required i {
-    color: #d4af37;
-    margin-bottom: 15px;
-}
-
-/* Indicador de conexão */
-.lux-connection-status {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 10px 20px;
-    background: rgba(76, 217, 100, 0.1);
-    border-radius: 20px;
-    margin: 10px 0;
-    font-size: 0.9rem;
-}
-
-.lux-connection-status.connecting {
-    background: rgba(255, 193, 7, 0.1);
-    color: #ffc107;
-}
-
-.lux-connection-status.connected {
-    background: rgba(76, 217, 100, 0.1);
-    color: #4cd964;
-}
-
-.lux-connection-status.error {
-    background: rgba(255, 71, 87, 0.1);
-    color: #ff4757;
-}
-
 
