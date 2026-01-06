@@ -54,6 +54,83 @@ const rtcConfiguration = {
 // ============================================
 // INICIALIZAÇÃO DA APLICAÇÃO
 // ============================================
+// ADICIONE ESTE CÓDIGO NO INÍCIO DO SEU ARQUIVO JS
+function fixVideoDisplay() {
+    console.log('🔧 Corrigindo exibição do vídeo...');
+    
+    // 1. Remover classe hidden do player
+    const livePlayer = document.getElementById('livePlayer');
+    if (livePlayer) {
+        livePlayer.classList.remove('hidden');
+        livePlayer.style.display = 'block';
+        livePlayer.style.visibility = 'visible';
+        livePlayer.style.opacity = '1';
+        console.log('✅ Player principal desocultado');
+    }
+    
+    // 2. Ocultar a grade de lives
+    const liveGrid = document.getElementById('liveGrid');
+    if (liveGrid) {
+        liveGrid.style.display = 'none';
+        console.log('✅ Grade de lives ocultada');
+    }
+    
+    // 3. Garantir que o elemento de vídeo está visível
+    const liveVideo = document.getElementById('liveVideo');
+    if (liveVideo) {
+        // Remover quaisquer estilos que estejam ocultando
+        liveVideo.style.display = 'block';
+        liveVideo.style.visibility = 'visible';
+        liveVideo.style.opacity = '1';
+        liveVideo.style.position = 'relative';
+        liveVideo.style.zIndex = '10';
+        liveVideo.style.width = '100%';
+        liveVideo.style.height = 'auto';
+        liveVideo.style.minHeight = '400px';
+        liveVideo.style.background = '#000';
+        liveVideo.style.objectFit = 'cover';
+        
+        // Configurar atributos importantes
+        liveVideo.setAttribute('playsinline', 'true');
+        liveVideo.setAttribute('autoplay', 'true');
+        liveVideo.setAttribute('muted', 'false'); // Permitir áudio
+        
+        console.log('✅ Elemento de vídeo configurado');
+    }
+    
+    // 4. Configurar placeholder corretamente
+    const placeholder = document.getElementById('videoPlaceholder');
+    if (placeholder) {
+        placeholder.style.display = 'none'; // Inicialmente oculto
+        placeholder.style.position = 'absolute';
+        placeholder.style.top = '0';
+        placeholder.style.left = '0';
+        placeholder.style.right = '0';
+        placeholder.style.bottom = '0';
+        placeholder.style.zIndex = '5';
+        placeholder.style.background = '#000';
+        console.log('✅ Placeholder configurado');
+    }
+    
+    // 5. Garantir que o container está visível
+    const videoContainer = document.querySelector('.lux-video-container');
+    if (videoContainer) {
+        videoContainer.style.display = 'block';
+        videoContainer.style.position = 'relative';
+        videoContainer.style.minHeight = '500px';
+        videoContainer.style.background = '#000';
+        console.log('✅ Container de vídeo configurado');
+    }
+    
+    // 6. Forçar redesenho
+    if (liveVideo) {
+        liveVideo.offsetHeight; // Trigger reflow
+    }
+}
+
+// Executar quando a página carregar
+document.addEventListener('DOMContentLoaded', fixVideoDisplay);
+
 
 async function initializeApp() {
     try {
@@ -2868,15 +2945,14 @@ function forceShowVideo() {
 // ============================================
 // MODIFIQUE A FUNÇÃO joinLive PARA DEBUG
 // ============================================
-
 async function joinLive(liveId) {
     try {
-        console.log(`🎯 Entrando na live ${liveId}...`);
+        console.log(`🎯 ENTROU NA LIVE ${liveId} - INICIANDO CONEXÃO...`);
         
-        // Debug: verificar estado inicial
-        debugVideoState();
+        // 1. PRIMEIRO: Corrigir display imediatamente
+        fixVideoDisplay();
         
-        // Obter dados da live
+        // 2. Obter dados da live
         const liveDoc = await db.collection('liveStreams').doc(liveId).get();
         
         if (!liveDoc.exists) {
@@ -2889,45 +2965,545 @@ async function joinLive(liveId) {
         currentLiveId = liveId;
         currentLiveData = liveData;
         
-        // Verificar status
+        // 3. Verificar status
         if (liveData.status !== 'active') {
             showToast('Esta live já foi encerrada', 'warning');
             return;
         }
         
-        // Registrar viewer
+        // 4. Mostrar player IMEDIATAMENTE (sem esperar)
+        showLivePlayerForViewerImmediate(liveData);
+        
+        // 5. Registrar viewer
         await registerViewer(liveId);
         
-        // MOSTRAR PLAYER IMEDIATAMENTE
-        showLivePlayerImmediately(liveData, false);
-        
-        // Configurar chat
+        // 6. Configurar chat
         setupLiveChat(liveId);
         
-        // Configurar listener para atualizações
+        // 7. Configurar listener para atualizações
         setupLiveRealtimeListener(liveId, false);
         
-        // CONECTAR AO STREAM REAL (com timeout)
-        console.log('⏱️ Iniciando conexão WebRTC...');
-        showStreamStatus('Conectando ao host...', 'info');
+        // 8. CONECTAR AO WEBRTC
+        console.log('🌐 INICIANDO CONEXÃO WEBRTC...');
+        await connectToViewerWebRTC(liveData);
         
-        // Timeout para evitar travamento
-        const connectionTimeout = setTimeout(() => {
-            console.log('⚠️ Timeout na conexão WebRTC');
-            showStreamStatus('Conexão lenta, tentando alternativa...', 'warning');
-            tryAlternativeConnection(liveData);
-        }, 10000);
+        showToast('✅ Conectado à live!', 'success');
         
-        // Conectar ao stream
-        await connectToLiveStream(liveData);
-        clearTimeout(connectionTimeout);
-        
-        // Debug após conexão
-        setTimeout(debugVideoState, 1000);
+        // 9. DEBUG: Verificar estado após 2 segundos
+        setTimeout(() => {
+            debugVideoElements();
+        }, 2000);
         
     } catch (error) {
         console.error('❌ Erro ao entrar na live:', error);
-        showToast('Erro ao entrar na live: ' + error.message, 'error');
+        showToast('Erro: ' + error.message, 'error');
+    }
+}
+
+
+async function connectToViewerWebRTC(liveData) {
+    console.log('🌐 CONEXÃO WEBRTC PARA ESPECTADOR');
+    
+    try {
+        // 1. VERIFICAR SE HOST TEM OFERTA
+        if (!liveData.hostOffer) {
+            console.log('⏳ Host ainda não configurou, aguardando...');
+            showConnectionStatus('Aguardando host iniciar transmissão...', 'warning');
+            
+            // Tentar novamente em 3 segundos
+            setTimeout(async () => {
+                if (currentLiveId) {
+                    const updatedDoc = await db.collection('liveStreams').doc(currentLiveId).get();
+                    if (updatedDoc.exists) {
+                        const updatedData = updatedDoc.data();
+                        if (updatedData.hostOffer) {
+                            await connectToViewerWebRTC(updatedData);
+                        }
+                    }
+                }
+            }, 3000);
+            
+            return;
+        }
+        
+        console.log('✅ Host tem oferta, criando PeerConnection...');
+        showConnectionStatus('Estabelecendo conexão P2P...', 'info');
+        
+        // 2. CRIAR PEERCONNECTION
+        const peerConnection = new RTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        });
+        
+        // 3. CRIAR STREAM REMOTO
+        const remoteStream = new MediaStream();
+        
+        // 4. CONFIGURAR EVENTO QUANDO RECEBER TRACKS
+        peerConnection.ontrack = (event) => {
+            console.log('📹 Track recebida:', event.track.kind);
+            
+            if (event.streams && event.streams[0]) {
+                // Adicionar tracks ao stream remoto
+                event.streams[0].getTracks().forEach(track => {
+                    if (!remoteStream.getTracks().some(t => t.id === track.id)) {
+                        remoteStream.addTrack(track);
+                        console.log(`✅ ${track.kind} track adicionada`);
+                    }
+                });
+                
+                // ATUALIZAR VÍDEO COM STREAM REAL
+                updateViewerVideoWithStream(remoteStream);
+            }
+        };
+        
+        // 5. CONFIGURAR ICE CANDIDATES
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate && currentLiveId) {
+                console.log('❄️ Candidato ICE gerado');
+                
+                // Salvar no Firestore
+                db.collection('liveStreams').doc(currentLiveId)
+                    .collection('viewerCandidates')
+                    .add({
+                        candidate: event.candidate.toJSON(),
+                        viewerId: currentUser?.uid || 'viewer',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+            }
+        };
+        
+        // 6. MONITORAR ESTADO DA CONEXÃO
+        peerConnection.onconnectionstatechange = () => {
+            const state = peerConnection.connectionState;
+            console.log(`📡 Estado da conexão: ${state}`);
+            
+            if (state === 'connected') {
+                console.log('✅ CONEXÃO WEBRTC ESTABELECIDA!');
+                showConnectionStatus('✅ Conectado ao host!', 'success');
+                showToast('Conexão estabelecida!', 'success');
+            } else if (state === 'failed') {
+                console.error('❌ Conexão falhou');
+                showConnectionStatus('Conexão falhou, tentando novamente...', 'error');
+                setTimeout(() => connectToViewerWebRTC(liveData), 3000);
+            }
+        };
+        
+        // 7. CONFIGURAR OFERTA DO HOST
+        console.log('📥 Configurando oferta remota do host...');
+        await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(liveData.hostOffer)
+        );
+        
+        // 8. CRIAR RESPOSTA
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        // 9. ENVIAR RESPOSTA PARA O HOST
+        await db.collection('liveStreams').doc(currentLiveId)
+            .collection('viewerAnswers')
+            .add({
+                sdp: answer.sdp,
+                type: answer.type,
+                viewerId: currentUser?.uid || 'viewer',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        
+        console.log('✅ Resposta SDP enviada para o host');
+        
+        // 10. SALVAR REFERÊNCIAS GLOBAIS
+        window.peerConnection = peerConnection;
+        window.remoteStream = remoteStream;
+        
+        // 11. BUSCAR CANDIDATOS ICE DO HOST
+        await fetchHostIceCandidates(currentLiveId, peerConnection);
+        
+        console.log('🎯 WebRTC configurado para espectador');
+        
+    } catch (error) {
+        console.error('❌ Erro na conexão WebRTC:', error);
+        showConnectionStatus('Erro: ' + error.message, 'error');
+        
+        // Tentar método simplificado
+        await trySimpleVideoConnection(liveData);
+    }
+} 
+
+
+function updateViewerVideoWithStream(stream) {
+    console.log('🎥 ATUALIZANDO VÍDEO DO ESPECTADOR COM STREAM REAL');
+    
+    const videoElement = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (!videoElement) {
+        console.error('❌ Elemento de vídeo não encontrado!');
+        return;
+    }
+    
+    // Verificar se temos tracks
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    
+    console.log('📊 Stream recebido:', {
+        videoTracks: videoTracks.length,
+        audioTracks: audioTracks.length,
+        streamActive: stream.active
+    });
+    
+    if (videoTracks.length === 0 && audioTracks.length === 0) {
+        console.log('⚠️ Stream sem tracks, aguardando...');
+        return;
+    }
+    
+    // PARAR QUALQUER STREAM ANTERIOR
+    if (videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.stop());
+        videoElement.srcObject = null;
+    }
+    
+    // ATRIBUIR NOVO STREAM
+    videoElement.srcObject = stream;
+    
+    // CONFIGURAR PROPRIEDADES
+    videoElement.muted = false; // Permitir áudio
+    videoElement.volume = 1.0;
+    videoElement.style.display = 'block';
+    videoElement.style.visibility = 'visible';
+    videoElement.style.opacity = '1';
+    videoElement.style.zIndex = '15';
+    videoElement.style.background = '#000';
+    
+    // OCULTAR PLACEHOLDER
+    if (placeholder) {
+        placeholder.style.display = 'none';
+        console.log('✅ Placeholder ocultado');
+    }
+    
+    // TENTAR REPRODUZIR
+    console.log('▶️ Tentando reproduzir vídeo...');
+    
+    const playPromise = videoElement.play();
+    
+    if (playPromise !== undefined) {
+        playPromise
+            .then(() => {
+                console.log('✅✅✅ VÍDEO REPRODUZINDO COM SUCESSO!');
+                console.log('Dimensões:', videoElement.videoWidth + 'x' + videoElement.videoHeight);
+                console.log('Duração:', videoElement.duration);
+                
+                // Mostrar controles após 3 segundos
+                setTimeout(() => {
+                    videoElement.setAttribute('controls', 'true');
+                }, 3000);
+                
+                // Atualizar status
+                showConnectionStatus('✅ Transmissão recebida!', 'success');
+                
+                // Eventos de debug
+                videoElement.addEventListener('loadedmetadata', () => {
+                    console.log('📀 Metadados carregados');
+                });
+                
+                videoElement.addEventListener('playing', () => {
+                    console.log('▶️ Vídeo está reproduzindo');
+                });
+                
+            })
+            .catch(error => {
+                console.error('❌ ERRO NO PLAY:', error);
+                
+                // Mostrar botão de play manual
+                if (placeholder) {
+                    placeholder.style.display = 'flex';
+                    placeholder.innerHTML = `
+                        <div class="lux-manual-play">
+                            <i class="fas fa-play-circle fa-4x"></i>
+                            <h3>Clique para assistir</h3>
+                            <p>O navegador requer interação para reproduzir</p>
+                            <button class="lux-btn lux-btn-primary lux-btn-xl" 
+                                    onclick="playVideoManually()">
+                                <i class="fas fa-play"></i> ASSISTIR LIVE
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+    }
+}
+
+
+function injectCriticalCSS() {
+    const css = `
+        /* REMOVER QUALQUER hidden QUE ESTEJA BLOQUEANDO */
+        #livePlayer {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* ELEMENTO DE VÍDEO - SUPER IMPORTANTE */
+        #liveVideo {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 500px !important;
+            background: #000 !important;
+            object-fit: cover !important;
+            position: relative !important;
+            z-index: 10 !important;
+        }
+        
+        /* CONTAINER DO VÍDEO */
+        .lux-video-container {
+            position: relative !important;
+            width: 100% !important;
+            min-height: 500px !important;
+            background: #000 !important;
+            border-radius: 10px !important;
+            overflow: hidden !important;
+            margin-bottom: 20px !important;
+        }
+        
+        /* PLACEHOLDER */
+        .video-placeholder {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: #000 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: white !important;
+            z-index: 5 !important;
+        }
+        
+        /* OVERLAY DE CONEXÃO */
+        .lux-connecting-overlay {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
+        }
+        
+        .lux-connecting-content {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+        }
+        
+        .lux-connecting-spinner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 30px;
+        }
+        
+        .lux-spinner-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-radius: 50%;
+            animation: luxSpin 1.2s linear infinite;
+        }
+        
+        .lux-spinner-ring:nth-child(1) {
+            border-top-color: #ff4757;
+            animation-delay: 0s;
+        }
+        
+        .lux-spinner-ring:nth-child(2) {
+            border-right-color: #d4af37;
+            animation-delay: 0.1s;
+        }
+        
+        .lux-spinner-ring:nth-child(3) {
+            border-bottom-color: #2ed573;
+            animation-delay: 0.2s;
+        }
+        
+        @keyframes luxSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* BARRA DE PROGRESSO */
+        .lux-connection-progress {
+            margin: 30px 0;
+        }
+        
+        .lux-progress-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .lux-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4757, #d4af37);
+            width: 30%;
+            animation: luxProgress 2s infinite ease-in-out;
+        }
+        
+        @keyframes luxProgress {
+            0%, 100% { width: 30%; }
+            50% { width: 70%; }
+        }
+        
+        /* BOTÃO MANUAL PLAY */
+        .lux-manual-play {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .lux-manual-play i {
+            color: #d4af37;
+            margin-bottom: 20px;
+        }
+        
+        .lux-btn-xl {
+            padding: 15px 40px !important;
+            font-size: 1.2rem !important;
+            border-radius: 50px !important;
+            margin-top: 20px !important;
+        }
+    `;
+    
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    console.log('✅ CSS crítico injetado');
+}
+
+// Executar quando carregar
+document.addEventListener('DOMContentLoaded', () => {
+    injectCriticalCSS();
+    fixVideoDisplay();
+});
+function showLivePlayerForViewerImmediate(liveData) {
+    console.log('🎬 CONFIGURANDO PLAYER PARA ESPECTADOR - IMEDIATO');
+    
+    // 1. MOSTRAR PLAYER, OCULTAR GRID
+    const player = document.getElementById('livePlayer');
+    const grid = document.getElementById('liveGrid');
+    
+    if (player) {
+        player.style.display = 'block';
+        player.classList.remove('hidden');
+        player.style.visibility = 'visible';
+        player.style.opacity = '1';
+    }
+    
+    if (grid) {
+        grid.style.display = 'none';
+    }
+    
+    // 2. CONFIGURAR ELEMENTO DE VÍDEO
+    const videoElement = document.getElementById('liveVideo');
+    if (videoElement) {
+        // Resetar qualquer stream anterior
+        if (videoElement.srcObject) {
+            videoElement.srcObject = null;
+        }
+        
+        // Configurar propriedades
+        videoElement.style.display = 'block';
+        videoElement.style.width = '100%';
+        videoElement.style.height = 'auto';
+        videoElement.style.minHeight = '500px';
+        videoElement.style.background = '#000';
+        videoElement.style.objectFit = 'cover';
+        videoElement.controls = false; // Inicialmente sem controles
+        videoElement.muted = false;
+        
+        // Garantir que está no topo
+        videoElement.style.zIndex = '10';
+        videoElement.style.position = 'relative';
+    }
+    
+    // 3. MOSTRAR PLACEHOLDER DE CARREGAMENTO
+    const placeholder = document.getElementById('videoPlaceholder');
+    if (placeholder) {
+        placeholder.style.display = 'flex';
+        placeholder.innerHTML = `
+            <div class="lux-connecting-overlay">
+                <div class="lux-connecting-content">
+                    <div class="lux-connecting-spinner">
+                        <div class="lux-spinner-ring"></div>
+                        <div class="lux-spinner-ring"></div>
+                        <div class="lux-spinner-ring"></div>
+                    </div>
+                    <h2>🔗 CONECTANDO À TRANSMISSÃO</h2>
+                    <p>Aguarde enquanto conectamos com ${liveData.hostName || 'o host'}</p>
+                    <div class="lux-connection-progress">
+                        <div class="lux-progress-track">
+                            <div class="lux-progress-bar" id="connectionProgress"></div>
+                        </div>
+                        <span id="progressText">Iniciando conexão...</span>
+                    </div>
+                    <div class="lux-connection-stats">
+                        <div class="lux-stat">
+                            <i class="fas fa-user"></i>
+                            <span>Host: ${liveData.hostName || 'Anônimo'}</span>
+                        </div>
+                        <div class="lux-stat">
+                            <i class="fas fa-eye"></i>
+                            <span>${liveData.viewerCount || 0} espectadores</span>
+                        </div>
+                        <div class="lux-stat">
+                            <i class="fas fa-heart"></i>
+                            <span>${liveData.likes || 0} curtidas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 4. ATUALIZAR INFORMAÇÕES DA LIVE
+    updateElementText('livePlayerTitle', liveData.title || 'Transmissão ao vivo');
+    updateElementText('liveHostName', liveData.hostName || 'Host');
+    
+    const hostAvatar = document.getElementById('liveHostAvatar');
+    if (hostAvatar && liveData.hostPhoto) {
+        hostAvatar.src = liveData.hostPhoto;
+        hostAvatar.onerror = () => {
+            hostAvatar.src = getDefaultAvatar();
+        };
+    }
+    
+    // 5. ATUALIZAR ESTATÍSTICAS
+    updateElementText('viewerCount', formatNumber(liveData.viewerCount || 0));
+    updateElementText('likeCount', formatNumber(liveData.likes || 0));
+    updateElementText('giftCount', formatNumber(liveData.giftCount || 0));
+    
+    // 6. CONFIGURAR BOTÃO DE SAÍDA
+    const exitBtn = document.getElementById('exitLiveBtn');
+    if (exitBtn) {
+        exitBtn.innerHTML = '<i class="fas fa-times"></i> Sair da Live';
+        exitBtn.className = 'lux-btn lux-btn-danger';
+        exitBtn.onclick = leaveLive;
+    }
+    
+    console.log('✅ Player configurado para espectador');
+}
+
+// Função auxiliar para atualizar texto
+function updateElementText(id, text) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = text;
     }
 }
 
@@ -3624,6 +4200,86 @@ function showHostPlaceholder() {
             </button>
         </div>
     `;
+}
+
+
+
+function debugVideoElements() {
+    console.log('=== DEBUG DE ELEMENTOS DE VÍDEO ===');
+    
+    const elements = [
+        'livePlayer',
+        'liveVideo', 
+        'videoPlaceholder',
+        'liveGrid'
+    ];
+    
+    elements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            console.log(`${id}:`, {
+                existe: true,
+                display: el.style.display,
+                visibility: el.style.visibility,
+                className: el.className,
+                hidden: el.hidden,
+                offsetWidth: el.offsetWidth,
+                offsetHeight: el.offsetHeight
+            });
+        } else {
+            console.log(`${id}: NÃO ENCONTRADO`);
+        }
+    });
+    
+    // Verificar vídeo específico
+    const video = document.getElementById('liveVideo');
+    if (video) {
+        console.log('VÍDEO DETALHES:', {
+            srcObject: video.srcObject,
+            paused: video.paused,
+            readyState: video.readyState,
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+            currentTime: video.currentTime,
+            duration: video.duration,
+            error: video.error
+        });
+        
+        // Verificar tracks
+        if (video.srcObject) {
+            const tracks = video.srcObject.getTracks();
+            console.log('TRACKS DO VÍDEO:', tracks.map(t => ({
+                kind: t.kind,
+                enabled: t.enabled,
+                readyState: t.readyState,
+                muted: t.muted
+            })));
+        }
+    }
+    
+    console.log('=== FIM DEBUG ===');
+}
+
+function playVideoManually() {
+    console.log('🖱️ Usuário clicou para reproduzir manualmente');
+    
+    const video = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (video && video.srcObject) {
+        video.play()
+            .then(() => {
+                console.log('✅ Vídeo iniciado manualmente');
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                showToast('Transmissão iniciada!', 'success');
+            })
+            .catch(error => {
+                console.error('❌ Erro ao iniciar manualmente:', error);
+                showToast('Não foi possível iniciar o vídeo', 'error');
+            });
+    }
 }
 
 // ============================================
