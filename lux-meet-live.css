@@ -1766,3 +1766,79 @@ img[src*="placeholder.com"] {
     content: '0';
     color: var(--text-secondary);
 }
+
+
+/* Áudio apenas */
+.lux-audio-only {
+    text-align: center;
+    padding: 40px;
+    color: white;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.lux-audio-wave {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 20px;
+    height: 40px;
+    align-items: flex-end;
+}
+
+.lux-wave-bar {
+    width: 6px;
+    background: #d4af37;
+    border-radius: 3px;
+    animation: luxWave 1.5s infinite ease-in-out;
+}
+
+.lux-wave-bar:nth-child(2) { animation-delay: 0.1s; height: 70%; }
+.lux-wave-bar:nth-child(3) { animation-delay: 0.2s; height: 100%; }
+.lux-wave-bar:nth-child(4) { animation-delay: 0.3s; height: 70%; }
+.lux-wave-bar:nth-child(5) { animation-delay: 0.4s; height: 50%; }
+
+@keyframes luxWave {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.5); }
+}
+
+/* Botão de play requerido */
+.lux-play-required {
+    text-align: center;
+    padding: 30px;
+    color: white;
+}
+
+.lux-play-required i {
+    color: #d4af37;
+    margin-bottom: 15px;
+}
+
+/* Indicador de conexão */
+.lux-connection-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: rgba(76, 217, 100, 0.1);
+    border-radius: 20px;
+    margin: 10px 0;
+    font-size: 0.9rem;
+}
+
+.lux-connection-status.connecting {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.lux-connection-status.connected {
+    background: rgba(76, 217, 100, 0.1);
+    color: #4cd964;
+}
+
+.lux-connection-status.error {
+    background: rgba(255, 71, 87, 0.1);
+    color: #ff4757;
+}
