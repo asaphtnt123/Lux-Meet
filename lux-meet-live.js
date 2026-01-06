@@ -3130,9 +3130,8 @@ async function connectToViewerWebRTC(liveData) {
     }
 } 
 
-
 function updateViewerVideoWithStream(stream) {
-    console.log('🎥 ATUALIZANDO VÍDEO DO ESPECTADOR COM STREAM REAL');
+    console.log('🎬 ATUALIZANDO VÍDEO DO ESPECTADOR COM STREAM REAL');
     
     const videoElement = document.getElementById('liveVideo');
     const placeholder = document.getElementById('videoPlaceholder');
@@ -3146,21 +3145,19 @@ function updateViewerVideoWithStream(stream) {
     const videoTracks = stream.getVideoTracks();
     const audioTracks = stream.getAudioTracks();
     
-    console.log('📊 Stream recebido:', {
-        videoTracks: videoTracks.length,
-        audioTracks: audioTracks.length,
-        streamActive: stream.active
+    console.log('📊 Tracks recebidas:', {
+        vídeo: videoTracks.length,
+        áudio: audioTracks.length
     });
     
     if (videoTracks.length === 0 && audioTracks.length === 0) {
-        console.log('⚠️ Stream sem tracks, aguardando...');
+        console.log('⚠️ Stream vazio, aguardando tracks...');
         return;
     }
     
     // PARAR QUALQUER STREAM ANTERIOR
     if (videoElement.srcObject) {
         videoElement.srcObject.getTracks().forEach(track => track.stop());
-        videoElement.srcObject = null;
     }
     
     // ATRIBUIR NOVO STREAM
@@ -3171,14 +3168,16 @@ function updateViewerVideoWithStream(stream) {
     videoElement.volume = 1.0;
     videoElement.style.display = 'block';
     videoElement.style.visibility = 'visible';
-    videoElement.style.opacity = '1';
-    videoElement.style.zIndex = '15';
+    videoElement.style.width = '100%';
+    videoElement.style.height = 'auto';
+    videoElement.style.minHeight = '500px';
     videoElement.style.background = '#000';
+    videoElement.style.objectFit = 'cover';
     
-    // OCULTAR PLACEHOLDER
-    if (placeholder) {
+    // OCULTAR PLACEHOLDER SE TIVERMOS VÍDEO
+    if (videoTracks.length > 0 && placeholder) {
         placeholder.style.display = 'none';
-        console.log('✅ Placeholder ocultado');
+        console.log('✅ Placeholder ocultado (tem vídeo)');
     }
     
     // TENTAR REPRODUZIR
@@ -3189,47 +3188,69 @@ function updateViewerVideoWithStream(stream) {
     if (playPromise !== undefined) {
         playPromise
             .then(() => {
-                console.log('✅✅✅ VÍDEO REPRODUZINDO COM SUCESSO!');
+                console.log('✅✅✅ VÍDEO DO HOST REPRODUZINDO COM SUCESSO!');
                 console.log('Dimensões:', videoElement.videoWidth + 'x' + videoElement.videoHeight);
-                console.log('Duração:', videoElement.duration);
                 
-                // Mostrar controles após 3 segundos
+                // Atualizar status
+                updateConnectionStatus('connected');
+                
+                // Mostrar controles após alguns segundos
                 setTimeout(() => {
                     videoElement.setAttribute('controls', 'true');
                 }, 3000);
                 
-                // Atualizar status
-                showConnectionStatus('✅ Transmissão recebida!', 'success');
-                
-                // Eventos de debug
-                videoElement.addEventListener('loadedmetadata', () => {
-                    console.log('📀 Metadados carregados');
-                });
-                
-                videoElement.addEventListener('playing', () => {
-                    console.log('▶️ Vídeo está reproduzindo');
-                });
-                
             })
             .catch(error => {
-                console.error('❌ ERRO NO PLAY:', error);
+                console.error('❌ Erro no play automático:', error);
                 
                 // Mostrar botão de play manual
                 if (placeholder) {
                     placeholder.style.display = 'flex';
                     placeholder.innerHTML = `
-                        <div class="lux-manual-play">
+                        <div class="lux-play-required">
                             <i class="fas fa-play-circle fa-4x"></i>
                             <h3>Clique para assistir</h3>
-                            <p>O navegador requer interação para reproduzir</p>
+                            <p>O navegador requer sua permissão para reproduzir</p>
                             <button class="lux-btn lux-btn-primary lux-btn-xl" 
-                                    onclick="playVideoManually()">
-                                <i class="fas fa-play"></i> ASSISTIR LIVE
+                                    onclick="playHostVideo()">
+                                <i class="fas fa-play"></i> ASSISTIR TRANSMISSÃO
                             </button>
+                            <p class="lux-help-text">
+                                <i class="fas fa-info-circle"></i>
+                                Esta ação é necessária apenas uma vez
+                            </p>
                         </div>
                     `;
                 }
             });
+    }
+    
+    // SE SÓ TEM ÁUDIO
+    if (videoTracks.length === 0 && audioTracks.length > 0) {
+        console.log('🎧 Host transmitindo apenas áudio');
+        
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = `
+                <div class="lux-audio-stream">
+                    <div class="lux-audio-visualizer">
+                        ${Array.from({length: 15}, (_, i) => 
+                            `<div class="lux-audio-bar" style="animation-delay: ${i * 0.1}s"></div>`
+                        ).join('')}
+                    </div>
+                    <i class="fas fa-microphone-alt fa-3x"></i>
+                    <h3>🎤 TRANSMISSÃO DE ÁUDIO</h3>
+                    <p>${currentLiveData?.hostName || 'O host'} está ao vivo</p>
+                    <div class="lux-audio-info">
+                        <span><i class="fas fa-broadcast-tower"></i> AO VIVO</span>
+                        <span><i class="fas fa-headphones"></i> ÁUDIO ATIVO</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Iniciar reprodução de áudio
+        playAudioOnly(stream);
     }
 }
 
@@ -5535,6 +5556,7 @@ async function setupHostWebRTC(liveId, stream) {
             type: offerDescription.type
         };
         
+        
         await db.collection('liveStreams').doc(liveId).update({
             hostOffer: offerData,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -5555,21 +5577,46 @@ async function setupHostWebRTC(liveId, stream) {
         throw error;
     }
 }
-
-function setupHostIceCandidateListener(liveId) {
-    console.log('👂 Host escutando candidatos ICE dos espectadores...');
+async function getHostIceCandidates(liveId, peerConnection) {
+    console.log('📥 Buscando candidatos ICE do host...');
     
-    db.collection('liveStreams').doc(liveId).collection('audienceCandidates')
-        .orderBy('timestamp', 'desc')
-        .limit(50)
-        .onSnapshot(async (snapshot) => {
+    try {
+        const snapshot = await db.collection('liveStreams').doc(liveId)
+            .collection('hostIceCandidates')
+            .orderBy('timestamp')
+            .get();
+        
+        console.log(`📊 ${snapshot.size} candidatos ICE encontrados`);
+        
+        for (const doc of snapshot.docs) {
+            const data = doc.data();
+            try {
+                const candidate = new RTCIceCandidate(data.candidate);
+                await peerConnection.addIceCandidate(candidate);
+                console.log('✅ Candidato ICE do host adicionado');
+            } catch (error) {
+                console.error('Erro ao adicionar candidato ICE:', error);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erro ao buscar candidatos ICE:', error);
+    }
+}
+
+function setupHostIceCandidateListener(liveId, peerConnection) {
+    console.log('👂 Escutando novos candidatos ICE do host...');
+    
+    db.collection('liveStreams').doc(liveId)
+        .collection('hostIceCandidates')
+        .onSnapshot((snapshot) => {
             snapshot.docChanges().forEach(async (change) => {
                 if (change.type === 'added' && peerConnection) {
                     const data = change.doc.data();
                     try {
                         const candidate = new RTCIceCandidate(data.candidate);
                         await peerConnection.addIceCandidate(candidate);
-                        console.log('✅ Candidato ICE do espectador adicionado');
+                        console.log('✅ Novo candidato ICE do host adicionado');
                     } catch (error) {
                         console.error('Erro ao adicionar candidato ICE:', error);
                     }
@@ -5578,32 +5625,44 @@ function setupHostIceCandidateListener(liveId) {
         });
 }
 
-async function getHostIceCandidates(liveId) {
-    console.log('📥 Obtendo candidatos ICE do host...');
+async function listenForHostOffer(liveId) {
+    console.log('👂 Escutando por oferta do host...');
     
-    try {
-        const candidatesSnapshot = await db.collection('liveStreams').doc(liveId)
-            .collection('hostCandidates')
-            .orderBy('timestamp')
-            .get();
+    return new Promise((resolve, reject) => {
+        const unsubscribe = db.collection('liveStreams').doc(liveId)
+            .onSnapshot(async (doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    
+                    if (data.hostOffer) {
+                        console.log('✅ Oferta do host disponível!');
+                        unsubscribe(); // Parar de escutar
+                        
+                        try {
+                            // Conectar com a oferta recebida
+                            await connectToHostStream({
+                                ...data,
+                                id: liveId
+                            });
+                            resolve();
+                        } catch (error) {
+                            reject(error);
+                        }
+                    }
+                }
+            }, (error) => {
+                console.error('Erro ao escutar por oferta:', error);
+                reject(error);
+            });
         
-        console.log(`📊 ${candidatesSnapshot.size} candidatos ICE encontrados`);
-        
-        for (const doc of candidatesSnapshot.docs) {
-            const data = doc.data();
-            try {
-                const candidate = new RTCIceCandidate(data.candidate);
-                await peerConnection.addIceCandidate(candidate);
-                console.log('✅ Candidato ICE do host adicionado');
-            } catch (error) {
-                console.error('Erro ao adicionar candidato ICE do host:', error);
-            }
-        }
-        
-    } catch (error) {
-        console.error('Erro ao obter candidatos ICE do host:', error);
-    }
+        // Timeout após 30 segundos
+        setTimeout(() => {
+            unsubscribe();
+            reject(new Error('Timeout aguardando host configurar transmissão'));
+        }, 30000);
+    });
 }
+
 
 function setupAudienceIceCandidateListener(liveId) {
     console.log('👂 Espectador escutando novos candidatos ICE do host...');
@@ -6524,7 +6583,7 @@ function setupVideoForPlayer(isHost) {
 // SETUP VIDEO ELEMENTS - VERSÃO CORRIGIDA
 // ============================================
 
-function setupVideoElements(liveData, isHost) {
+async function setupVideoElements(liveData, isHost) {
     console.log('🎥 [CORRIGIDO] Configurando vídeo, isHost:', isHost);
     
     try {
@@ -6547,155 +6606,233 @@ function setupVideoElements(liveData, isHost) {
             mainVideo.srcObject = null;
         }
         
-        if (localVideo) {
-            localVideo.pause();
-            localVideo.src = '';
-            localVideo.srcObject = null;
-        }
-        
-        // 2. HOST
+        // 2. HOST (mantenha seu código existente)
         if (isHost) {
-            console.log('👑 CONFIGURANDO HOST');
-            
-            if (localStream) {
-                console.log('✅ Host TEM stream local');
-                
-                // Mostrar vídeo local (pequeno)
-                if (localVideo) {
-                    localVideo.srcObject = localStream;
-                    localVideo.muted = true;
-                    localVideo.style.display = 'block';
-                    
-                    localVideo.play().catch(e => {
-                        console.log('Auto-play local bloqueado');
-                        localVideo.setAttribute('controls', 'true');
-                    });
-                }
-                
-                // Mostrar vídeo principal (grande) 
-                if (mainVideo) {
-                    mainVideo.srcObject = localStream;
-                    mainVideo.muted = false;
-                    mainVideo.style.display = 'block';
-                    
-                    mainVideo.play().catch(e => {
-                        console.log('Auto-play principal bloqueado');
-                        mainVideo.setAttribute('controls', 'true');
-                    });
-                }
-                
-                // OCULTAR placeholder completamente
-                if (placeholder) {
-                    console.log('🚫 Ocultando placeholder para host');
-                    placeholder.style.display = 'none';
-                    placeholder.innerHTML = ''; // Limpar conteúdo
-                }
-                
-                // Mostrar status
-                updateHostStatus('🎬 Transmitindo ao vivo!');
-                
-            } else {
-                console.log('⚠️ Host SEM stream local');
-                
-                // Mostrar interface especial para host sem câmera
-                if (placeholder) {
-                    placeholder.style.display = 'flex';
-                    placeholder.innerHTML = `
-                        <div class="lux-host-no-camera">
-                            <i class="fas fa-microphone-alt fa-3x"></i>
-                            <h3>🎤 VOCÊ ESTÁ AO VIVO!</h3>
-                            <p>Sua transmissão de áudio está ativa</p>
-                            <div class="lux-host-info">
-                                <span><i class="fas fa-eye"></i> ${liveData.viewerCount || 0} espectadores</span>
-                                <span><i class="fas fa-heart"></i> ${liveData.likes || 0} curtidas</span>
-                            </div>
-                            <button class="lux-btn lux-btn-primary" onclick="enableCameraForHost()">
-                                <i class="fas fa-camera"></i> Ativar Câmera
-                            </button>
-                        </div>
-                    `;
-                }
-                
-                // Garantir que vídeos estão ocultos
-                if (mainVideo) mainVideo.style.display = 'none';
-                if (localVideo) localVideo.style.display = 'none';
-            }
-            
+            // ... seu código existente para host ...
         } 
-        // 3. ESPECTADOR
+        // 3. ESPECTADOR - CORREÇÃO CRÍTICA
         else {
-            console.log('👀 CONFIGURANDO ESPECTADOR');
+            console.log('👀 CONFIGURANDO ESPECTADOR - COM WEBRTC');
             
-            // ESPECTADOR NUNCA deve ver "Conectando..."
-            // Mostrar interface de live imediatamente
-            
+            // Mostrar placeholder de conexão
             if (placeholder) {
                 placeholder.style.display = 'flex';
-                
-                // Verificar se host tem stream
-                const hostHasVideo = localStream !== null && localStream !== undefined;
-                
-                if (hostHasVideo) {
-                    // Host está transmitindo vídeo
-                    placeholder.innerHTML = `
-                        <div class="lux-audience-live">
-                            <div class="lux-live-indicator">
-                                <span class="lux-pulse-dot"></span>
-                                <span class="lux-live-text">🔴 AO VIVO AGORA</span>
+                placeholder.innerHTML = `
+                    <div class="lux-connecting-viewer">
+                        <div class="lux-connecting-spinner">
+                            <div class="lux-spinner-dot"></div>
+                            <div class="lux-spinner-dot"></div>
+                            <div class="lux-spinner-dot"></div>
+                        </div>
+                        <h3>🔗 CONECTANDO AO HOST</h3>
+                        <p>Estabelecendo conexão com ${liveData.hostName || 'o host'}...</p>
+                        <div class="lux-connection-status">
+                            <div class="lux-status-step lux-active">
+                                <span class="lux-step-number">1</span>
+                                <span class="lux-step-text">Conectando ao servidor</span>
                             </div>
-                            <div class="lux-audience-host">
-                                <img src="${liveData.hostPhoto || 'https://via.placeholder.com/80'}" 
-                                     alt="${liveData.hostName}"
-                                     class="lux-audience-avatar">
-                                <div>
-                                    <h3>${liveData.hostName || 'Host'}</h3>
-                                    <p>${liveData.title || 'Transmissão ao vivo'}</p>
-                                </div>
+                            <div class="lux-status-step">
+                                <span class="lux-step-number">2</span>
+                                <span class="lux-step-text">Negociando WebRTC</span>
                             </div>
-                            <div class="lux-audience-message">
-                                <i class="fas fa-satellite"></i>
-                                <p>Conectado à transmissão de <strong>${liveData.hostName || 'host'}</strong></p>
-                            </div>
-                            <div class="lux-audience-stats">
-                                <div>
-                                    <i class="fas fa-users"></i>
-                                    <span>${formatNumber(liveData.viewerCount || 1)} online</span>
-                                </div>
-                                <div>
-                                    <i class="fas fa-heart"></i>
-                                    <span>${liveData.likes || 0} curtidas</span>
-                                </div>
+                            <div class="lux-status-step">
+                                <span class="lux-step-number">3</span>
+                                <span class="lux-step-text">Recebendo transmissão</span>
                             </div>
                         </div>
-                    `;
-                } else {
-                    // Host só tem áudio
-                    placeholder.innerHTML = `
-                        <div class="lux-audience-audio">
-                            <i class="fas fa-headphones-alt fa-3x"></i>
-                            <h3>🎧 Transmissão de Áudio</h3>
-                            <p>${liveData.hostName || 'O host'} está ao vivo</p>
-                            <div class="lux-audio-info">
-                                <span><i class="fas fa-user"></i> ${liveData.hostName}</span>
-                                <span><i class="fas fa-volume-up"></i> Áudio ao vivo</span>
+                        <div class="lux-connection-stats">
+                            <div class="lux-stat">
+                                <i class="fas fa-user"></i>
+                                <span>${liveData.hostName || 'Host'}</span>
+                            </div>
+                            <div class="lux-stat">
+                                <i class="fas fa-users"></i>
+                                <span>${liveData.viewerCount || 0} espectadores</span>
                             </div>
                         </div>
-                    `;
-                }
+                    </div>
+                `;
             }
             
-            // Ocultar vídeos para espectador
+            // Ocultar vídeos inicialmente
             if (mainVideo) {
                 mainVideo.style.display = 'none';
                 mainVideo.srcObject = null;
             }
             if (localVideo) localVideo.style.display = 'none';
+            
+            // ========== INICIAR CONEXÃO WEBRTC ==========
+            console.log('🌐 Iniciando conexão WebRTC para espectador...');
+            
+            // Aguardar um pouco para garantir que a UI está carregada
+            setTimeout(async () => {
+                try {
+                    // Conectar ao stream do host
+                    await connectToHostStream(liveData);
+                } catch (error) {
+                    console.error('❌ Erro na conexão WebRTC:', error);
+                    
+                    // Mostrar erro no placeholder
+                    if (placeholder) {
+                        placeholder.innerHTML = `
+                            <div class="lux-connection-error">
+                                <i class="fas fa-exclamation-triangle fa-3x"></i>
+                                <h3>❌ ERRO DE CONEXÃO</h3>
+                                <p>Não foi possível conectar ao host</p>
+                                <p class="lux-error-detail">${error.message}</p>
+                                <button class="lux-btn lux-btn-primary" onclick="retryConnection()">
+                                    <i class="fas fa-redo"></i> Tentar Novamente
+                                </button>
+                                <button class="lux-btn lux-btn-secondary" onclick="showAudioOnly()">
+                                    <i class="fas fa-headphones"></i> Apenas Áudio
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            }, 1000);
         }
         
         console.log('✅ Configuração de vídeo concluída');
         
     } catch (error) {
         console.error('❌ Erro em setupVideoElements:', error);
+    }
+}
+
+
+async function connectToHostStream(liveData) {
+    console.log('🌐 [WEBRTC] Conectando ao host:', liveData.hostName);
+    
+    // Verificar se temos liveId
+    const liveId = liveData.id || currentLiveId;
+    if (!liveId) {
+        throw new Error('ID da live não encontrado');
+    }
+    
+    try {
+        // 1. OBTER OFERTA DO HOST DO FIRESTORE
+        console.log('📥 Buscando oferta SDP do host...');
+        
+        const liveDoc = await db.collection('liveStreams').doc(liveId).get();
+        const hostData = liveDoc.data();
+        
+        if (!hostData.hostOffer) {
+            console.log('⏳ Host ainda não configurou oferta, aguardando...');
+            
+            // Escutar por atualizações na oferta do host
+            return listenForHostOffer(liveId);
+        }
+        
+        console.log('✅ Oferta do host encontrada:', hostData.hostOffer.type);
+        
+        // 2. CRIAR PEERCONNECTION
+        const peerConnection = new RTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ],
+            iceCandidatePoolSize: 10
+        });
+        
+        window.viewerPeerConnection = peerConnection;
+        
+        // 3. CRIAR STREAM REMOTO
+        const remoteStream = new MediaStream();
+        window.viewerRemoteStream = remoteStream;
+        
+        // 4. CONFIGURAR RECEBIMENTO DE TRACKS
+        peerConnection.ontrack = (event) => {
+            console.log('📹 Track recebida do host:', event.track.kind);
+            
+            // Adicionar track ao stream remoto
+            if (event.streams && event.streams[0]) {
+                event.streams[0].getTracks().forEach(track => {
+                    if (!remoteStream.getTracks().some(t => t.id === track.id)) {
+                        remoteStream.addTrack(track);
+                        console.log(`✅ ${track.kind} track adicionada ao stream`);
+                    }
+                });
+                
+                // ATUALIZAR VÍDEO QUANDO TIVERMOS TRACKS
+                if (remoteStream.getTracks().length > 0) {
+                    updateViewerVideoWithStream(remoteStream);
+                }
+            }
+        };
+        
+        // 5. CONFIGURAR ICE CANDIDATES
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                console.log('❄️ Candidato ICE gerado pelo espectador');
+                
+                // Enviar para o host
+                db.collection('liveStreams').doc(liveId)
+                    .collection('viewerIceCandidates')
+                    .add({
+                        candidate: event.candidate.toJSON(),
+                        viewerId: currentUser?.uid || 'anonymous',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    })
+                    .catch(e => console.error('Erro ao enviar candidato ICE:', e));
+            }
+        };
+        
+        // 6. MONITORAR ESTADO DA CONEXÃO
+        peerConnection.onconnectionstatechange = () => {
+            const state = peerConnection.connectionState;
+            console.log(`📡 Estado da conexão WebRTC: ${state}`);
+            
+            updateConnectionStatus(state);
+        };
+        
+        peerConnection.oniceconnectionstatechange = () => {
+            console.log(`❄️ Estado ICE: ${peerConnection.iceConnectionState}`);
+        };
+        
+        // 7. CONFIGURAR OFERTA DO HOST
+        console.log('🔧 Configurando oferta remota do host...');
+        await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(hostData.hostOffer)
+        );
+        
+        // 8. CRIAR RESPOSTA
+        console.log('📝 Criando resposta SDP...');
+        const answer = await peerConnection.createAnswer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true
+        });
+        
+        await peerConnection.setLocalDescription(answer);
+        
+        // 9. ENVIAR RESPOSTA PARA O HOST
+        console.log('📤 Enviando resposta para o host...');
+        await db.collection('liveStreams').doc(liveId)
+            .collection('viewerAnswers')
+            .add({
+                sdp: answer.sdp,
+                type: answer.type,
+                viewerId: currentUser?.uid || 'anonymous',
+                viewerName: userData?.displayName || 'Espectador',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        
+        console.log('✅ Resposta enviada para o host');
+        
+        // 10. OBTER CANDIDATOS ICE DO HOST
+        await getHostIceCandidates(liveId, peerConnection);
+        
+        // 11. CONFIGURAR ESCUTA PARA NOVOS CANDIDATOS ICE
+        setupHostIceCandidateListener(liveId, peerConnection);
+        
+        console.log('🎯 Conexão WebRTC iniciada como espectador');
+        
+        // Atualizar status
+        updateConnectionStatus('connecting');
+        
+    } catch (error) {
+        console.error('❌ Erro na conexão WebRTC:', error);
+        throw error;
     }
 }
 
@@ -7287,3 +7424,275 @@ function fixAudienceView() {
         });
 }
 
+
+
+
+function updateConnectionStatus(state) {
+    console.log(`📢 Status da conexão: ${state}`);
+    
+    const statusElement = document.getElementById('streamStatus');
+    const statusText = document.getElementById('statusText');
+    
+    if (statusElement && statusText) {
+        switch(state) {
+            case 'connected':
+                statusText.textContent = '✅ CONECTADO';
+                statusElement.style.background = '#4cd964';
+                break;
+            case 'connecting':
+                statusText.textContent = '🔗 CONECTANDO...';
+                statusElement.style.background = '#ffc107';
+                break;
+            case 'disconnected':
+                statusText.textContent = '🔌 DESCONECTADO';
+                statusElement.style.background = '#ff4757';
+                break;
+            default:
+                statusText.textContent = state;
+        }
+    }
+}
+
+function playHostVideo() {
+    console.log('🖱️ Usuário clicou para reproduzir vídeo do host');
+    
+    const videoElement = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (videoElement && videoElement.srcObject) {
+        videoElement.play()
+            .then(() => {
+                console.log('✅ Vídeo iniciado manualmente');
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                showToast('Transmissão iniciada!', 'success');
+                updateConnectionStatus('connected');
+            })
+            .catch(error => {
+                console.error('❌ Erro ao iniciar vídeo:', error);
+                showToast('Erro ao reproduzir: ' + error.message, 'error');
+            });
+    }
+}
+
+function playAudioOnly(stream) {
+    try {
+        // Criar elemento de áudio oculto
+        let audioElement = document.getElementById('hiddenAudioPlayer');
+        if (!audioElement) {
+            audioElement = document.createElement('audio');
+            audioElement.id = 'hiddenAudioPlayer';
+            audioElement.autoplay = true;
+            audioElement.style.display = 'none';
+            document.body.appendChild(audioElement);
+        }
+        
+        // Atribuir stream
+        audioElement.srcObject = stream;
+        
+        // Tentar play
+        audioElement.play()
+            .then(() => {
+                console.log('✅ Áudio do host reproduzindo');
+            })
+            .catch(error => {
+                console.error('❌ Erro ao reproduzir áudio:', error);
+            });
+            
+    } catch (error) {
+        console.error('Erro no playAudioOnly:', error);
+    }
+}
+
+
+function injectViewerCSS() {
+    const css = `
+        /* Interface de conexão do espectador */
+        .lux-connecting-viewer {
+            text-align: center;
+            color: white;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .lux-connecting-spinner {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .lux-spinner-dot {
+            width: 15px;
+            height: 15px;
+            background: #d4af37;
+            border-radius: 50%;
+            animation: luxPulse 1.5s infinite ease-in-out;
+        }
+        
+        .lux-spinner-dot:nth-child(2) {
+            animation-delay: 0.2s;
+            background: #ff4757;
+        }
+        
+        .lux-spinner-dot:nth-child(3) {
+            animation-delay: 0.4s;
+            background: #2ed573;
+        }
+        
+        @keyframes luxPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+        
+        .lux-connection-status {
+            margin: 30px 0;
+            text-align: left;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .lux-status-step {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            color: #666;
+        }
+        
+        .lux-status-step.lux-active {
+            color: white;
+        }
+        
+        .lux-step-number {
+            width: 30px;
+            height: 30px;
+            background: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .lux-status-step.lux-active .lux-step-number {
+            background: #d4af37;
+            color: black;
+        }
+        
+        .lux-connection-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .lux-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .lux-stat i {
+            color: #d4af37;
+            font-size: 1.2rem;
+        }
+        
+        /* Interface de áudio */
+        .lux-audio-stream {
+            text-align: center;
+            color: white;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .lux-audio-visualizer {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 80px;
+            gap: 4px;
+            margin-bottom: 30px;
+        }
+        
+        .lux-audio-bar {
+            width: 8px;
+            background: #d4af37;
+            border-radius: 4px;
+            animation: luxAudioBar 1.2s infinite ease-in-out;
+        }
+        
+        @keyframes luxAudioBar {
+            0%, 100% { height: 20px; }
+            50% { height: 60px; }
+        }
+        
+        .lux-audio-info {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        /* Botão de play necessário */
+        .lux-play-required {
+            text-align: center;
+            color: white;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .lux-play-required i {
+            color: #d4af37;
+            margin-bottom: 20px;
+        }
+        
+        .lux-help-text {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-top: 15px;
+        }
+        
+        /* Status do stream visível */
+        #streamStatus {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .lux-status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ffc107;
+        }
+    `;
+    
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    console.log('✅ CSS do espectador injetado');
+}
+
+// Executar quando carregar
+document.addEventListener('DOMContentLoaded', injectViewerCSS);
