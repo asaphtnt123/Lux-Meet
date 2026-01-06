@@ -8,6 +8,16 @@ let liveId = null
 let liveData = null
 let viewersUnsub = null
 
+
+let localStream = null
+let peerConnection = null
+
+const rtcConfig = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' }
+    ]
+}
+
 // =======================================
 // INIT
 // =======================================
@@ -54,6 +64,13 @@ async function handleAuth(user) {
 
     setupUI()
     watchViewers()
+
+    if (liveData.hostId === currentUser.uid) {
+    await startHostStream()
+    await startHostRTC()
+} else {
+    await startViewerRTC()
+}
 
     document.getElementById('loading').classList.add('hidden')
     document.getElementById('app').classList.remove('hidden')
@@ -188,3 +205,84 @@ function leaveLive() {
 
     window.location.href = 'lux-meet-live.html'
 }
+
+
+async function startHostStream() {
+    localStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+    })
+
+    document.getElementById('liveVideo').srcObject = localStream
+}
+
+async function startHostRTC() {
+    peerConnection = new RTCPeerConnection(rtcConfig)
+
+    localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream)
+    })
+
+    peerConnection.onicecandidate = e => {
+        if (e.candidate) {
+            db.collection('lives')
+                .doc(liveId)
+                .collection('signals')
+                .add({
+                    type: 'host-ice',
+                    candidate: e.candidate.toJSON()
+                })
+        }
+    }
+
+    const offer = await peerConnection.createOffer()
+    await peerConnection.setLocalDescription(offer)
+
+    await db.collection('lives')
+        .doc(liveId)
+        .set({
+            offer: offer.toJSON()
+        }, { merge: true })
+}
+
+
+async function startViewerRTC() {
+    peerConnection = new RTCPeerConnection(rtcConfig)
+
+    peerConnection.ontrack = e => {
+        document.getElementById('liveVideo').srcObject = e.streams[0]
+    }
+
+    peerConnection.onicecandidate = e => {
+        if (e.candidate) {
+            db.collection('lives')
+                .doc(liveId)
+                .collection('signals')
+                .add({
+                    type: 'viewer-ice',
+                    uid: currentUser.uid,
+                    candidate: e.candidate.toJSON()
+                })
+        }
+    }
+
+    const liveRef = db.collection('lives').doc(liveId)
+
+    liveRef.onSnapshot(async snap => {
+        const data = snap.data()
+        if (data?.offer && !peerConnection.currentRemoteDescription) {
+            await peerConnection.setRemoteDescription(
+                new RTCSessionDescription(data.offer)
+            )
+
+            const answer = await peerConnection.createAnswer()
+            await peerConnection.setLocalDescription(answer)
+
+            await liveRef.set({
+                answer: answer.toJSON()
+            }, { merge: true })
+        }
+    })
+}
+
+
