@@ -234,15 +234,18 @@ async function startHostRTC() {
                 })
         }
     }
+const offer = await peerConnection.createOffer()
+await peerConnection.setLocalDescription(offer)
 
-    const offer = await peerConnection.createOffer()
-    await peerConnection.setLocalDescription(offer)
+await db.collection('lives')
+    .doc(liveId)
+    .set({
+        offer: {
+            type: offer.type,
+            sdp: offer.sdp
+        }
+    }, { merge: true })
 
-    await db.collection('lives')
-        .doc(liveId)
-        .set({
-            offer: offer.toJSON()
-        }, { merge: true })
 }
 
 
@@ -272,15 +275,23 @@ async function startViewerRTC() {
         const data = snap.data()
         if (data?.offer && !peerConnection.currentRemoteDescription) {
             await peerConnection.setRemoteDescription(
-                new RTCSessionDescription(data.offer)
-            )
+    new RTCSessionDescription({
+        type: data.offer.type,
+        sdp: data.offer.sdp
+    })
+)
+
 
             const answer = await peerConnection.createAnswer()
             await peerConnection.setLocalDescription(answer)
 
             await liveRef.set({
-                answer: answer.toJSON()
-            }, { merge: true })
+    answer: {
+        type: answer.type,
+        sdp: answer.sdp
+    }
+}, { merge: true })
+
         }
     })
 }
