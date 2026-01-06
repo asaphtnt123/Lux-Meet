@@ -37,16 +37,20 @@ let remoteStream = null;
 let isHost = false;
 let iceCandidates = [];
 
+
+
+let currentLiveData = null; // <-- VARIÁVEL NOVA para armazenar dados da live
+
+
 // Configuração do RTCPeerConnection
 const rtcConfiguration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        // Adicione seus próprios TURN servers se necessário (para NAT restritivo)
-        // { urls: 'turn:your-turn-server.com:3478', username: 'user', credential: 'pass' }
+        { urls: 'stun:stun1.l.google.com:19302' }
     ],
     iceCandidatePoolSize: 10
 };
+
 // ============================================
 // INICIALIZAÇÃO DA APLICAÇÃO
 // ============================================
@@ -3833,9 +3837,8 @@ async function requestMediaPermissions() {
 // CREATE LIVE - VERSÃO CORRIGIDA E DEFINITIVA
 // ============================================
 
-
 async function createLive(event) {
-    console.log('🚀 [CORRIGIDA] Iniciando criação de live');
+    console.log('🚀 [WEBRTC CORRIGIDO] Iniciando criação de live');
     
     // Prevenir comportamento padrão
     if (event) {
@@ -3851,50 +3854,214 @@ async function createLive(event) {
     
     isCreatingLive = true;
     
-     try {
-        // ========== OBTER STREAM ==========
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: 'user',
-                frameRate: { ideal: 30 }
-            },
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
+    // Desabilitar botão
+    const submitBtn = document.querySelector('#createLiveForm button[type="submit"], #createLiveSubmitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando transmissão...';
+    }
+    
+    try {
+        // ========== FASE 1: VALIDAÇÃO ==========
+        console.log('1️⃣ Validando formulário...');
+        
+        const titleInput = document.getElementById('liveTitle');
+        const title = titleInput?.value.trim();
+        
+        if (!title) {
+            showToast('Digite um título para a live', 'error');
+            titleInput?.focus();
+            isCreatingLive = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-video"></i> Criar Live';
             }
+            return;
+        }
+        
+        console.log('✅ Título válido:', title);
+        
+        // ========== FASE 2: OBTER STREAM ==========
+        console.log('2️⃣ Obtendo stream de mídia...');
+        
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user',
+                    frameRate: { ideal: 30 }
+                },
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
+            
+            console.log('✅ Stream obtido com sucesso');
+            window.localStream = stream;
+            localStream = stream;
+            isHost = true;
+            
+        } catch (mediaError) {
+            console.error('❌ Erro ao obter stream:', mediaError.name);
+            
+            let errorMessage = 'Não foi possível acessar a câmera/microfone. ';
+            if (mediaError.name === 'NotAllowedError') {
+                errorMessage += 'Permissão negada.';
+            } else if (mediaError.name === 'NotFoundError') {
+                errorMessage += 'Dispositivo não encontrado.';
+            } else if (mediaError.name === 'NotReadableError') {
+                errorMessage += 'Dispositivo em uso por outro aplicativo.';
+            } else {
+                errorMessage += mediaError.message;
+            }
+            
+            showToast(errorMessage, 'warning');
+            stream = null;
+            localStream = null;
+        }
+        
+        // ========== FASE 3: PREPARAR DADOS DA LIVE ==========
+        console.log('3️⃣ Preparando dados da live...');
+        
+        // Criar objeto liveData DENTRO do try-catch
+        const liveData = {
+            hostId: currentUser.uid,
+            hostName: userData?.displayName || currentUser.displayName || 'Host',
+            hostPhoto: userData?.photoURL || currentUser.photoURL || getDefaultAvatar(),
+            hostVerified: userData?.isVerified || false,
+            hostFollowers: userData?.followers || 0,
+            title: title,
+            description: document.getElementById('liveDescription')?.value.trim() || '',
+            category: document.getElementById('liveCategory')?.value || 'social',
+            privacy: document.getElementById('livePrivacy')?.value || 'public',
+            status: 'active',
+            startTime: firebase.firestore.FieldValue.serverTimestamp(),
+            viewerCount: 1,
+            likes: 0,
+            giftCount: 0,
+            totalEarnings: 0,
+            hasActiveStream: stream !== null,
+            streamingType: stream ? 'webrtc' : 'audio',
+            thumbnail: getDefaultThumbnail(),
+            chatEnabled: true,
+            giftsEnabled: true,
+            isActive: true, // IMPORTANTE: para WebRTC
+            hostOffer: null, // Será preenchido pelo WebRTC
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        console.log('📝 Dados da live preparados:', {
+            title: liveData.title,
+            hasStream: liveData.hasActiveStream
         });
         
-        window.localStream = stream;
-        localStream = stream;
-        isHost = true;
+        // Salvar globalmente para uso posterior
+        currentLiveData = liveData;
         
-        // ========== CRIAR LIVE NO FIRESTORE ==========
+        // ========== FASE 4: CRIAR NO FIRESTORE ==========
+        console.log('4️⃣ Criando documento no Firestore...');
+        
         const liveRef = await db.collection('liveStreams').add(liveData);
         currentLiveId = liveRef.id;
         
-        // ========== CONFIGURAR WEBRTC COMO HOST ==========
-        await setupHostWebRTC(currentLiveId, stream);
+        console.log('✅ Live criada com ID:', currentLiveId);
         
-        // ========== MOSTRAR PLAYER ==========
-        showLivePlayerCorrected(liveData, true);
+        // ========== FASE 5: ADICIONAR HOST COMO VIEWER ==========
+        console.log('5️⃣ Registrando host como viewer...');
         
-        // Configurar listener para candidatos ICE
-        setupIceCandidateListener(currentLiveId);
+        await db.collection('liveStreams').doc(currentLiveId).update({
+            [`viewers.${currentUser.uid}`]: {
+                uid: currentUser.uid,
+                name: userData?.displayName || 'Host',
+                photo: userData?.photoURL || getDefaultAvatar(),
+                role: 'host',
+                joinedAt: new Date().toISOString(),
+                isHost: true
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
         
-        showToast('🎬 Live iniciada com sucesso! Aguardando espectadores...', 'success');
+        // ========== FASE 6: CONFIGURAR WEBRTC COMO HOST ==========
+        console.log('6️⃣ Configurando WebRTC como host...');
+        
+        if (stream) {
+            await setupHostWebRTC(currentLiveId, stream);
+        }
+        
+        // ========== FASE 7: FECHAR MODAL E LIMPAR ==========
+        console.log('7️⃣ Finalizando criação...');
+        
+        // Fechar modal
+        closeModal('createLiveModal');
+        
+        // Limpar formulário
+        if (titleInput) titleInput.value = '';
+        const descInput = document.getElementById('liveDescription');
+        if (descInput) descInput.value = '';
+        
+        // ========== FASE 8: CONFIGURAR UI DO HOST ==========
+        console.log('8️⃣ Configurando interface do host...');
+        
+        setTimeout(() => {
+            try {
+                // Mostrar player
+                showLivePlayerCorrected(liveData, true);
+                
+                // Configurar listener em tempo real
+                setupLiveRealtimeListener(currentLiveId, true);
+                
+                // Mostrar mensagem de SUCESSO
+                showToast('🎬 Live iniciada com sucesso! Aguardando espectadores...', 'success');
+                
+                console.log('🎉 Live criada e configurada com SUCESSO!');
+                
+            } catch (uiError) {
+                console.error('❌ Erro na UI:', uiError);
+                showToast('Live criada, mas houve erro na interface', 'warning');
+            }
+        }, 300);
         
     } catch (error) {
-        console.error('❌ Erro ao criar live:', error);
-        showToast('Erro ao iniciar transmissão: ' + error.message, 'error');
+        console.error('❌ ERRO CRÍTICO ao criar live:', error);
+        
+        // Mensagens específicas
+        if (error.name === 'FirebaseError') {
+            if (error.code === 'permission-denied') {
+                showToast('Permissão negada no banco de dados', 'error');
+            } else if (error.code === 'unavailable') {
+                showToast('Servidor indisponível. Verifique sua conexão.', 'error');
+            } else {
+                showToast('Erro no banco de dados: ' + error.message, 'error');
+            }
+        } else {
+            showToast('Erro ao criar live: ' + error.message, 'error');
+        }
+        
+        // Limpar recursos em caso de erro
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+        }
+        
+    } finally {
+        console.log('🔄 Restaurando estado...');
+        isCreatingLive = false;
+        
+        // Reativar botão
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-video"></i> Criar Live';
+        }
     }
 }
 // ============================================
 // SHOW LIVE PLAYER CORRIGIDA
 // ============================================
-
 function showLivePlayerCorrected(liveData, isHost) {
     console.log('🎬 [CORRIGIDA] Mostrando player - Host:', isHost);
     
@@ -3906,12 +4073,10 @@ function showLivePlayerCorrected(liveData, isHost) {
         if (player) {
             player.style.display = 'block';
             player.classList.remove('hidden');
-            console.log('✅ Player exibido');
         }
         
         if (grid) {
             grid.style.display = 'none';
-            console.log('✅ Grid ocultada');
         }
         
         // 2. Atualizar informações básicas
@@ -3924,7 +4089,6 @@ function showLivePlayerCorrected(liveData, isHost) {
             hostAvatar.onerror = function() {
                 this.src = getDefaultAvatar();
             };
-            console.log('✅ Avatar configurado');
         }
         
         // 3. Atualizar badge
@@ -3934,7 +4098,6 @@ function showLivePlayerCorrected(liveData, isHost) {
                 badge.textContent = '🔴 AO VIVO';
                 badge.style.background = '#ff4757';
                 badge.style.color = 'white';
-                console.log('✅ Badge atualizado');
             }
         });
         
@@ -3952,12 +4115,10 @@ function showLivePlayerCorrected(liveData, isHost) {
                 exitBtn.innerHTML = '<i class="fas fa-stop"></i> Encerrar Live';
                 exitBtn.className = 'lux-btn lux-btn-danger';
                 exitBtn.onclick = endLive;
-                console.log('✅ Botão "Encerrar Live" configurado');
             } else {
                 exitBtn.innerHTML = '<i class="fas fa-times"></i> Sair da Live';
                 exitBtn.className = 'lux-btn lux-btn-secondary';
                 exitBtn.onclick = leaveLive;
-                console.log('✅ Botão "Sair" configurado');
             }
         }
         
@@ -3966,9 +4127,6 @@ function showLivePlayerCorrected(liveData, isHost) {
         updateElementSafe('likeCount', liveData.likes || 0);
         updateElementSafe('giftCount', liveData.giftCount || 0);
         
-        // 7. Mostrar status de conexão
-        showConnectionStatus(isHost ? 'conectado' : 'assistindo');
-        
         console.log('✅ Player configurado para', isHost ? 'HOST' : 'ESPECTADOR');
         
     } catch (error) {
@@ -3976,9 +4134,8 @@ function showLivePlayerCorrected(liveData, isHost) {
     }
 }
 
-
 async function setupHostWebRTC(liveId, stream) {
-    console.log('🎥 Configurando WebRTC como HOST para live:', liveId);
+    console.log('🎥 [WEBRTC] Configurando como HOST para live:', liveId);
     
     try {
         // Criar PeerConnection
@@ -3987,12 +4144,13 @@ async function setupHostWebRTC(liveId, stream) {
         // Adicionar stream local ao PeerConnection
         stream.getTracks().forEach(track => {
             peerConnection.addTrack(track, stream);
+            console.log(`✅ Track ${track.kind} adicionada ao PeerConnection`);
         });
         
         // Coletar candidatos ICE e salvar no Firestore
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                console.log('❄️ Novo candidato ICE do host:', event.candidate);
+                console.log('❄️ Novo candidato ICE do host');
                 
                 // Salvar candidato ICE no Firestore
                 db.collection('liveStreams').doc(liveId).collection('hostCandidates').add({
@@ -4002,18 +4160,34 @@ async function setupHostWebRTC(liveId, stream) {
             }
         };
         
+        // Quando conexão mudar de estado
+        peerConnection.onconnectionstatechange = () => {
+            console.log(`📡 Estado da conexão: ${peerConnection.connectionState}`);
+            
+            if (peerConnection.connectionState === 'connected') {
+                console.log('✅ Conexão WebRTC estabelecida com espectador');
+                showToast('Espectador conectado à transmissão!', 'success');
+            }
+        };
+        
         // Criar oferta SDP
-        const offerDescription = await peerConnection.createOffer();
+        console.log('📝 Criando oferta SDP...');
+        const offerDescription = await peerConnection.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true
+        });
+        
         await peerConnection.setLocalDescription(offerDescription);
+        console.log('✅ Oferta SDP criada localmente');
         
         // Salvar oferta no Firestore
+        const offerData = {
+            sdp: offerDescription.sdp,
+            type: offerDescription.type
+        };
+        
         await db.collection('liveStreams').doc(liveId).update({
-            hostOffer: {
-                sdp: offerDescription.sdp,
-                type: offerDescription.type
-            },
-            hostId: currentUser.uid,
-            isActive: true,
+            hostOffer: offerData,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
@@ -4022,75 +4196,211 @@ async function setupHostWebRTC(liveId, stream) {
         // Escutar respostas dos espectadores
         setupAnswerListener(liveId);
         
+        // Configurar listener para candidatos ICE dos espectadores
+        setupHostIceCandidateListener(liveId);
+        
+        console.log('🎯 Host WebRTC configurado e pronto para espectadores');
+        
     } catch (error) {
         console.error('❌ Erro ao configurar WebRTC como host:', error);
         throw error;
     }
 }
 
+function setupHostIceCandidateListener(liveId) {
+    console.log('👂 Host escutando candidatos ICE dos espectadores...');
+    
+    db.collection('liveStreams').doc(liveId).collection('audienceCandidates')
+        .orderBy('timestamp', 'desc')
+        .limit(50)
+        .onSnapshot(async (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added' && peerConnection) {
+                    const data = change.doc.data();
+                    try {
+                        const candidate = new RTCIceCandidate(data.candidate);
+                        await peerConnection.addIceCandidate(candidate);
+                        console.log('✅ Candidato ICE do espectador adicionado');
+                    } catch (error) {
+                        console.error('Erro ao adicionar candidato ICE:', error);
+                    }
+                }
+            });
+        });
+}
+
+async function getHostIceCandidates(liveId) {
+    console.log('📥 Obtendo candidatos ICE do host...');
+    
+    try {
+        const candidatesSnapshot = await db.collection('liveStreams').doc(liveId)
+            .collection('hostCandidates')
+            .orderBy('timestamp')
+            .get();
+        
+        console.log(`📊 ${candidatesSnapshot.size} candidatos ICE encontrados`);
+        
+        for (const doc of candidatesSnapshot.docs) {
+            const data = doc.data();
+            try {
+                const candidate = new RTCIceCandidate(data.candidate);
+                await peerConnection.addIceCandidate(candidate);
+                console.log('✅ Candidato ICE do host adicionado');
+            } catch (error) {
+                console.error('Erro ao adicionar candidato ICE do host:', error);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erro ao obter candidatos ICE do host:', error);
+    }
+}
+
+function setupAudienceIceCandidateListener(liveId) {
+    console.log('👂 Espectador escutando novos candidatos ICE do host...');
+    
+    db.collection('liveStreams').doc(liveId).collection('hostCandidates')
+        .onSnapshot((snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added' && peerConnection) {
+                    const data = change.doc.data();
+                    try {
+                        const candidate = new RTCIceCandidate(data.candidate);
+                        await peerConnection.addIceCandidate(candidate);
+                        console.log('✅ Novo candidato ICE do host adicionado');
+                    } catch (error) {
+                        console.error('Erro ao adicionar novo candidato ICE:', error);
+                    }
+                }
+            });
+        });
+}
+
+function setupAnswerListener(liveId) {
+    console.log('👂 Host escutando respostas dos espectadores...');
+    
+    db.collection('liveStreams').doc(liveId).collection('answers')
+        .orderBy('timestamp', 'desc')
+        .limit(10)
+        .onSnapshot(async (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added' && peerConnection) {
+                    const data = change.doc.data();
+                    try {
+                        const answerDescription = new RTCSessionDescription(data.answer);
+                        
+                        // Verificar se já temos uma descrição remota
+                        if (!peerConnection.remoteDescription) {
+                            await peerConnection.setRemoteDescription(answerDescription);
+                            console.log('✅ Resposta SDP do espectador configurada');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao configurar resposta SDP:', error);
+                    }
+                }
+            });
+        });
+}
+
+
 async function watchLive(liveId) {
-    console.log('👀 Assistindo live:', liveId);
+    console.log('👀 [WEBRTC] Assistindo live:', liveId);
     
     try {
         isHost = false;
         currentLiveId = liveId;
         
+        // Mostrar indicador de carregamento
+        showToast('Conectando à transmissão...', 'info');
+        
         // Obter dados da live
         const liveDoc = await db.collection('liveStreams').doc(liveId).get();
         const liveData = liveDoc.data();
         
-        if (!liveData || !liveData.isActive) {
+        if (!liveData) {
+            showToast('Live não encontrada', 'error');
+            return;
+        }
+        
+        if (!liveData.isActive) {
             showToast('Live não está mais ativa', 'error');
             return;
         }
         
-        // Configurar WebRTC como espectador
-        await setupAudienceWebRTC(liveId, liveData);
+        // Salvar dados globalmente
+        currentLiveData = liveData;
         
         // Mostrar player do espectador
         showLivePlayerCorrected(liveData, false);
         
-        showToast('Conectando à transmissão...', 'info');
+        // Configurar WebRTC como espectador
+        if (liveData.hostOffer) {
+            await setupAudienceWebRTC(liveId, liveData);
+        } else {
+            console.log('⚠️ Host ainda não configurou WebRTC, aguardando...');
+            // Tentar novamente em 3 segundos
+            setTimeout(() => watchLive(liveId), 3000);
+        }
         
     } catch (error) {
         console.error('❌ Erro ao assistir live:', error);
-        showToast('Não foi possível conectar à transmissão', 'error');
+        showToast('Não foi possível conectar à transmissão: ' + error.message, 'error');
     }
 }
 
 async function setupAudienceWebRTC(liveId, liveData) {
-    console.log('🎥 Configurando WebRTC como ESPECTADOR');
+    console.log('🎥 [WEBRTC] Configurando como ESPECTADOR');
     
     try {
         // Criar PeerConnection
         peerConnection = new RTCPeerConnection(rtcConfiguration);
         
-        // Configurar stream remoto
+        // Criar stream remoto
         remoteStream = new MediaStream();
         
         // Quando receber tracks remotas
         peerConnection.ontrack = (event) => {
             console.log('📹 Recebendo track remota:', event.track.kind);
             
-            event.streams[0].getTracks().forEach(track => {
-                remoteStream.addTrack(track);
-            });
-            
-            // Atualizar elemento de vídeo
-            updateAudienceVideo(remoteStream);
+            if (event.streams && event.streams[0]) {
+                event.streams[0].getTracks().forEach(track => {
+                    if (!remoteStream.getTracks().some(t => t.id === track.id)) {
+                        remoteStream.addTrack(track);
+                        console.log(`✅ Track ${track.kind} adicionada ao stream remoto`);
+                    }
+                });
+                
+                // Atualizar elemento de vídeo
+                updateAudienceVideo(remoteStream);
+            }
         };
         
         // Coletar candidatos ICE do espectador
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                console.log('❄️ Novo candidato ICE do espectador:', event.candidate);
+                console.log('❄️ Novo candidato ICE do espectador');
                 
                 // Salvar candidato ICE no Firestore
                 db.collection('liveStreams').doc(liveId).collection('audienceCandidates').add({
                     candidate: event.candidate.toJSON(),
-                    userId: currentUser.uid,
+                    userId: currentUser?.uid || 'anonymous',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }).catch(e => console.error('Erro ao salvar candidato ICE:', e));
+            }
+        };
+        
+        // Monitorar estado da conexão
+        peerConnection.onconnectionstatechange = () => {
+            console.log(`📡 Estado da conexão (espectador): ${peerConnection.connectionState}`);
+            
+            if (peerConnection.connectionState === 'connected') {
+                console.log('✅ Conectado à transmissão do host');
+                showToast('✅ Conectado à transmissão!', 'success');
+            } else if (peerConnection.connectionState === 'failed') {
+                console.error('❌ Conexão falhou');
+                showToast('Conexão perdida, tentando reconectar...', 'warning');
+                // Tentar reconectar após 5 segundos
+                setTimeout(() => setupAudienceWebRTC(liveId, liveData), 5000);
             }
         };
         
@@ -4100,14 +4410,20 @@ async function setupAudienceWebRTC(liveId, liveData) {
             throw new Error('Host ainda não configurou a transmissão');
         }
         
+        console.log('📥 Configurando oferta remota do host...');
+        
         // Configurar oferta remota
         await peerConnection.setRemoteDescription(
             new RTCSessionDescription(hostOffer)
         );
         
+        console.log('✅ Oferta remota configurada');
+        
         // Criar resposta
         const answerDescription = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answerDescription);
+        
+        console.log('✅ Resposta SDP criada localmente');
         
         // Enviar resposta para o host
         await db.collection('liveStreams').doc(liveId).collection('answers').add({
@@ -4115,8 +4431,8 @@ async function setupAudienceWebRTC(liveId, liveData) {
                 sdp: answerDescription.sdp,
                 type: answerDescription.type
             },
-            userId: currentUser.uid,
-            userName: userData.displayName || 'Espectador',
+            userId: currentUser?.uid || 'anonymous',
+            userName: userData?.displayName || 'Espectador',
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         
@@ -4125,12 +4441,16 @@ async function setupAudienceWebRTC(liveId, liveData) {
         // Obter candidatos ICE do host
         await getHostIceCandidates(liveId);
         
+        // Configurar listener para novos candidatos ICE do host
+        setupAudienceIceCandidateListener(liveId);
+        
+        console.log('🎯 Espectador WebRTC configurado');
+        
     } catch (error) {
         console.error('❌ Erro ao configurar WebRTC como espectador:', error);
         throw error;
     }
 }
-
 
 async function setupIceCandidateListener(liveId) {
     // Host escuta candidatos ICE dos espectadores
@@ -4152,134 +4472,101 @@ async function setupIceCandidateListener(liveId) {
             });
         });
 }
-
-async function getHostIceCandidates(liveId) {
-    // Espectador obtém candidatos ICE do host
-    const candidatesSnapshot = await db.collection('liveStreams').doc(liveId)
-        .collection('hostCandidates')
-        .orderBy('timestamp')
-        .get();
-    
-    for (const doc of candidatesSnapshot.docs) {
-        const data = doc.data();
-        try {
-            const candidate = new RTCIceCandidate(data.candidate);
-            await peerConnection.addIceCandidate(candidate);
-            console.log('✅ Candidato ICE do host adicionado');
-        } catch (error) {
-            console.error('Erro ao adicionar candidato ICE do host:', error);
-        }
-    }
-    
-    // Escutar novos candidatos ICE do host
-    db.collection('liveStreams').doc(liveId).collection('hostCandidates')
-        .onSnapshot((snapshot) => {
-            snapshot.docChanges().forEach(async (change) => {
-                if (change.type === 'added') {
-                    const data = change.doc.data();
-                    try {
-                        const candidate = new RTCIceCandidate(data.candidate);
-                        await peerConnection.addIceCandidate(candidate);
-                    } catch (error) {
-                        console.error('Erro ao adicionar novo candidato ICE:', error);
-                    }
-                }
-            });
-        });
-}
-
-function setupAnswerListener(liveId) {
-    // Host escuta respostas dos espectadores
-    db.collection('liveStreams').doc(liveId).collection('answers')
-        .orderBy('timestamp', 'desc')
-        .limit(10)
-        .onSnapshot(async (snapshot) => {
-            snapshot.docChanges().forEach(async (change) => {
-                if (change.type === 'added') {
-                    const data = change.doc.data();
-                    try {
-                        const answerDescription = new RTCSessionDescription(data.answer);
-                        await peerConnection.setRemoteDescription(answerDescription);
-                        console.log('✅ Resposta SDP do espectador configurada');
-                    } catch (error) {
-                        console.error('Erro ao configurar resposta SDP:', error);
-                    }
-                }
-            });
-        });
-}
-
 function updateAudienceVideo(stream) {
     console.log('🔄 Atualizando vídeo do espectador');
     
     const mainVideo = document.getElementById('liveVideo');
     const placeholder = document.getElementById('videoPlaceholder');
     
-    if (mainVideo && stream) {
-        // Verificar se há tracks de vídeo
-        const videoTracks = stream.getVideoTracks();
-        const audioTracks = stream.getAudioTracks();
+    if (!mainVideo) {
+        console.error('❌ Elemento liveVideo não encontrado');
+        return;
+    }
+    
+    // Verificar se há tracks de vídeo
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    
+    console.log('📊 Tracks recebidas:', {
+        video: videoTracks.length,
+        audio: audioTracks.length
+    });
+    
+    if (videoTracks.length > 0) {
+        // Tem vídeo - configurar player
+        mainVideo.srcObject = stream;
+        mainVideo.style.display = 'block';
         
-        console.log('📊 Tracks recebidas:', {
-            video: videoTracks.length,
-            audio: audioTracks.length
-        });
+        // Tentar reproduzir
+        const playPromise = mainVideo.play();
         
-        if (videoTracks.length > 0) {
-            // Tem vídeo - mostrar player
-            mainVideo.srcObject = stream;
-            mainVideo.style.display = 'block';
-            
-            // Tentar play
-            mainVideo.play().then(() => {
-                console.log('✅ Vídeo do host reproduzindo');
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('✅ Vídeo do host reproduzindo automaticamente');
                 
-                // Ocultar placeholder
+                // Ocultar placeholder se existir
                 if (placeholder) {
                     placeholder.style.display = 'none';
                 }
                 
-                // Atualizar status
-                showToast('✅ Conectado à transmissão!', 'success');
+            }).catch(error => {
+                console.warn('⚠️ Auto-play bloqueado:', error);
                 
-            }).catch(e => {
-                console.warn('⚠️ Auto-play bloqueado, solicitando interação:', e);
-                
-                // Mostrar botão de play
+                // Mostrar interface para interação do usuário
                 if (placeholder) {
                     placeholder.style.display = 'flex';
                     placeholder.innerHTML = `
                         <div class="lux-play-required">
-                            <i class="fas fa-play-circle fa-3x"></i>
-                            <h3>Transmissão Pronta</h3>
-                            <p>Clique para iniciar a reprodução</p>
-                            <button class="lux-btn lux-btn-primary" onclick="startVideoPlayback()">
+                            <i class="fas fa-play-circle fa-3x" style="color: #d4af37; margin-bottom: 15px;"></i>
+                            <h3 style="color: white; margin-bottom: 10px;">Transmissão Pronta</h3>
+                            <p style="color: #ccc; margin-bottom: 20px;">Clique para iniciar a reprodução</p>
+                            <button class="lux-btn lux-btn-primary" onclick="startVideoPlayback()" 
+                                    style="background: #d4af37; color: black; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
                                 <i class="fas fa-play"></i> Reproduzir Live
                             </button>
                         </div>
                     `;
                 }
             });
-        } else if (audioTracks.length > 0) {
-            // Só tem áudio - mostrar interface de áudio
-            if (placeholder) {
-                placeholder.style.display = 'flex';
-                placeholder.innerHTML = `
-                    <div class="lux-audio-only">
-                        <i class="fas fa-headphones-alt fa-3x"></i>
-                        <h3>🎧 Transmissão de Áudio</h3>
-                        <p>O host está transmitindo apenas áudio</p>
-                        <div class="lux-audio-wave">
-                            <div class="lux-wave-bar"></div>
-                            <div class="lux-wave-bar"></div>
-                            <div class="lux-wave-bar"></div>
-                            <div class="lux-wave-bar"></div>
-                            <div class="lux-wave-bar"></div>
-                        </div>
+        }
+        
+    } else if (audioTracks.length > 0) {
+        // Só tem áudio
+        console.log('🎧 Host transmitindo apenas áudio');
+        
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = `
+                <div class="lux-audio-only">
+                    <i class="fas fa-headphones-alt fa-3x" style="color: #d4af37; margin-bottom: 20px;"></i>
+                    <h3 style="color: white; margin-bottom: 10px;">🎧 Transmissão de Áudio</h3>
+                    <p style="color: #ccc; margin-bottom: 20px;">O host está transmitindo apenas áudio</p>
+                    <div class="lux-audio-wave">
+                        <div class="lux-wave-bar"></div>
+                        <div class="lux-wave-bar"></div>
+                        <div class="lux-wave-bar"></div>
+                        <div class="lux-wave-bar"></div>
+                        <div class="lux-wave-bar"></div>
                     </div>
-                `;
-            }
-            mainVideo.style.display = 'none';
+                </div>
+            `;
+        }
+        
+        mainVideo.style.display = 'none';
+        
+    } else {
+        // Sem tracks
+        console.warn('⚠️ Stream sem tracks de áudio ou vídeo');
+        
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = `
+                <div style="text-align: center; color: white;">
+                    <i class="fas fa-sync-alt fa-spin fa-2x" style="margin-bottom: 15px;"></i>
+                    <h3>Aguardando transmissão...</h3>
+                    <p>O host pode estar configurando a live</p>
+                </div>
+            `;
         }
     }
 }
@@ -4288,18 +4575,21 @@ function startVideoPlayback() {
     const video = document.getElementById('liveVideo');
     const placeholder = document.getElementById('videoPlaceholder');
     
-    if (video) {
+    if (video && video.srcObject) {
         video.play().then(() => {
-            console.log('✅ Vídeo iniciado após interação');
+            console.log('✅ Vídeo iniciado após interação do usuário');
+            
             if (placeholder) {
                 placeholder.style.display = 'none';
             }
-        }).catch(e => {
-            console.error('❌ Erro ao iniciar vídeo:', e);
+            
+        }).catch(error => {
+            console.error('❌ Erro ao iniciar vídeo:', error);
             showToast('Não foi possível reproduzir o vídeo', 'error');
         });
     }
 }
+
 
 async function endLive() {
     console.log('🛑 Encerrando live');
