@@ -234,6 +234,14 @@ async function startHostRTC() {
                 })
         }
     }
+
+    peerConnection.onconnectionstatechange = () => {
+    console.log(
+        'Host connection:',
+        peerConnection.connectionState
+    )
+}
+
 const offer = await peerConnection.createOffer()
 await peerConnection.setLocalDescription(offer)
 
@@ -245,6 +253,28 @@ await db.collection('lives')
             sdp: offer.sdp
         }
     }, { merge: true })
+
+
+    // 🔥 HOST ESCUTA ANSWER DO VIEWER
+db.collection('lives')
+    .doc(liveId)
+    .onSnapshot(async snap => {
+        const data = snap.data()
+
+        if (
+            data?.answer &&
+            peerConnection &&
+            !peerConnection.currentRemoteDescription
+        ) {
+            await peerConnection.setRemoteDescription(
+                new RTCSessionDescription({
+                    type: data.answer.type,
+                    sdp: data.answer.sdp
+                })
+            )
+        }
+    })
+
 
     // 🔥 HOST recebe ICE dos viewers
 db.collection('lives')
@@ -302,6 +332,12 @@ async function startViewerRTC() {
                     })
             }
         }
+peerConnection.onconnectionstatechange = () => {
+    console.log(
+        'Viewer connection:',
+        peerConnection.connectionState
+    )
+}
 
         await peerConnection.setRemoteDescription(
             new RTCSessionDescription({
