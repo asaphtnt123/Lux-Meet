@@ -253,13 +253,16 @@ db.collection('lives')
     .where('type', '==', 'viewer-ice')
     .onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
-            if (change.type === 'added') {
-                const data = change.doc.data()
-                if (peerConnection.remoteDescription) {
-    peerConnection.addIceCandidate(
-        new RTCIceCandidate(data.candidate)
-    )
-}
+            if (
+                change.type === 'added' &&
+                peerConnection.remoteDescription
+            ) {
+                peerConnection.addIceCandidate(
+                    new RTCIceCandidate(change.doc.data().candidate)
+                )
+            
+
+
 
             }
         })
@@ -268,72 +271,72 @@ db.collection('lives')
 
 
 }
-
-
 async function startViewerRTC() {
-    peerConnection = new RTCPeerConnection(rtcConfig)
-
-    peerConnection.ontrack = e => {
-        document.getElementById('liveVideo').srcObject = e.streams[0]
-    }
-
-    peerConnection.onicecandidate = e => {
-        if (e.candidate) {
-            db.collection('lives')
-                .doc(liveId)
-                .collection('signals')
-                .add({
-                    type: 'viewer-ice',
-                    uid: currentUser.uid,
-                    candidate: e.candidate.toJSON()
-                })
-        }
-    }
-
-    // 🔥 Viewer recebe ICE do host
-db.collection('lives')
-    .doc(liveId)
-    .collection('signals')
-    .where('type', '==', 'host-ice')
-    .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-            if (change.type === 'added') {
-                const data = change.doc.data()
-                if (peerConnection.remoteDescription) {
-    peerConnection.addIceCandidate(
-        new RTCIceCandidate(data.candidate)
-    )
-}
-
-            }
-        })
-    })
-
-
     const liveRef = db.collection('lives').doc(liveId)
 
     liveRef.onSnapshot(async snap => {
         const data = snap.data()
-        if (data?.offer && !peerConnection.currentRemoteDescription) {
-            await peerConnection.setRemoteDescription(
-    new RTCSessionDescription({
-        type: data.offer.type,
-        sdp: data.offer.sdp
-    })
-)
+        if (!data?.offer) return
 
+        // ⛔ Evita recriar
+        if (peerConnection) return
 
-            const answer = await peerConnection.createAnswer()
-            await peerConnection.setLocalDescription(answer)
+        peerConnection = new RTCPeerConnection(rtcConfig)
 
-            await liveRef.set({
-    answer: {
-        type: answer.type,
-        sdp: answer.sdp
-    }
-}, { merge: true })
-
+        peerConnection.ontrack = e => {
+            const video = document.getElementById('liveVideo')
+            video.srcObject = e.streams[0]
+            video.muted = false
+            video.play().catch(() => {})
         }
+
+        peerConnection.onicecandidate = e => {
+            if (e.candidate) {
+                db.collection('lives')
+                    .doc(liveId)
+                    .collection('signals')
+                    .add({
+                        type: 'viewer-ice',
+                        uid: currentUser.uid,
+                        candidate: e.candidate.toJSON()
+                    })
+            }
+        }
+
+        await peerConnection.setRemoteDescription(
+            new RTCSessionDescription({
+                type: data.offer.type,
+                sdp: data.offer.sdp
+            })
+        )
+
+        const answer = await peerConnection.createAnswer()
+        await peerConnection.setLocalDescription(answer)
+
+        await liveRef.set({
+            answer: {
+                type: answer.type,
+                sdp: answer.sdp
+            }
+        }, { merge: true })
+
+        // 🔥 ESCUTAR ICE DO HOST
+        db.collection('lives')
+            .doc(liveId)
+            .collection('signals')
+            .where('type', '==', 'host-ice')
+            .onSnapshot(snapshot => {
+                snapshot.docChanges().forEach(change => {
+                    if (
+                        change.type === 'added' &&
+                        peerConnection.remoteDescription
+                    ) {
+                        peerConnection.addIceCandidate(
+                            new RTCIceCandidate(change.doc.data().candidate)
+                        )
+                    }
+                })
+            })
     })
 }
 
