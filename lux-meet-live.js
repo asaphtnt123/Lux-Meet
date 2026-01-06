@@ -2309,51 +2309,6 @@ async function tryRealStreamingMethods(liveData, videoElement) {
 // CORRIGIR A FUNÇÃO joinLive
 // ============================================
 
-async function joinLive(liveId) {
-    try {
-        console.log(`🎯 Entrando na live ${liveId}...`);
-        
-        // Obter dados da live
-        const liveDoc = await db.collection('liveStreams').doc(liveId).get();
-        
-        if (!liveDoc.exists) {
-            showToast('Live não encontrada', 'error');
-            return;
-        }
-        
-        const liveData = liveDoc.data();
-        currentLiveId = liveId;
-        
-        // Verificar status
-        if (liveData.status !== 'active') {
-            showToast('Esta live já foi encerrada', 'warning');
-            return;
-        }
-        
-        // Registrar viewer
-        await registerViewer(liveId);
-        
-        // Mostrar player
-        showLivePlayer(liveData, false);
-        isWatching = true;
-        
-        // Configurar chat
-        setupLiveChat(liveId);
-        
-        // Configurar listener para atualizações
-        setupLiveRealtimeListener(liveId, false);
-        
-        // CONECTAR AO STREAM REAL (sem simulação!)
-        await connectToLiveStream(liveData);
-        
-        showToast('✅ Entrou na live!', 'success');
-        
-    } catch (error) {
-        console.error('❌ Erro ao entrar na live:', error);
-        showToast('Erro ao entrar na live', 'error');
-    }
-}
-
 
 // ============================================
 // CONNECT TO LIVE STREAM - VERSÃO LIMPA E DEFINITIVA
@@ -2497,9 +2452,388 @@ async function connectToLiveStream(liveData) {
 // ============================================
 // FUNÇÃO PARA ATUALIZAR VÍDEO COM STREAM REAL
 // ============================================
-
 function updateAudienceVideoWithRealStream(stream) {
-    console.log('🎬 ATUALIZANDO VÍDEO COM STREAM REAL');
+    console.log('🎬 ATUALIZANDO VÍDEO COM STREAM REAL - INICIANDO');
+    
+    const videoElement = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (!videoElement) {
+        console.error('❌ CRÍTICO: Elemento liveVideo não encontrado no DOM');
+        // Criar elemento dinamicamente se não existir
+        createVideoElementIfMissing();
+        return;
+    }
+    
+    console.log('✅ Elemento video encontrado:', videoElement);
+    
+    // Verificar se temos stream válido
+    if (!stream) {
+        console.error('❌ Stream é null ou undefined');
+        showStreamStatus('Erro: Stream não disponível', 'error');
+        return;
+    }
+    
+    // Verificar tracks
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    
+    console.log('📊 Tracks disponíveis:', {
+        videoTracks: videoTracks.length,
+        audioTracks: audioTracks.length,
+        streamActive: stream.active
+    });
+    
+    if (videoTracks.length === 0) {
+        console.log('⚠️ Nenhuma track de vídeo disponível');
+        showAudioOnlyInterface(stream);
+        return;
+    }
+    
+    // TEMOS VÍDEO - CONFIGURAR ELEMENTO
+    console.log('✅ Configurando vídeo element com stream...');
+    
+    // Parar qualquer stream anterior
+    if (videoElement.srcObject) {
+        videoElement.srcObject = null;
+    }
+    
+    // Atribuir novo stream
+    videoElement.srcObject = stream;
+    
+    // Configurar propriedades
+    videoElement.muted = false; // Permitir áudio
+    videoElement.volume = 1.0;
+    videoElement.style.display = 'block';
+    videoElement.style.background = 'transparent';
+    
+    // Remover qualquer placeholder visível
+    if (placeholder) {
+        placeholder.style.display = 'none';
+        console.log('✅ Placeholder ocultado');
+    }
+    
+    // Tentar reprodução
+    console.log('▶️ Tentando reproduzir vídeo...');
+    
+    const playPromise = videoElement.play();
+    
+    if (playPromise !== undefined) {
+        playPromise
+            .then(() => {
+                console.log('✅ VÍDEO REPRODUZINDO COM SUCESSO!');
+                console.log('📏 Dimensões:', videoElement.videoWidth + 'x' + videoElement.videoHeight);
+                console.log('🎵 Volume:', videoElement.volume);
+                console.log('🔊 Muted:', videoElement.muted);
+                
+                // Atualizar status
+                showStreamStatus('✅ Transmissão ao vivo', 'success');
+                
+                // Mostrar controles após alguns segundos
+                setTimeout(() => {
+                    videoElement.setAttribute('controls', 'true');
+                }, 3000);
+                
+                // Log de eventos do vídeo
+                setupVideoEventListeners(videoElement);
+                
+            })
+            .catch(error => {
+                console.error('❌ ERRO NO PLAY:', error);
+                
+                // Mostrar interface de interação
+                showPlaybackRequirement(error);
+            });
+    }
+}
+
+// ============================================
+// FUNÇÃO AUXILIAR: CRIAR ELEMENTO DE VÍDEO SE FALTAR
+// ============================================
+
+function createVideoElementIfMissing() {
+    console.log('🛠️ Criando elemento de vídeo dinamicamente...');
+    
+    const videoContainer = document.querySelector('.lux-video-container') || 
+                          document.getElementById('livePlayer');
+    
+    if (!videoContainer) {
+        console.error('❌ Container de vídeo não encontrado');
+        return;
+    }
+    
+    // Criar elemento de vídeo
+    const videoElement = document.createElement('video');
+    videoElement.id = 'liveVideo';
+    videoElement.playsInline = true;
+    videoElement.autoplay = true;
+    videoElement.style.width = '100%';
+    videoElement.style.height = 'auto';
+    videoElement.style.background = '#000';
+    
+    // Adicionar ao container
+    videoContainer.prepend(videoElement);
+    
+    console.log('✅ Elemento de vídeo criado dinamicamente');
+    return videoElement;
+}
+
+// ============================================
+// FUNÇÃO PARA MOSTRAR INTERFACE DE ÁUDIO APENAS
+// ============================================
+
+function showAudioOnlyInterface(stream) {
+    console.log('🎧 Mostrando interface de áudio apenas');
+    
+    const videoElement = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (placeholder) {
+        placeholder.style.display = 'flex';
+        placeholder.innerHTML = `
+            <div class="lux-audio-live">
+                <div class="lux-audio-visualizer-large">
+                    ${Array.from({length: 20}, (_, i) => 
+                        `<div class="lux-visualizer-bar-large" style="animation-delay: ${i * 0.05}s"></div>`
+                    ).join('')}
+                </div>
+                <div class="lux-audio-content">
+                    <i class="fas fa-microphone-alt fa-4x"></i>
+                    <h2>🎤 TRANSMISSÃO DE ÁUDIO</h2>
+                    <p>${currentLiveData?.hostName || 'O host'} está transmitindo ao vivo</p>
+                    <div class="lux-audio-stats">
+                        <div class="lux-stat">
+                            <i class="fas fa-broadcast-tower"></i>
+                            <span>AO VIVO</span>
+                        </div>
+                        <div class="lux-stat">
+                            <i class="fas fa-headphones"></i>
+                            <span>ÁUDIO STEREO</span>
+                        </div>
+                    </div>
+                    <div class="lux-audio-controls-full">
+                        <button class="lux-btn lux-btn-audio-control" onclick="toggleAudioMute()">
+                            <i class="fas fa-volume-up"></i>
+                            <span>Volume</span>
+                        </button>
+                        <button class="lux-btn lux-btn-audio-control" onclick="requestVideoFromHost()">
+                            <i class="fas fa-video"></i>
+                            <span>Solicitar Vídeo</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    if (videoElement) {
+        videoElement.style.display = 'none';
+    }
+    
+    // Iniciar reprodução de áudio
+    playAudioStream(stream);
+}
+
+// ============================================
+// FUNÇÃO PARA REPRODUZIR STREAM DE ÁUDIO
+// ============================================
+
+function playAudioStream(stream) {
+    try {
+        // Verificar se temos permissão de áudio
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length === 0) {
+            console.log('⚠️ Nenhuma track de áudio disponível');
+            return;
+        }
+        
+        console.log('🔊 Iniciando reprodução de áudio...');
+        
+        // Criar elemento de áudio oculto
+        let audioElement = document.getElementById('hiddenAudioPlayer');
+        if (!audioElement) {
+            audioElement = document.createElement('audio');
+            audioElement.id = 'hiddenAudioPlayer';
+            audioElement.autoplay = true;
+            audioElement.style.display = 'none';
+            document.body.appendChild(audioElement);
+        }
+        
+        // Atribuir stream
+        audioElement.srcObject = stream;
+        
+        // Tentar play
+        audioElement.play()
+            .then(() => {
+                console.log('✅ Áudio reproduzindo');
+                showStreamStatus('🎧 Transmissão de áudio ativa', 'success');
+            })
+            .catch(error => {
+                console.error('❌ Erro ao reproduzir áudio:', error);
+            });
+            
+    } catch (error) {
+        console.error('Erro no playAudioStream:', error);
+    }
+}
+
+// ============================================
+// FUNÇÃO PARA MOSTRAR REQUISIÇÃO DE INTERAÇÃO
+// ============================================
+
+function showPlaybackRequirement(error) {
+    console.log('🖱️ Mostrando requisição de interação do usuário');
+    
+    const videoElement = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (!placeholder) return;
+    
+    placeholder.style.display = 'flex';
+    placeholder.innerHTML = `
+        <div class="lux-play-requirement">
+            <div class="lux-requirement-content">
+                <i class="fas fa-hand-pointer fa-4x"></i>
+                <h2>INTERAÇÃO NECESSÁRIA</h2>
+                <p>Para assistir a live, clique no botão abaixo</p>
+                <p class="lux-error-detail">${error.message || 'Auto-play bloqueado pelo navegador'}</p>
+                
+                <div class="lux-action-buttons">
+                    <button class="lux-btn lux-btn-primary lux-btn-xl" onclick="userInitiatedPlayback()">
+                        <i class="fas fa-play-circle"></i> ASSISTIR LIVE
+                    </button>
+                    <button class="lux-btn lux-btn-secondary" onclick="toggleMuteAndPlay()">
+                        <i class="fas fa-volume-mute"></i> TENTAR COM ÁUDIO MUDO
+                    </button>
+                </div>
+                
+                <div class="lux-play-instructions">
+                    <h4><i class="fas fa-info-circle"></i> Por que isso acontece?</h4>
+                    <p>Navegadores bloqueiam reprodução automática para economizar dados e bateria.</p>
+                    <p>Esta ação é necessária apenas uma vez.</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Mostrar vídeo mas pausado
+    if (videoElement) {
+        videoElement.style.display = 'block';
+        videoElement.pause();
+    }
+}
+
+// ============================================
+// FUNÇÃO PARA INICIAR REPRODUÇÃO COM INTERAÇÃO
+// ============================================
+
+function userInitiatedPlayback() {
+    console.log('🖱️ Usuário iniciou reprodução manualmente');
+    
+    const videoElement = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (!videoElement || !videoElement.srcObject) {
+        console.error('❌ Vídeo ou stream não disponível');
+        return;
+    }
+    
+    // Remover placeholder
+    if (placeholder) {
+        placeholder.style.display = 'none';
+    }
+    
+    // Tentar play
+    videoElement.play()
+        .then(() => {
+            console.log('✅ Reprodução iniciada manualmente com sucesso');
+            showToast('Transmissão iniciada!', 'success');
+            
+            // Ativar controles
+            videoElement.setAttribute('controls', 'true');
+        })
+        .catch(error => {
+            console.error('❌ Erro na reprodução manual:', error);
+            showPlaybackRequirement(error);
+        });
+}
+
+// ============================================
+// FUNÇÃO PARA CONFIGURAR EVENT LISTENERS DO VÍDEO
+// ============================================
+
+function setupVideoEventListeners(videoElement) {
+    if (!videoElement) return;
+    
+    // Limpar listeners anteriores
+    videoElement.replaceWith(videoElement.cloneNode(true));
+    const newVideo = document.getElementById('liveVideo');
+    
+    // Adicionar novos listeners
+    newVideo.addEventListener('loadeddata', () => {
+        console.log('📹 Dados do vídeo carregados');
+    });
+    
+    newVideo.addEventListener('playing', () => {
+        console.log('▶️ Vídeo está reproduzindo');
+        showStreamStatus('Transmissão ao vivo', 'success');
+    });
+    
+    newVideo.addEventListener('pause', () => {
+        console.log('⏸️ Vídeo pausado');
+    });
+    
+    newVideo.addEventListener('ended', () => {
+        console.log('⏹️ Vídeo terminado');
+        showStreamStatus('Transmissão encerrada', 'info');
+    });
+    
+    newVideo.addEventListener('error', (e) => {
+        console.error('❌ Erro no elemento de vídeo:', e);
+        console.error('Código do erro:', newVideo.error);
+        showStreamStatus('Erro na reprodução', 'error');
+    });
+    
+    newVideo.addEventListener('volumechange', () => {
+        console.log('🔊 Volume alterado:', newVideo.volume);
+    });
+}
+
+// ============================================
+// FUNÇÃO DEBUG PARA VERIFICAR ESTADO DO VÍDEO
+// ============================================
+
+function debugVideoState() {
+    const videoElement = document.getElementById('liveVideo');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    console.log('=== DEBUG VÍDEO ESTADO ===');
+    console.log('Elemento video existe:', !!videoElement);
+    if (videoElement) {
+        console.log('srcObject:', videoElement.srcObject);
+        console.log('readyState:', videoElement.readyState);
+        console.log('paused:', videoElement.paused);
+        console.log('currentTime:', videoElement.currentTime);
+        console.log('duration:', videoElement.duration);
+        console.log('videoWidth:', videoElement.videoWidth);
+        console.log('videoHeight:', videoElement.videoHeight);
+        console.log('error:', videoElement.error);
+        console.log('networkState:', videoElement.networkState);
+    }
+    console.log('Placeholder existe:', !!placeholder);
+    if (placeholder) {
+        console.log('Placeholder display:', placeholder.style.display);
+    }
+    console.log('Remote Stream:', remoteStream);
+    console.log('===========================');
+}
+
+// ============================================
+// FUNÇÃO PARA FORÇAR EXIBIÇÃO DO VÍDEO
+// ============================================
+
+function forceShowVideo() {
+    console.log('🔧 Forçando exibição do vídeo...');
     
     const videoElement = document.getElementById('liveVideo');
     const placeholder = document.getElementById('videoPlaceholder');
@@ -2509,102 +2843,170 @@ function updateAudienceVideoWithRealStream(stream) {
         return;
     }
     
-    // Verificar se temos tracks
-    const videoTracks = stream.getVideoTracks();
-    const audioTracks = stream.getAudioTracks();
+    // Garantir que o vídeo está visível
+    videoElement.style.display = 'block';
+    videoElement.style.visibility = 'visible';
+    videoElement.style.opacity = '1';
+    videoElement.style.zIndex = '10';
     
-    console.log('📊 Tracks disponíveis:', {
-        vídeo: videoTracks.length,
-        áudio: audioTracks.length
-    });
+    // Ocultar placeholder
+    if (placeholder) {
+        placeholder.style.display = 'none';
+        placeholder.style.visibility = 'hidden';
+    }
     
-    if (videoTracks.length > 0) {
-        console.log('✅ TEMOS VÍDEO DO HOST!');
+    // Tentar play forçado
+    if (videoElement.srcObject) {
+        videoElement.play()
+            .then(() => console.log('✅ Vídeo forçado a reproduzir'))
+            .catch(e => console.error('❌ Erro no play forçado:', e));
+    }
+    
+    debugVideoState();
+}
+
+// ============================================
+// MODIFIQUE A FUNÇÃO joinLive PARA DEBUG
+// ============================================
+
+async function joinLive(liveId) {
+    try {
+        console.log(`🎯 Entrando na live ${liveId}...`);
         
-        // Configurar elemento de vídeo
-        videoElement.srcObject = stream;
-        videoElement.style.display = 'block';
+        // Debug: verificar estado inicial
+        debugVideoState();
         
-        // Tentar reprodução automática
-        const playPromise = videoElement.play();
+        // Obter dados da live
+        const liveDoc = await db.collection('liveStreams').doc(liveId).get();
         
-        if (playPromise !== undefined) {
-            playPromise.then(() => {
-                console.log('🎥 Vídeo reproduzindo automaticamente');
-                
-                // Ocultar placeholder
-                if (placeholder) {
-                    placeholder.style.display = 'none';
-                }
-                
-                // Mostrar controles após 3 segundos
-                setTimeout(() => {
-                    videoElement.setAttribute('controls', 'true');
-                }, 3000);
-                
-            }).catch(error => {
-                console.warn('⚠️ Auto-play bloqueado:', error);
-                
-                // Mostrar botão de play
-                if (placeholder) {
-                    placeholder.style.display = 'flex';
-                    placeholder.innerHTML = `
-                        <div class="lux-play-overlay">
-                            <div class="lux-play-content">
-                                <i class="fas fa-play-circle fa-4x"></i>
-                                <h3>Transmissão ao vivo disponível</h3>
-                                <p>Clique para assistir a live</p>
-                                <button class="lux-btn lux-btn-primary lux-btn-lg" onclick="playLiveStream()">
-                                    <i class="fas fa-play"></i> Assistir Live
-                                </button>
-                                <p class="lux-help-text">Clique em qualquer lugar da tela para iniciar</p>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
+        if (!liveDoc.exists) {
+            showToast('Live não encontrada', 'error');
+            return;
         }
         
-    } else if (audioTracks.length > 0) {
-        // Apenas áudio
-        console.log('🎧 Transmissão apenas de áudio');
+        const liveData = liveDoc.data();
+        liveData.id = liveId;
+        currentLiveId = liveId;
+        currentLiveData = liveData;
         
-        if (placeholder) {
-            placeholder.style.display = 'flex';
-            placeholder.innerHTML = `
-                <div class="lux-audio-stream">
-                    <div class="lux-audio-visualizer">
-                        <div class="lux-visualizer-bar" style="animation-delay: 0s"></div>
-                        <div class="lux-visualizer-bar" style="animation-delay: 0.1s"></div>
-                        <div class="lux-visualizer-bar" style="animation-delay: 0.2s"></div>
-                        <div class="lux-visualizer-bar" style="animation-delay: 0.3s"></div>
-                        <div class="lux-visualizer-bar" style="animation-delay: 0.4s"></div>
+        // Verificar status
+        if (liveData.status !== 'active') {
+            showToast('Esta live já foi encerrada', 'warning');
+            return;
+        }
+        
+        // Registrar viewer
+        await registerViewer(liveId);
+        
+        // MOSTRAR PLAYER IMEDIATAMENTE
+        showLivePlayerImmediately(liveData, false);
+        
+        // Configurar chat
+        setupLiveChat(liveId);
+        
+        // Configurar listener para atualizações
+        setupLiveRealtimeListener(liveId, false);
+        
+        // CONECTAR AO STREAM REAL (com timeout)
+        console.log('⏱️ Iniciando conexão WebRTC...');
+        showStreamStatus('Conectando ao host...', 'info');
+        
+        // Timeout para evitar travamento
+        const connectionTimeout = setTimeout(() => {
+            console.log('⚠️ Timeout na conexão WebRTC');
+            showStreamStatus('Conexão lenta, tentando alternativa...', 'warning');
+            tryAlternativeConnection(liveData);
+        }, 10000);
+        
+        // Conectar ao stream
+        await connectToLiveStream(liveData);
+        clearTimeout(connectionTimeout);
+        
+        // Debug após conexão
+        setTimeout(debugVideoState, 1000);
+        
+    } catch (error) {
+        console.error('❌ Erro ao entrar na live:', error);
+        showToast('Erro ao entrar na live: ' + error.message, 'error');
+    }
+}
+
+// ============================================
+// NOVA FUNÇÃO PARA MOSTRAR PLAYER IMEDIATAMENTE
+// ============================================
+
+function showLivePlayerImmediately(liveData, isHost) {
+    console.log('🎬 MOSTRANDO PLAYER IMEDIATAMENTE');
+    
+    // 1. Mostrar container do player
+    const player = document.getElementById('livePlayer');
+    if (player) {
+        player.style.display = 'block';
+        player.style.opacity = '1';
+        player.style.visibility = 'visible';
+        console.log('✅ Player container exibido');
+    }
+    
+    // 2. Ocultar grid de lives
+    const grid = document.getElementById('liveGrid');
+    if (grid) {
+        grid.style.display = 'none';
+        console.log('✅ Grid ocultada');
+    }
+    
+    // 3. Configurar vídeo element para espectador
+    const videoElement = document.getElementById('liveVideo');
+    if (videoElement) {
+        // Garantir que está visível
+        videoElement.style.display = 'block';
+        videoElement.style.background = '#000';
+        videoElement.style.minHeight = '300px';
+        console.log('✅ Elemento de vídeo preparado');
+    }
+    
+    // 4. Mostrar placeholder inicial
+    const placeholder = document.getElementById('videoPlaceholder');
+    if (placeholder) {
+        placeholder.style.display = 'flex';
+        placeholder.innerHTML = `
+            <div class="lux-initial-loading">
+                <div class="lux-loading-spinner">
+                    <div class="lux-spinner"></div>
+                </div>
+                <h3>🔄 CONECTANDO À TRANSMISSÃO</h3>
+                <p>Estabelecendo conexão com ${liveData.hostName || 'o host'}...</p>
+                <div class="lux-connection-steps">
+                    <div class="lux-step lux-step-active">
+                        <span class="lux-step-number">1</span>
+                        <span class="lux-step-text">Conectando ao servidor</span>
                     </div>
-                    <i class="fas fa-headphones-alt fa-3x"></i>
-                    <h3>🎤 ${liveData.hostName || 'Host'} está ao vivo</h3>
-                    <p>Transmissão de áudio em andamento</p>
-                    <div class="lux-audio-controls">
-                        <button class="lux-btn lux-btn-audio" onclick="toggleAudio()">
-                            <i class="fas fa-volume-up"></i> Áudio
-                        </button>
-                        <div class="lux-audio-info">
-                            <span><i class="fas fa-microphone"></i> Ao vivo</span>
-                        </div>
+                    <div class="lux-step">
+                        <span class="lux-step-number">2</span>
+                        <span class="lux-step-text">Estabelecendo WebRTC</span>
+                    </div>
+                    <div class="lux-step">
+                        <span class="lux-step-number">3</span>
+                        <span class="lux-step-text">Recebendo transmissão</span>
                     </div>
                 </div>
-            `;
-        }
-        
-        // Iniciar áudio automaticamente
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(stream);
-        source.connect(audioContext.destination);
-        
-    } else {
-        // Sem tracks ainda
-        console.log('⏳ Aguardando transmissão...');
-        showStreamStatus('Aguardando host iniciar a transmissão...', 'info');
+                <button class="lux-btn lux-btn-secondary" onclick="debugVideoState()" style="margin-top: 20px;">
+                    <i class="fas fa-bug"></i> Debug
+                </button>
+            </div>
+        `;
+        console.log('✅ Placeholder inicial mostrado');
     }
+    
+    // 5. Atualizar informações da live
+    updateElementSafe('livePlayerTitle', liveData.title || 'Live');
+    updateElementSafe('liveHostName', liveData.hostName || 'Host');
+    
+    const hostAvatar = document.getElementById('liveHostAvatar');
+    if (hostAvatar && liveData.hostPhoto) {
+        hostAvatar.src = liveData.hostPhoto;
+    }
+    
+    console.log('✅ Player configurado imediatamente');
 }
 
 // ============================================
@@ -3134,25 +3536,6 @@ function showLiveAudienceInterface(liveData, placeholder) {
         </div>
     `;
 }
-
-function showAudioOnlyInterface(liveData, placeholder) {
-    if (!placeholder) return;
-    
-    placeholder.style.display = 'flex';
-    placeholder.innerHTML = `
-        <div class="lux-audio-only">
-            <i class="fas fa-headphones-alt fa-3x"></i>
-            <h3>🎧 Transmissão de Áudio</h3>
-            <p>${liveData.hostName || 'O host'} está transmitindo apenas áudio</p>
-            <div class="lux-audio-stats">
-                <span><i class="fas fa-user"></i> ${liveData.hostName}</span>
-                <span><i class="fas fa-eye"></i> ${liveData.viewerCount || 0} ouvindo</span>
-            </div>
-            <small>Participe do chat para conversar!</small>
-        </div>
-    `;
-}
-
 
 // ============================================
 // INTERFACE PARA ESPECTADORES
