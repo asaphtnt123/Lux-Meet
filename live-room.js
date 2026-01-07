@@ -148,6 +148,7 @@ async function setupUI() {
 // =======================================
 // JOIN LIVE (LIVEKIT)
 // =======================================
+
 async function joinLive(role) {
     const idToken = await currentUser.getIdToken()
 
@@ -160,19 +161,17 @@ async function joinLive(role) {
         body: JSON.stringify({ liveId, role })
     })
 
-const data = await res.json()
+    const data = await res.json()
+    if (!res.ok) {
+        throw new Error(data.error || 'Erro ao entrar na live')
+    }
 
-if (!res.ok) {
-  alert(data.error || 'Erro ao entrar na live')
-  throw new Error(data.error)
-}
+    const { token, url } = data
 
-const { token, url } = data
-
-    room = new LiveKit.Room()
+    room = new LiveKitClient.Room()
 
     room.on(
-        LiveKit.RoomEvent.TrackSubscribed,
+        LiveKitClient.RoomEvent.TrackSubscribed,
         (track) => {
             if (track.kind === 'video') {
                 const el = track.attach()
@@ -189,7 +188,7 @@ const { token, url } = data
 
     if (role === 'host') {
         const videoTrack =
-            await LiveKit.createLocalVideoTrack()
+            await LiveKitClient.createLocalVideoTrack()
 
         await room.localParticipant.publishTrack(videoTrack)
 
@@ -202,18 +201,8 @@ const { token, url } = data
             .getElementById('videoContainer')
             .appendChild(el)
     }
-
-    // registra presença
-    await db
-        .collection('lives')
-        .doc(liveId)
-        .collection('viewers')
-        .doc(currentUser.uid)
-        .set({
-            joinedAt:
-                firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true })
 }
+
 
 // =======================================
 // LEAVE
