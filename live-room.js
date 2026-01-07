@@ -11,6 +11,7 @@ let currentUser = null
 let userData = null
 let liveId = null
 let liveData = null
+let viewerCount = 0
 
 // =======================================
 // AGORA
@@ -129,6 +130,8 @@ db.collection("lives").doc(liveId)
       showLiveEndedForViewer()
     }
   })
+viewerUnsub = listenViewerCount()
+let viewerUnsub = null
 
 
   document.getElementById("loading").classList.add("hidden")
@@ -689,3 +692,16 @@ function handleLiveEndedByHost() {
   `
 }
 
+
+
+function listenViewerCount() {
+  return db
+    .collection("lives")
+    .doc(liveId)
+    .collection("viewers")
+    .onSnapshot(snap => {
+      viewerCount = snap.size
+      document.getElementById("viewerCount").textContent =
+        `👁 ${viewerCount}`
+    })
+}
