@@ -12,6 +12,7 @@ let userData = null
 let liveId = null
 let liveData = null
 let viewerCount = 0
+let viewerUnsub = null
 
 // =======================================
 // AGORA
@@ -131,7 +132,6 @@ db.collection("lives").doc(liveId)
     }
   })
 viewerUnsub = listenViewerCount()
-let viewerUnsub = null
 
 
   document.getElementById("loading").classList.add("hidden")
