@@ -17,6 +17,12 @@ let liveData = null
 // =======================================
 let client = null
 let localTracks = []
+let joined = false
+
+// =======================================
+// CHAT
+// =======================================
+let chatUnsub = null
 
 // =======================================
 // INIT
@@ -29,7 +35,7 @@ function init() {
 
   if (!liveId) {
     alert("Live inválida")
-    return location.href = "lux-meet-live.html"
+    return (location.href = "lux-meet-live.html")
   }
 
   if (!firebase.apps.length) {
@@ -50,7 +56,7 @@ function init() {
 // AUTH
 // =======================================
 async function handleAuth(user) {
-  if (!user) return location.href = "/login.html"
+  if (!user) return (location.href = "/login.html")
 
   currentUser = user
 
@@ -63,14 +69,12 @@ async function handleAuth(user) {
     liveData.hostId === currentUser.uid ? "host" : "viewer"
 
   await startAgora(role)
+  await registerViewer()
+  initChat()
+  watchViewerCount()
 
   document.getElementById("loading").classList.add("hidden")
   document.getElementById("app").classList.remove("hidden")
-
-  initChat()
-
-
-
 }
 
 // =======================================
@@ -124,9 +128,12 @@ async function setupUI() {
   const hostSnap = await db.collection("users").doc(liveData.hostId).get()
   const host = hostSnap.data()
 
-  document.getElementById("hostName").textContent = host.name || "Host"
+  document.getElementById("hostName").textContent =
+    host.name || "Host"
+
   document.getElementById("hostAvatar").src =
     host.profilePhotoURL || "https://via.placeholder.com/50"
+
   document.getElementById("liveTitle").textContent =
     liveData.title || ""
 
@@ -142,20 +149,16 @@ async function startAgora(role) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       channelName: liveId,
-      role: role
+      role
     })
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    throw new Error(err)
+    throw new Error(await response.text())
   }
 
   const { token, uid } = await response.json()
-
-  if (!token) {
-    throw new Error("Token inválido retornado pelo backend")
-  }
+  if (!token) throw new Error("Token inválido")
 
   client = AgoraRTC.createClient({
     mode: "live",
@@ -173,10 +176,11 @@ async function startAgora(role) {
     uid || null
   )
 
+  joined = true
+
   // 🎥 HOST
   if (role === "host") {
     localTracks = await AgoraRTC.createMicrophoneAndCameraTracks()
-
     localTracks[1].play("videoContainer")
     await client.publish(localTracks)
   }
@@ -188,7 +192,6 @@ async function startAgora(role) {
     if (mediaType === "video") {
       user.videoTrack.play("videoContainer")
     }
-
     if (mediaType === "audio") {
       user.audioTrack.play()
     }
@@ -196,35 +199,44 @@ async function startAgora(role) {
 }
 
 // =======================================
-// LEAVE
+// VIEWERS
 // =======================================
-async function leaveLive() {
-  localTracks.forEach(track => {
-    track.stop()
-    track.close()
-  })
-
-  if (client) await client.leave()
-
+async function registerViewer() {
   await db
     .collection("lives")
     .doc(liveId)
     .collection("viewers")
     .doc(currentUser.uid)
-    .delete()
-
-  location.href = "lux-meet-live.html"
+    .set(
+      {
+        uid: currentUser.uid,
+        joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    )
 }
 
-// Iniciar Chat
+function watchViewerCount() {
+  db.collection("lives")
+    .doc(liveId)
+    .collection("viewers")
+    .onSnapshot(snap => {
+      document.getElementById(
+        "viewerCount"
+      ).textContent = `👁 ${snap.size}`
+    })
+}
 
+// =======================================
+// CHAT
+// =======================================
 function initChat() {
   const chatRef = db
     .collection("lives")
     .doc(liveId)
     .collection("chat")
     .orderBy("createdAt", "asc")
-    .limit(100)
+    .limit(150)
 
   chatUnsub = chatRef.onSnapshot(snapshot => {
     snapshot.docChanges().forEach(change => {
@@ -257,7 +269,6 @@ async function sendMessage(e) {
       name: userData.name || "Usuário",
       photo: userData.profilePhotoURL || "",
       text,
-      type: "text",
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
 }
@@ -269,13 +280,38 @@ function renderMessage(msg) {
   div.className = "chat-message"
 
   div.innerHTML = `
-    <img src="${msg.photo || 'https://via.placeholder.com/30'}" />
-    <div class="content">
-      <div class="name">${msg.name}</div>
-      <div class="text">${msg.text}</div>
-    </div>
+    <strong>${msg.name}:</strong> ${msg.text}
   `
 
   container.appendChild(div)
   container.scrollTop = container.scrollHeight
+}
+
+// =======================================
+// LEAVE
+// =======================================
+async function leaveLive() {
+  try {
+    if (chatUnsub) chatUnsub()
+
+    localTracks.forEach(track => {
+      track.stop()
+      track.close()
+    })
+
+    if (client && joined) {
+      await client.leave()
+    }
+
+    await db
+      .collection("lives")
+      .doc(liveId)
+      .collection("viewers")
+      .doc(currentUser.uid)
+      .delete()
+  } catch (e) {
+    console.warn(e)
+  }
+
+  location.href = "lux-meet-live.html"
 }

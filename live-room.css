@@ -1,15 +1,14 @@
-/* ===============================
-   RESET + BASE
-================================ */
+/* ================= RESET ================= */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+    Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   height: 100%;
   background: #000;
@@ -17,73 +16,62 @@ html, body {
   overflow: hidden;
 }
 
-/* ===============================
-   LOADING
-================================ */
+/* ================= LOADING ================= */
 .loading-screen {
   position: fixed;
   inset: 0;
   background: #000;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  z-index: 9999;
-}
-
-.loading-screen p {
-  margin-top: 12px;
-  font-size: 14px;
-  color: #bbb;
+  align-items: center;
+  z-index: 1000;
 }
 
 .spinner {
-  width: 36px;
-  height: 36px;
-  border: 4px solid #222;
-  border-top: 4px solid #ff4d6d;
+  width: 42px;
+  height: 42px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top: 4px solid #ff2d55;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin-bottom: 14px;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .hidden {
   display: none !important;
 }
 
-/* ===============================
-   APP LAYOUT
-================================ */
-#app {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  background: #000;
+/* ================= APP ================= */
+.app {
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
-/* ===============================
-   HEADER FIXO
-================================ */
+/* ================= HEADER ================= */
 .live-header {
   position: fixed;
   top: env(safe-area-inset-top);
   left: 0;
-  width: 100%;
+  right: 0;
   height: 64px;
-  padding: 0 14px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: linear-gradient(
     to bottom,
-    rgba(0,0,0,0.7),
-    rgba(0,0,0,0)
+    rgba(0, 0, 0, 0.7),
+    rgba(0, 0, 0, 0)
   );
-  z-index: 10;
+  z-index: 50;
 }
 
 .host-info {
@@ -97,10 +85,10 @@ html, body {
   height: 42px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #ff4d6d;
+  border: 2px solid #ff2d55;
 }
 
-.host-text {
+.host-meta {
   display: flex;
   flex-direction: column;
 }
@@ -115,7 +103,7 @@ html, body {
   color: #ccc;
 }
 
-.header-actions {
+.header-right {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -123,142 +111,181 @@ html, body {
 
 .viewer-count {
   font-size: 13px;
-  background: rgba(0,0,0,0.6);
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .leave-btn {
-  background: rgba(255, 77, 109, 0.9);
+  background: rgba(255, 45, 85, 0.9);
   border: none;
   color: #fff;
-  font-size: 13px;
-  padding: 7px 14px;
-  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
   cursor: pointer;
 }
 
-.leave-btn:active {
-  transform: scale(0.96);
-}
-
-/* ===============================
-   STAGE / VIDEO
-================================ */
+/* ================= STAGE ================= */
 .live-stage {
-  flex: 1;
   width: 100%;
   height: 100%;
   position: relative;
+}
+
+/* ================= VIDEO ================= */
+.video-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.video-container {
+  width: 100%;
+  height: 100%;
   background: #000;
 }
 
-/* Agora injeta vídeos aqui */
-.video-container {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-/* VÍDEO DO AGORA */
 .video-container video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #000;
 }
 
-/* ===============================
-   FOOTER
-================================ */
+/* ================= OVERLAYS ================= */
+.live-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ===== System messages ===== */
+.system-messages {
+  position: absolute;
+  top: 80px;
+  left: 12px;
+  right: 12px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+/* ===== Chat Overlay ===== */
+.chat-overlay {
+  position: absolute;
+  bottom: 90px;
+  left: 12px;
+  width: 70%;
+  max-width: 420px;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow: hidden;
+}
+
+.chat-message {
+  background: rgba(0, 0, 0, 0.55);
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.3;
+  animation: fadeInUp 0.25s ease;
+}
+
+.chat-message strong {
+  color: #ffcc00;
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===== Floating Actions ===== */
+.floating-actions {
+  position: absolute;
+  right: 12px;
+  bottom: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.action-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  font-size: 22px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* ================= FOOTER ================= */
 .live-footer {
   position: fixed;
   bottom: env(safe-area-inset-bottom);
   left: 0;
-  width: 100%;
-  height: 60px;
+  right: 0;
+  padding: 10px;
   background: linear-gradient(
     to top,
-    rgba(0,0,0,0.7),
-    rgba(0,0,0,0)
+    rgba(0, 0, 0, 0.85),
+    rgba(0, 0, 0, 0)
   );
-  z-index: 10;
-}
-
-/* ===============================
-   DESKTOP AJUSTES
-================================ */
-@media (min-width: 768px) {
-  .live-header {
-    height: 72px;
-    padding: 0 24px;
-  }
-
-  .host-name {
-    font-size: 15px;
-  }
-
-  .viewer-count {
-    font-size: 14px;
-  }
-}
-.live-chat {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #0f0f0f;
-  border-top: 1px solid #222;
-  display: flex;
-  flex-direction: column;
-  height: 35vh;
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  font-size: 14px;
-}
-
-.chat-message {
-  margin-bottom: 8px;
-  display: flex;
-  gap: 8px;
-}
-
-.chat-message img {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-}
-
-.chat-message .content {
-  color: #fff;
-}
-
-.chat-message .name {
-  font-weight: bold;
-  font-size: 12px;
+  z-index: 40;
 }
 
 .chat-form {
   display: flex;
-  border-top: 1px solid #222;
+  gap: 8px;
+  align-items: center;
 }
 
 .chat-form input {
   flex: 1;
-  background: #111;
+  height: 42px;
+  border-radius: 22px;
   border: none;
+  padding: 0 14px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
-  padding: 10px;
 }
 
-.chat-form button {
+.chat-form input::placeholder {
+  color: #ccc;
+}
+
+.send-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
   background: #ff2d55;
   color: #fff;
-  border: none;
-  padding: 0 16px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* ================= DESKTOP ================= */
+@media (min-width: 768px) {
+  .chat-overlay {
+    width: 420px;
+  }
+
+  .floating-actions {
+    right: 24px;
+  }
 }
