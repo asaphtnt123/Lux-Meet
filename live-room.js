@@ -547,7 +547,18 @@ async function endLiveAsHost() {
 
   showLiveSummary()
 }
+
 async function showLiveSummary() {
+  const summary = document.getElementById("liveSummary")
+  const viewersEl = document.getElementById("sumViewers")
+  const coinsEl = document.getElementById("sumCoins")
+  const topGiftersEl = document.getElementById("topGifters")
+
+  if (!summary || !viewersEl || !coinsEl || !topGiftersEl) {
+    console.error("❌ HTML do resumo não encontrado")
+    return
+  }
+
   const giftsSnap = await db
     .collection("lives")
     .doc(liveId)
@@ -568,11 +579,14 @@ async function showLiveSummary() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
 
-  document.getElementById("sumViewers").textContent = viewerCount
-  document.getElementById("sumCoins").textContent = totalCoins
+  viewersEl.textContent = viewerCount || 0
+  coinsEl.textContent = totalCoins
 
-  const list = document.getElementById("topGifters")
-  list.innerHTML = ""
+  topGiftersEl.innerHTML = ""
+
+  if (topGifters.length === 0) {
+    topGiftersEl.innerHTML = `<p style="color:#aaa">Nenhum presente recebido</p>`
+  }
 
   topGifters.forEach(([name, value]) => {
     const div = document.createElement("div")
@@ -581,12 +595,15 @@ async function showLiveSummary() {
       <span>${name}</span>
       <strong>${value} coins</strong>
     `
-    list.appendChild(div)
+    topGiftersEl.appendChild(div)
   })
 
-  document.getElementById("liveSummary").classList.remove("hidden")
-}
+  summary.classList.remove("hidden")
 
+  document.getElementById("closeSummaryBtn").onclick = () => {
+    location.href = "lux-meet-live.html"
+  }
+}
 
 
 function showLiveEndedForViewer() {
