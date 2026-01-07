@@ -98,6 +98,8 @@ async function handleAuth(user) {
   await validateAccess()
   await setupUI()
   renderGifts()
+  bindLeaveButton()
+
 
 
   const role =
@@ -598,4 +600,42 @@ function showLiveEndedForViewer() {
     </div>
   `
 }
+
+
+
+function bindLeaveButton() {
+  const btn = document.getElementById("leaveBtn")
+
+  if (!btn) {
+    console.warn("leaveBtn não encontrado")
+    return
+  }
+
+  btn.addEventListener("click", () => {
+    if (liveData.hostId === currentUser.uid) {
+      openEndLiveModal()
+    } else {
+      leaveLive()
+    }
+  })
+}
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const cancel = document.getElementById("cancelEndLive")
+  const confirm = document.getElementById("confirmEndLive")
+
+  if (cancel) {
+    cancel.onclick = () => {
+      document.getElementById("endLiveModal").classList.add("hidden")
+    }
+  }
+
+  if (confirm) {
+    confirm.onclick = async () => {
+      await endLiveAsHost()
+    }
+  }
+})
 
