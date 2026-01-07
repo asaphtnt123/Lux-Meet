@@ -547,7 +547,6 @@ async function endLiveAsHost() {
 
   showLiveSummary()
 }
-
 async function showLiveSummary() {
   const giftsSnap = await db
     .collection("lives")
@@ -569,24 +568,24 @@ async function showLiveSummary() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
 
-  document.body.innerHTML = `
-    <div class="live-summary">
-      <h2>📊 Live Finalizada</h2>
-      <p>👁 Espectadores: ${viewerCount}</p>
-      <p>💰 Ganhos totais: ${totalCoins} coins</p>
+  document.getElementById("sumViewers").textContent = viewerCount
+  document.getElementById("sumCoins").textContent = totalCoins
 
-      <h3>🏆 Top apoiadores</h3>
-      ${topGifters.map(
-        g => `<p>${g[0]} — ${g[1]} coins</p>`
-      ).join("")}
+  const list = document.getElementById("topGifters")
+  list.innerHTML = ""
 
-      <button onclick="location.href='lux-meet-live.html'">
-        OK
-      </button>
-    </div>
-  `
+  topGifters.forEach(([name, value]) => {
+    const div = document.createElement("div")
+    div.className = "top-gifter"
+    div.innerHTML = `
+      <span>${name}</span>
+      <strong>${value} coins</strong>
+    `
+    list.appendChild(div)
+  })
+
+  document.getElementById("liveSummary").classList.remove("hidden")
 }
-
 
 
 
