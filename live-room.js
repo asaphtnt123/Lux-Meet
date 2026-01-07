@@ -148,10 +148,7 @@ async function setupUI() {
 // =======================================
 // JOIN LIVE (LIVEKIT)
 // =======================================
-
 async function joinLive(role) {
-    console.log('LiveKit global:', window.LiveKit)
-
     if (!window.LiveKit) {
         alert('LiveKit não carregado')
         return
@@ -168,22 +165,43 @@ async function joinLive(role) {
         body: JSON.stringify({ liveId, role })
     })
 
+    if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt)
+    }
+
     const { token, url } = await res.json()
 
-    room = new window.LiveKit.Room()
+    room = new LiveKit.Room()
+
+    room.on(
+        LiveKit.RoomEvent.TrackSubscribed,
+        (track) => {
+            if (track.kind === 'video') {
+                const el = track.attach()
+                el.autoplay = true
+                el.playsInline = true
+                document
+                    .getElementById('videoContainer')
+                    .appendChild(el)
+            }
+        }
+    )
+
     await room.connect(url, token)
 
-    console.log('Conectado à live')
-
     if (role === 'host') {
-        const track = await window.LiveKit.createLocalVideoTrack()
+        const track = await LiveKit.createLocalVideoTrack()
         await room.localParticipant.publishTrack(track)
 
         const el = track.attach()
         el.muted = true
         el.autoplay = true
         el.playsInline = true
-        document.getElementById('videoContainer').appendChild(el)
+
+        document
+            .getElementById('videoContainer')
+            .appendChild(el)
     }
 }
 
