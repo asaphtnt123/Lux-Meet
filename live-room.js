@@ -24,6 +24,39 @@ let joined = false
 // =======================================
 let chatUnsub = null
 
+
+
+// =======================================
+// GIFTS CATALOG (FRONTEND)
+// =======================================
+const GIFTS = [
+  {
+    id: "rose",
+    name: "Rosa",
+    emoji: "🌹",
+    value: 5
+  },
+  {
+    id: "heart",
+    name: "Coração",
+    emoji: "❤️",
+    value: 10
+  },
+  {
+    id: "diamond",
+    name: "Diamante",
+    emoji: "💎",
+    value: 50
+  },
+  {
+    id: "crown",
+    name: "Coroa",
+    emoji: "👑",
+    value: 100
+  }
+]
+
+
 // =======================================
 // INIT
 // =======================================
@@ -439,3 +472,15 @@ function showGiftAnimation(gift) {
 
   setTimeout(() => div.remove(), 2000)
 }
+
+
+function showGiftAnimation({ emoji, name }) {
+  const el = document.createElement("div")
+  el.className = "gift-animation"
+  el.textContent = emoji + " " + name
+
+  document.body.appendChild(el)
+
+  setTimeout(() => el.remove(), 3000)
+}
+
