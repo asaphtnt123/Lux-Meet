@@ -86,7 +86,25 @@
 </section>
 
 
+
+
   </main>
+
+
+  <div id="liveSummary" class="summary-screen hidden">
+  <h2>Live encerrada 🎉</h2>
+
+  <p>👁 Espectadores: <span id="sumViewers"></span></p>
+  <p>💰 Total ganho: <span id="sumTotal"></span> coins</p>
+
+  <h3>🏆 Top Gifters</h3>
+  <ul id="topGifters"></ul>
+
+  <h3>🎁 Presentes recebidos</h3>
+  <div id="giftThumbs" class="gift-thumbs"></div>
+
+  <button onclick="location.href='lux-meet-live.html'">OK</button>
+</div>
 
   <!-- ================= FOOTER / CHAT INPUT ================= -->
   <footer class="live-footer">
@@ -105,6 +123,20 @@
 
   </footer>
 
+</div>
+
+<div id="endLiveModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Encerrar live?</h3>
+    <p>
+      👁 <strong id="modalViewerCount">0</strong> espectadores assistindo
+    </p>
+
+    <div class="modal-actions">
+      <button id="cancelEndLive">Cancelar</button>
+      <button id="confirmEndLive" class="danger">Encerrar</button>
+    </div>
+  </div>
 </div>
 
 <!-- ================= MODALS (FUTURO) ================= -->

@@ -108,6 +108,16 @@ async function handleAuth(user) {
   initChat()
   watchViewerCount()
 
+  db.collection("lives")
+  .doc(liveId)
+  .onSnapshot(doc => {
+    if (!doc.exists) return
+    if (doc.data().status === "ended") {
+      showLiveEndedForViewer()
+    }
+  })
+
+
   document.getElementById("loading").classList.add("hidden")
   document.getElementById("app").classList.remove("hidden")
 }
@@ -172,7 +182,13 @@ async function setupUI() {
   document.getElementById("liveTitle").textContent =
     liveData.title || ""
 
-  document.getElementById("leaveBtn").onclick = leaveLive
+document.getElementById("leaveBtn").onclick = () => {
+  if (liveData.hostId === currentUser.uid) {
+    openEndLiveModal()
+  } else {
+    leaveLive()
+  }
+}
 }
 
 // =======================================
@@ -482,5 +498,104 @@ function showGiftAnimation({ emoji, name }) {
   document.body.appendChild(el)
 
   setTimeout(() => el.remove(), 3000)
+}
+
+
+
+async function openEndLiveModal() {
+  const snap = await db
+    .collection("lives")
+    .doc(liveId)
+    .collection("viewers")
+    .get()
+
+  document.getElementById("modalViewerCount").textContent = snap.size
+  document.getElementById("endLiveModal").classList.remove("hidden")
+}
+
+document.getElementById("cancelEndLive").onclick = () => {
+  document.getElementById("endLiveModal").classList.add("hidden")
+}
+
+document.getElementById("confirmEndLive").onclick = async () => {
+  await endLiveAsHost()
+}
+
+async function endLiveAsHost() {
+  // Atualiza status da live
+  await db.collection("lives").doc(liveId).update({
+    status: "ended",
+    endedAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+
+  showLiveSummary()
+}
+
+
+async function showLiveSummary() {
+  document.getElementById("app").classList.add("hidden")
+  document.getElementById("liveSummary").classList.remove("hidden")
+
+  const viewersSnap = await db
+    .collection("lives")
+    .doc(liveId)
+    .collection("viewers")
+    .get()
+
+  document.getElementById("sumViewers").textContent = viewersSnap.size
+
+  const giftsSnap = await db
+    .collection("lives")
+    .doc(liveId)
+    .collection("gifts")
+    .get()
+
+  let total = 0
+  const ranking = {}
+
+  giftsSnap.forEach(doc => {
+    const g = doc.data()
+    total += g.value
+
+    ranking[g.senderName] =
+      (ranking[g.senderName] || 0) + g.value
+
+    const gift = GIFTS.find(x => x.id === g.giftId)
+    if (gift) {
+      const el = document.createElement("span")
+      el.textContent = gift.emoji
+      document.getElementById("giftThumbs").appendChild(el)
+    }
+  })
+
+  document.getElementById("sumTotal").textContent = total
+
+  const sorted = Object.entries(ranking)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+
+  const ul = document.getElementById("topGifters")
+  sorted.forEach(([name, val]) => {
+    const li = document.createElement("li")
+    li.textContent = `${name} — ${val} coins`
+    ul.appendChild(li)
+  })
+
+  await leaveLive(true)
+}
+
+
+
+function showLiveEndedForViewer() {
+  document.getElementById("app").innerHTML = `
+    <div class="ended-viewer">
+      <h2>🔴 Live finalizada</h2>
+      <p>O host encerrou a transmissão</p>
+
+      <button onclick="followHost()">⭐ Tornar Fã</button>
+      <button onclick="addFriend()">➕ Adicionar amigo</button>
+      <button onclick="openGiftPanel()">🎁 Enviar presente</button>
+    </div>
+  `
 }
 
