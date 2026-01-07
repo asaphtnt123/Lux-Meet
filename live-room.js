@@ -148,8 +148,11 @@ async function setupUI() {
 // =======================================
 // JOIN LIVE (LIVEKIT)
 // =======================================
-
 async function joinLive(role) {
+    if (!window.LiveKit) {
+        throw new Error('LiveKit SDK não carregado')
+    }
+
     const idToken = await currentUser.getIdToken()
 
     const res = await fetch('/.netlify/functions/getLiveToken', {
@@ -168,10 +171,10 @@ async function joinLive(role) {
 
     const { token, url } = data
 
-    room = new LiveKitClient.Room()
+    room = new window.LiveKit.Room()
 
     room.on(
-        LiveKitClient.RoomEvent.TrackSubscribed,
+        window.LiveKit.RoomEvent.TrackSubscribed,
         (track) => {
             if (track.kind === 'video') {
                 const el = track.attach()
@@ -188,7 +191,7 @@ async function joinLive(role) {
 
     if (role === 'host') {
         const videoTrack =
-            await LiveKitClient.createLocalVideoTrack()
+            await window.LiveKit.createLocalVideoTrack()
 
         await room.localParticipant.publishTrack(videoTrack)
 
