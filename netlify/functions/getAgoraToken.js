@@ -32,9 +32,12 @@ export const handler = async (event) => {
     );
 
     return {
-      statusCode: 200,
-      body: JSON.stringify({ token }),
-    };
+  statusCode: 200,
+  body: JSON.stringify({
+    token: token
+  })
+}
+
   } catch (err) {
     return {
       statusCode: 500,

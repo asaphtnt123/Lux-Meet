@@ -57,12 +57,10 @@ async function handleAuth(user) {
   await loadUser()
   await loadLive()
   await validateAccess()
-  setupUI()
+  await setupUI()
 
   const role =
-    liveData.hostId === currentUser.uid
-      ? "host"
-      : "viewer"
+    liveData.hostId === currentUser.uid ? "host" : "viewer"
 
   await startAgora(role)
 
@@ -124,7 +122,9 @@ async function setupUI() {
   document.getElementById("hostName").textContent = host.name || "Host"
   document.getElementById("hostAvatar").src =
     host.profilePhotoURL || "https://via.placeholder.com/50"
-  document.getElementById("liveTitle").textContent = liveData.title || ""
+  document.getElementById("liveTitle").textContent =
+    liveData.title || ""
+
   document.getElementById("leaveBtn").onclick = leaveLive
 }
 
@@ -132,28 +132,32 @@ async function setupUI() {
 // AGORA START
 // =======================================
 async function startAgora(role) {
-  const idToken = await currentUser.getIdToken()
-
-  const res = await fetch("/.netlify/functions/getAgoraToken", {
+  const response = await fetch("/.netlify/functions/getAgoraToken", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${idToken}`
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      channel: liveId,
-      role
+      channelName: liveId,
+      role: role
     })
   })
 
-  const { token, uid } = await res.json()
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(err)
+  }
+
+  const { token, uid } = await response.json()
+
+  if (!token) {
+    throw new Error("Token inválido retornado pelo backend")
+  }
 
   client = AgoraRTC.createClient({
     mode: "live",
     codec: "vp8"
   })
 
-  client.setClientRole(
+  await client.setClientRole(
     role === "host" ? "host" : "audience"
   )
 
@@ -161,20 +165,18 @@ async function startAgora(role) {
     AGORA_APP_ID,
     liveId,
     token,
-    uid
+    uid || null
   )
 
-  // 🔥 HOST
+  // 🎥 HOST
   if (role === "host") {
     localTracks = await AgoraRTC.createMicrophoneAndCameraTracks()
 
-    const videoTrack = localTracks[1]
-    videoTrack.play("videoContainer")
-
+    localTracks[1].play("videoContainer")
     await client.publish(localTracks)
   }
 
-  // 👀 VIEWER
+  // 👀 VIEWERS
   client.on("user-published", async (user, mediaType) => {
     await client.subscribe(user, mediaType)
 
@@ -192,10 +194,10 @@ async function startAgora(role) {
 // LEAVE
 // =======================================
 async function leaveLive() {
-  if (localTracks.length) {
-    localTracks.forEach(track => track.stop())
-    localTracks.forEach(track => track.close())
-  }
+  localTracks.forEach(track => {
+    track.stop()
+    track.close()
+  })
 
   if (client) await client.leave()
 
