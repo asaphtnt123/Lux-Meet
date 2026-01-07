@@ -11,6 +11,8 @@ let currentUser = null
 let userData = null
 let liveId = null
 let liveData = null
+let viewersUnsub = null
+
 let viewerCount = 0
 let viewerUnsub = null
 let liveEnded = false
@@ -86,6 +88,20 @@ function init() {
   db = firebase.firestore()
 
   auth.onAuthStateChanged(handleAuth)
+
+  viewersUnsub = db
+  .collection("lives")
+  .doc(liveId)
+  .collection("viewers")
+  .onSnapshot(snap => {
+    if (liveEnded) return
+
+    const el = document.getElementById("viewerCount")
+    if (el) el.textContent = `👁 ${snap.size}`
+  })
+
+
+
 }
 
 // =======================================
@@ -540,13 +556,29 @@ document.getElementById("confirmEndLive").onclick = async () => {
 }
 
 async function endLiveAsHost() {
-  // Atualiza status da live
+  liveEnded = true
+
+  // 🔕 Desliga listeners
+  if (chatUnsub) chatUnsub()
+  if (giftsUnsub) giftsUnsub()
+  if (viewersUnsub) viewersUnsub()
+
+  // 🔴 Marca live como encerrada
   await db.collection("lives").doc(liveId).update({
     status: "ended",
     endedAt: firebase.firestore.FieldValue.serverTimestamp()
   })
 
-  showLiveSummary()
+  // 🎥 Agora
+  localTracks.forEach(t => {
+    t.stop()
+    t.close()
+  })
+
+  if (client) await client.leave()
+
+  // 📊 Mostra resumo
+  await showLiveSummary()
 }
 
 async function showLiveSummary() {
@@ -554,6 +586,11 @@ async function showLiveSummary() {
   const viewersEl = document.getElementById("sumViewers")
   const coinsEl = document.getElementById("sumCoins")
   const topGiftersEl = document.getElementById("topGifters")
+
+   liveEnded = true
+
+  
+  if (!summary) return
 
   if (!summary || !viewersEl || !coinsEl || !topGiftersEl) {
     console.error("❌ HTML do resumo não encontrado")
