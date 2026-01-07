@@ -66,6 +66,11 @@ async function handleAuth(user) {
 
   document.getElementById("loading").classList.add("hidden")
   document.getElementById("app").classList.remove("hidden")
+
+  initChat()
+
+
+
 }
 
 // =======================================
@@ -209,4 +214,68 @@ async function leaveLive() {
     .delete()
 
   location.href = "lux-meet-live.html"
+}
+
+// Iniciar Chat
+
+function initChat() {
+  const chatRef = db
+    .collection("lives")
+    .doc(liveId)
+    .collection("chat")
+    .orderBy("createdAt", "asc")
+    .limit(100)
+
+  chatUnsub = chatRef.onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+        renderMessage(change.doc.data())
+      }
+    })
+  })
+
+  document
+    .getElementById("chatForm")
+    .addEventListener("submit", sendMessage)
+}
+
+async function sendMessage(e) {
+  e.preventDefault()
+
+  const input = document.getElementById("chatInput")
+  const text = input.value.trim()
+  if (!text) return
+
+  input.value = ""
+
+  await db
+    .collection("lives")
+    .doc(liveId)
+    .collection("chat")
+    .add({
+      uid: currentUser.uid,
+      name: userData.name || "Usuário",
+      photo: userData.profilePhotoURL || "",
+      text,
+      type: "text",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+}
+
+function renderMessage(msg) {
+  const container = document.getElementById("chatMessages")
+
+  const div = document.createElement("div")
+  div.className = "chat-message"
+
+  div.innerHTML = `
+    <img src="${msg.photo || 'https://via.placeholder.com/30'}" />
+    <div class="content">
+      <div class="name">${msg.name}</div>
+      <div class="text">${msg.text}</div>
+    </div>
+  `
+
+  container.appendChild(div)
+  container.scrollTop = container.scrollHeight
 }
