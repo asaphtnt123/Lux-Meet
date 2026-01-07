@@ -13,6 +13,7 @@ let liveId = null
 let liveData = null
 let viewerCount = 0
 let viewerUnsub = null
+let liveEnded = false
 
 // =======================================
 // AGORA
@@ -717,7 +718,10 @@ function listenViewerCount() {
     .collection("viewers")
     .onSnapshot(snap => {
       viewerCount = snap.size
-      document.getElementById("viewerCount").textContent =
-        `👁 ${viewerCount}`
+      const el = document.getElementById("viewerCount")
+if (el && !liveEnded) {
+  el.textContent = count
+}
+
     })
 }
