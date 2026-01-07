@@ -64,6 +64,8 @@ async function handleAuth(user) {
   await loadLive()
   await validateAccess()
   await setupUI()
+  renderGifts()
+
 
   const role =
     liveData.hostId === currentUser.uid ? "host" : "viewer"
@@ -230,13 +232,16 @@ function watchViewerCount() {
 // =======================================
 // CHAT
 // =======================================
+let giftsUnsub = null
+
 function initChat() {
+  // ================= CHAT TEXTO =================
   const chatRef = db
     .collection("lives")
     .doc(liveId)
     .collection("chat")
     .orderBy("createdAt", "asc")
-    .limit(150)
+    .limit(100)
 
   chatUnsub = chatRef.onSnapshot(snapshot => {
     snapshot.docChanges().forEach(change => {
@@ -249,7 +254,42 @@ function initChat() {
   document
     .getElementById("chatForm")
     .addEventListener("submit", sendMessage)
+
+  // ================= GIFTS =================
+  const giftsRef = db
+    .collection("lives")
+    .doc(liveId)
+    .collection("gifts")
+    .orderBy("createdAt", "desc")
+    .limit(20)
+
+  giftsUnsub = giftsRef.onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+        const g = change.doc.data()
+
+        // Mostra no chat
+        renderMessage({
+          name: "🎁 Sistema",
+          text: `${g.senderName} enviou ${g.giftName} (${g.value})`
+        })
+
+        // Animação (se quiser)
+        showGiftAnimation({
+          emoji: getGiftEmoji(g.giftId),
+          name: g.giftName
+        })
+      }
+    })
+  })
 }
+
+
+function getGiftEmoji(giftId) {
+  const gift = GIFTS.find(g => g.id === giftId)
+  return gift ? gift.emoji : "🎁"
+}
+
 
 async function sendMessage(e) {
   e.preventDefault()
@@ -291,27 +331,111 @@ function renderMessage(msg) {
 // LEAVE
 // =======================================
 async function leaveLive() {
-  try {
-    if (chatUnsub) chatUnsub()
+  if (chatUnsub) chatUnsub()
+  if (giftsUnsub) giftsUnsub()
 
-    localTracks.forEach(track => {
-      track.stop()
-      track.close()
-    })
+  localTracks.forEach(track => {
+    track.stop()
+    track.close()
+  })
 
-    if (client && joined) {
-      await client.leave()
-    }
+  if (client) await client.leave()
 
-    await db
-      .collection("lives")
-      .doc(liveId)
-      .collection("viewers")
-      .doc(currentUser.uid)
-      .delete()
-  } catch (e) {
-    console.warn(e)
-  }
+  await db
+    .collection("lives")
+    .doc(liveId)
+    .collection("viewers")
+    .doc(currentUser.uid)
+    .delete()
 
   location.href = "lux-meet-live.html"
+}
+
+
+// gifts
+
+function renderGifts() {
+  const container = document.getElementById("giftsList")
+  container.innerHTML = ""
+
+  GIFTS.forEach(gift => {
+    const btn = document.createElement("button")
+    btn.className = "gift-btn"
+    btn.innerHTML = `
+      ${gift.emoji}
+      <span>${gift.value}</span>
+    `
+    btn.onclick = () => sendGift(gift)
+    container.appendChild(btn)
+  })
+}
+
+
+
+async function sendGift(gift) {
+  if (currentUser.uid === liveData.hostId) {
+    alert("Você não pode enviar gift para si mesmo")
+    return
+  }
+
+  const userRef = db.collection("users").doc(currentUser.uid)
+  const hostRef = db.collection("users").doc(liveData.hostId)
+  const liveRef = db.collection("lives").doc(liveId)
+
+  try {
+    await db.runTransaction(async tx => {
+      const userSnap = await tx.get(userRef)
+      const hostSnap = await tx.get(hostRef)
+
+      const balance = userSnap.data().balance || 0
+      if (balance < gift.value) {
+        throw new Error("Saldo insuficiente")
+      }
+
+      // Desconta do viewer
+      tx.update(userRef, {
+        balance: balance - gift.value
+      })
+
+      // Credita ao host
+      tx.update(hostRef, {
+        earnings:
+          (hostSnap.data().earnings || 0) + gift.value
+      })
+
+      // Soma na live
+      tx.update(liveRef, {
+        totalGiftsValue:
+          firebase.firestore.FieldValue.increment(gift.value)
+      })
+
+      // Registra gift
+      tx.set(
+        liveRef.collection("gifts").doc(),
+        {
+          senderId: currentUser.uid,
+          senderName: userData.name,
+          giftId: gift.id,
+          giftName: gift.name,
+          value: gift.value,
+          createdAt:
+            firebase.firestore.FieldValue.serverTimestamp()
+        }
+      )
+    })
+
+    showGiftAnimation(gift)
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
+function showGiftAnimation(gift) {
+  const div = document.createElement("div")
+  div.className = "gift-animation"
+  div.innerHTML = `${gift.emoji} ${gift.name}!`
+
+  document.body.appendChild(div)
+
+  setTimeout(() => div.remove(), 2000)
 }

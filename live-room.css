@@ -289,3 +289,48 @@ body {
     right: 24px;
   }
 }
+
+
+.live-gifts {
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  display: flex;
+}
+
+.gifts-list {
+  display: flex;
+  gap: 8px;
+}
+
+.gift-btn {
+  background: rgba(0,0,0,.6);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 12px;
+  padding: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.gift-btn span {
+  display: block;
+  font-size: 12px;
+  opacity: .8;
+}
+
+.gift-animation {
+  position: fixed;
+  bottom: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
+  animation: pop 2s ease forwards;
+  color: gold;
+}
+
+@keyframes pop {
+  0% { opacity: 0; transform: scale(.5); }
+  30% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
