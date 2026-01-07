@@ -95,11 +95,22 @@ async function handleAuth(user) {
 
   await loadUser()
   await loadLive()
+  
   await validateAccess()
   await setupUI()
   renderGifts()
   bindLeaveButton()
 
+db.collection("lives").doc(liveId)
+  .onSnapshot(doc => {
+    if (!doc.exists) return
+
+    const data = doc.data()
+
+    if (data.status === "finished") {
+      handleLiveEndedByHost()
+    }
+  })
 
 
   const role =
@@ -185,12 +196,13 @@ async function setupUI() {
     liveData.title || ""
 
 document.getElementById("leaveBtn").onclick = () => {
-  if (liveData.hostId === currentUser.uid) {
-    openEndLiveModal()
+  if (currentUser.uid === liveData.hostId) {
+    endLiveAsHost()
   } else {
     leaveLive()
   }
 }
+
 }
 
 // =======================================
@@ -533,58 +545,45 @@ async function endLiveAsHost() {
   showLiveSummary()
 }
 
-
 async function showLiveSummary() {
-  document.getElementById("app").classList.add("hidden")
-  document.getElementById("liveSummary").classList.remove("hidden")
-
-  const viewersSnap = await db
-    .collection("lives")
-    .doc(liveId)
-    .collection("viewers")
-    .get()
-
-  document.getElementById("sumViewers").textContent = viewersSnap.size
-
   const giftsSnap = await db
     .collection("lives")
     .doc(liveId)
     .collection("gifts")
     .get()
 
-  let total = 0
+  let totalCoins = 0
   const ranking = {}
 
   giftsSnap.forEach(doc => {
     const g = doc.data()
-    total += g.value
-
+    totalCoins += g.value
     ranking[g.senderName] =
       (ranking[g.senderName] || 0) + g.value
-
-    const gift = GIFTS.find(x => x.id === g.giftId)
-    if (gift) {
-      const el = document.createElement("span")
-      el.textContent = gift.emoji
-      document.getElementById("giftThumbs").appendChild(el)
-    }
   })
 
-  document.getElementById("sumTotal").textContent = total
-
-  const sorted = Object.entries(ranking)
+  const topGifters = Object.entries(ranking)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
 
-  const ul = document.getElementById("topGifters")
-  sorted.forEach(([name, val]) => {
-    const li = document.createElement("li")
-    li.textContent = `${name} — ${val} coins`
-    ul.appendChild(li)
-  })
+  document.body.innerHTML = `
+    <div class="live-summary">
+      <h2>📊 Live Finalizada</h2>
+      <p>👁 Espectadores: ${viewerCount}</p>
+      <p>💰 Ganhos totais: ${totalCoins} coins</p>
 
-  await leaveLive(true)
+      <h3>🏆 Top apoiadores</h3>
+      ${topGifters.map(
+        g => `<p>${g[0]} — ${g[1]} coins</p>`
+      ).join("")}
+
+      <button onclick="location.href='lux-meet-live.html'">
+        OK
+      </button>
+    </div>
+  `
 }
+
 
 
 
@@ -638,4 +637,55 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 })
+
+
+async function endLiveAsHost() {
+  const confirmEnd = confirm(
+    `Deseja finalizar a live agora?\n\n👁 Espectadores ativos: ${viewerCount}`
+  )
+
+  if (!confirmEnd) return
+
+  // 🔴 1. Marcar live como finalizada
+  await db.collection("lives").doc(liveId).update({
+    status: "finished",
+    endedAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+
+  // 🔴 2. Desconectar Agora
+  if (localTracks.length) {
+    localTracks.forEach(t => {
+      t.stop()
+      t.close()
+    })
+  }
+
+  if (client) await client.leave()
+
+  // 🔴 3. Mostrar tela final (SEM REDIRECIONAR AINDA)
+  await showLiveSummary()
+
+}
+
+
+function handleLiveEndedByHost() {
+  if (client) client.leave()
+
+  document.body.innerHTML = `
+    <div class="live-ended-screen">
+      <h2>📴 Live encerrada</h2>
+      <p>O host finalizou a transmissão.</p>
+
+      <div class="ended-actions">
+        <button onclick="followHost()">⭐ Tornar fã</button>
+        <button onclick="addFriend()">👤 Adicionar amigo</button>
+        <button onclick="sendGift()">🎁 Enviar presente</button>
+      </div>
+
+      <button onclick="location.href='lux-meet-live.html'">
+        Voltar
+      </button>
+    </div>
+  `
+}
 
