@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@joeattardi/emoji-button": "^4.6.4",
     "livekit-server-sdk": "^2.4.3",
     "firebase-admin": "^12.0.0"
   }
