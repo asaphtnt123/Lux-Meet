@@ -160,7 +160,14 @@ async function joinLive(role) {
         body: JSON.stringify({ liveId, role })
     })
 
-    const { token, url } = await res.json()
+const data = await res.json()
+
+if (!res.ok) {
+  alert(data.error || 'Erro ao entrar na live')
+  throw new Error(data.error)
+}
+
+const { token, url } = data
 
     room = new LiveKit.Room()
 
