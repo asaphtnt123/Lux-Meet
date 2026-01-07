@@ -148,9 +148,13 @@ async function setupUI() {
 // =======================================
 // JOIN LIVE (LIVEKIT)
 // =======================================
+
 async function joinLive(role) {
+    console.log('LiveKit global:', window.LiveKit)
+
     if (!window.LiveKit) {
-        throw new Error('LiveKit SDK não carregado')
+        alert('LiveKit não carregado')
+        return
     }
 
     const idToken = await currentUser.getIdToken()
@@ -164,47 +168,25 @@ async function joinLive(role) {
         body: JSON.stringify({ liveId, role })
     })
 
-    const data = await res.json()
-    if (!res.ok) {
-        throw new Error(data.error || 'Erro ao entrar na live')
-    }
-
-    const { token, url } = data
+    const { token, url } = await res.json()
 
     room = new window.LiveKit.Room()
-
-    room.on(
-        window.LiveKit.RoomEvent.TrackSubscribed,
-        (track) => {
-            if (track.kind === 'video') {
-                const el = track.attach()
-                el.autoplay = true
-                el.playsInline = true
-                document
-                    .getElementById('videoContainer')
-                    .appendChild(el)
-            }
-        }
-    )
-
     await room.connect(url, token)
 
+    console.log('Conectado à live')
+
     if (role === 'host') {
-        const videoTrack =
-            await window.LiveKit.createLocalVideoTrack()
+        const track = await window.LiveKit.createLocalVideoTrack()
+        await room.localParticipant.publishTrack(track)
 
-        await room.localParticipant.publishTrack(videoTrack)
-
-        const el = videoTrack.attach()
+        const el = track.attach()
         el.muted = true
         el.autoplay = true
         el.playsInline = true
-
-        document
-            .getElementById('videoContainer')
-            .appendChild(el)
+        document.getElementById('videoContainer').appendChild(el)
     }
 }
+
 
 
 // =======================================
