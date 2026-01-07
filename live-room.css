@@ -1,155 +1,205 @@
-/* ================================
-   RESET & BASE
+/* ===============================
+   RESET + BASE
 ================================ */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
 }
 
-body {
-    background: #000;
-    color: #fff;
-    overflow: hidden;
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
 }
 
-/* ================================
+/* ===============================
    LOADING
 ================================ */
-.loading {
-    position: fixed;
-    inset: 0;
-    background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    z-index: 1000;
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-screen p {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #bbb;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid #222;
+  border-top: 4px solid #ff4d6d;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .hidden {
-    display: none;
+  display: none !important;
 }
 
-/* ================================
-   LIVE APP
+/* ===============================
+   APP LAYOUT
 ================================ */
-.live-app {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    background: #000;
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #000;
 }
 
-/* ================================
+/* ===============================
    HEADER FIXO
 ================================ */
 .live-header {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    right: 12px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    background: rgba(20, 20, 25, 0.75);
-    backdrop-filter: blur(10px);
-    border-radius: 14px;
-    z-index: 10;
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 0;
+  width: 100%;
+  height: 64px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.7),
+    rgba(0,0,0,0)
+  );
+  z-index: 10;
 }
 
-/* HOST INFO */
 .host-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .host-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #ff3d3d;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ff4d6d;
 }
 
-.host-meta {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.2;
+.host-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .host-name {
-    font-size: 14px;
-    font-weight: 600;
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.live-status {
-    font-size: 12px;
-    color: #ff3d3d;
+.live-title {
+  font-size: 12px;
+  color: #ccc;
 }
 
-/* END LIVE BUTTON */
-.btn-danger {
-    background: rgba(255, 61, 61, 0.15);
-    color: #ff3d3d;
-    border: 1px solid rgba(255, 61, 61, 0.4);
-    padding: 6px 12px;
-    border-radius: 10px;
-    font-size: 12px;
-    cursor: pointer;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.btn-danger:hover {
-    background: rgba(255, 61, 61, 0.25);
+.viewer-count {
+  font-size: 13px;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 10px;
+  border-radius: 999px;
 }
 
-/* ================================
-   VIDEO AREA
+.leave-btn {
+  background: rgba(255, 77, 109, 0.9);
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.leave-btn:active {
+  transform: scale(0.96);
+}
+
+/* ===============================
+   STAGE / VIDEO
 ================================ */
-.video-area {
-    position: absolute;
-    inset: 0;
-    background: #000;
+.live-stage {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #000;
 }
 
-#liveVideo {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    background: #000;
+/* Agora injeta vídeos aqui */
+.video-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-/* ================================
-   DESKTOP ADJUSTMENTS
+/* VÍDEO DO AGORA */
+.video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+}
+
+/* ===============================
+   FOOTER
+================================ */
+.live-footer {
+  position: fixed;
+  bottom: env(safe-area-inset-bottom);
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.7),
+    rgba(0,0,0,0)
+  );
+  z-index: 10;
+}
+
+/* ===============================
+   DESKTOP AJUSTES
 ================================ */
 @media (min-width: 768px) {
-    .live-header {
-        top: 16px;
-        left: 16px;
-        right: 16px;
-        height: 64px;
-    }
+  .live-header {
+    height: 72px;
+    padding: 0 24px;
+  }
 
-    .host-avatar {
-        width: 48px;
-        height: 48px;
-    }
+  .host-name {
+    font-size: 15px;
+  }
 
-    .host-name {
-        font-size: 16px;
-    }
+  .viewer-count {
+    font-size: 14px;
+  }
 }
-
-
-.live-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    background: black;
-}
-

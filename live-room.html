@@ -1,70 +1,76 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <title>Live Room</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <title>Lux Meet • Live</title>
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <link rel="stylesheet" href="live-room.css" />
+  <!-- CSS -->
+  <link rel="stylesheet" href="live-room.css" />
+
+  <!-- PRELOAD VIDEO -->
+  <meta name="theme-color" content="#000000" />
 </head>
+
 <body>
 
-<!-- LOADING -->
-<div id="loading" class="loading">
-    Entrando na live...
+<!-- ================= LOADING ================= -->
+<div id="loading" class="loading-screen">
+  <div class="spinner"></div>
+  <p>Entrando na live...</p>
 </div>
 
-<!-- APP -->
+<!-- ================= APP ================= -->
 <div id="app" class="hidden">
 
-    <!-- HEADER -->
-    <header class="live-header">
-        <div class="host-info">
-            <img id="hostAvatar" />
-            <div>
-                <span id="hostName"></span>
-                <small id="liveTitle"></small>
-            </div>
-        </div>
+  <!-- ===== HEADER FIXO ===== -->
+  <header class="live-header">
 
-        <div class="header-right">
-            <span id="viewerCount">👁 0</span>
-            <button id="leaveBtn">Sair</button>
-        </div>
-    </header>
+    <div class="host-info">
+      <img id="hostAvatar" class="host-avatar" />
+      <div class="host-text">
+        <span id="hostName" class="host-name">Host</span>
+        <small id="liveTitle" class="live-title"></small>
+      </div>
+    </div>
 
-    <!-- VIDEO AREA -->
-    <main class="live-stage">
-      <video
-    id="liveVideo"
-    autoplay
-    playsinline
-    muted="false"
-    class="live-video">
-</video>
+    <div class="header-actions">
+      <span id="viewerCount" class="viewer-count">👁 0</span>
+      <button id="leaveBtn" class="leave-btn">Sair</button>
+    </div>
 
-<div id="videoContainer"></div>
+  </header>
 
+  <!-- ===== VIDEO STAGE ===== -->
+  <main class="live-stage">
 
+    <!-- VIDEO PRINCIPAL -->
+    <div id="videoContainer" class="video-container">
+      <!-- Agora irá injetar o vídeo aqui -->
+    </div>
 
-    </main>
+  </main>
+
+  <!-- ===== FOOTER (AÇÕES FUTURAS) ===== -->
+  <footer class="live-footer">
+    <!-- reservado para chat, gifts, likes -->
+  </footer>
 
 </div>
 
- 
+<!-- ================= SCRIPTS ================= -->
 
-  <!-- Scripts -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-  
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-<script src="https://unpkg.com/livekit-client@1.15.6/dist/livekit-client.umd.min.js"></script>
+<!-- AGORA SDK -->
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
 
-
-
+<!-- APP -->
 <script src="live-room.js"></script>
+
 </body>
 </html>

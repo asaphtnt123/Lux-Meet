@@ -1,9 +1,6 @@
 {
-  "name": "luxmeet-live",
-  "version": "1.0.0",
-  "private": true,
   "dependencies": {
-    "livekit-server-sdk": "^2.4.3",
+    "agora-access-token": "^2.0.4",
     "firebase-admin": "^12.0.0"
   }
 }
