@@ -108,18 +108,18 @@ async function loadUserData() {
     return false
   }
 }
-
-
 function updateUserHeader(userData) {
-  // saldo normal
-  document.getElementById("userBalance").textContent =
-    userData.balance || 0
+  const balanceEl = document.getElementById("userBalance")
+  if (balanceEl) {
+    balanceEl.textContent = userData.balance || 0
+  }
 
-  // ganhos (earnings)
   const earnings = userData.earnings || 0
   const earningsEl = document.getElementById("userEarnings")
   const earningsValueEl =
     document.getElementById("userEarningsValue")
+
+  if (!earningsEl || !earningsValueEl) return
 
   if (earnings > 0) {
     earningsValueEl.textContent = earnings
@@ -133,13 +133,19 @@ function updateUserHeader(userData) {
 // USER READY
 // =======================================
 function onUserReady() {
-    document.getElementById('loading').classList.add('hidden')
-    document.getElementById('app').classList.remove('hidden')
+  document.getElementById('loading').classList.add('hidden')
+  document.getElementById('app').classList.remove('hidden')
 
-    updateUserUI()
-    setupEvents()
-    loadLives()
+  updateUserUI()
+  setupEvents()
+
+  // 🌍 navbar de países
+  renderCountryNavbar(userData.country || 'all')
+
+  // 🔴 carrega lives do país selecionado
+  loadLives(userData.country || 'all')
 }
+
 
 // =======================================
 // UPDATE USER UI
@@ -211,20 +217,22 @@ async function createLive() {
 
     // 🔹 Dados da live
     const liveData = {
-      hostId: currentUser.uid,
+  hostId: currentUser.uid,
+  hostName: userData.name,
+  hostAvatar: userData.profilePhotoURL,
 
-      title,
-      description,
+  title,
+  description,
 
-      type, // public | private
-      price: type === 'private' ? price : 0,
+  type,
+  price: type === 'private' ? price : 0,
 
-      country, // 🌍 IMPORTANTE PARA FILTRO
+  country,
+  status: 'active',
 
-      status: 'active',
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+}
 
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }
 
     const liveRef =
       await db.collection('lives').add(liveData)
@@ -281,8 +289,8 @@ async function loadLives(country) {
     .collection('lives')
     .where('status', '==', 'active')
 
-  // ⚠️ só filtra se existir
-  if (country) {
+  // ✅ só filtra se NÃO for "all"
+  if (country !== 'all') {
     query = query.where('country', '==', country)
   }
 
