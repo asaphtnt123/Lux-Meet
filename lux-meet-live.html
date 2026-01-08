@@ -13,22 +13,42 @@
     <!-- APP CONTAINER -->
     <div id="app" class="app hidden">
 
-        <!-- HEADER / USER INFO -->
-        <header class="app-header">
-            <div class="user-info">
-                <img id="userAvatar" class="user-avatar" src="" alt="Avatar do usuário">
-                <div class="user-meta">
-                    <span id="userName" class="user-name">Usuário</span>
-                    <span class="user-balance">
-                        💰 <strong id="userBalance">0</strong> moedas
-                    </span>
-                </div>
-            </div>
+       <!-- HEADER / USER INFO -->
+<header class="app-header">
 
-            <button id="createLiveBtn" class="btn-primary">
-                🔴 Criar Live
-            </button>
-        </header>
+  <div class="user-info">
+    <img
+      id="userAvatar"
+      class="user-avatar"
+      src=""
+      alt="Avatar do usuário"
+    >
+
+    <div class="user-meta">
+      <span id="userName" class="user-name">Usuário</span>
+
+      <div class="user-balances">
+        <span class="user-balance">
+          💰 <strong id="userBalance">0</strong> moedas
+        </span>
+
+        <!-- ganhos (só aparece se > 0) -->
+        <span
+          id="userEarnings"
+          class="user-earnings hidden"
+        >
+          ⭐ Ganhos: <strong id="userEarningsValue">0</strong>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <button id="createLiveBtn" class="btn-primary">
+    🔴 Criar Live
+  </button>
+
+</header>
+
 
         <!-- MAIN CONTENT -->
         <main class="app-content">

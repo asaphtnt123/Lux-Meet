@@ -30,6 +30,17 @@ async function initializeApp() {
 
         auth.onAuthStateChanged(handleAuthStateChange)
 
+
+        const snap = await db
+  .collection("users")
+  .doc(currentUser.uid)
+  .get()
+
+const userData = snap.data()
+
+updateUserHeader(userData)
+
+
     } catch (error) {
         console.error('Erro ao inicializar Firebase:', error)
         alert('Erro ao inicializar aplicação')
@@ -84,6 +95,25 @@ async function loadUserData() {
         console.error('Erro ao carregar usuário:', error)
         return false
     }
+}
+
+function updateUserHeader(userData) {
+  // saldo normal
+  document.getElementById("userBalance").textContent =
+    userData.balance || 0
+
+  // ganhos (earnings)
+  const earnings = userData.earnings || 0
+  const earningsEl = document.getElementById("userEarnings")
+  const earningsValueEl =
+    document.getElementById("userEarningsValue")
+
+  if (earnings > 0) {
+    earningsValueEl.textContent = earnings
+    earningsEl.classList.remove("hidden")
+  } else {
+    earningsEl.classList.add("hidden")
+  }
 }
 
 // =======================================

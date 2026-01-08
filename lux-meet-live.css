@@ -66,10 +66,22 @@ body {
     font-size: 16px;
 }
 
-.user-balance {
-    font-size: 13px;
-    color: #aaa;
+.user-balances {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
+
+.user-earnings {
+  font-size: 13px;
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.hidden {
+  display: none !important;
+}
+
 
 /* BUTTONS */
 .btn-primary {
