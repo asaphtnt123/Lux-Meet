@@ -277,23 +277,32 @@ function renderMessage(msg) {
 // =======================================
 // GIFTS UI
 // =======================================
+
 function renderGifts() {
   const container = document.getElementById("giftsContainer")
-  if (!container) return
+
+  if (!container) {
+    console.warn("giftsContainer não encontrado")
+    return
+  }
 
   container.innerHTML = ""
 
-  GIFTS.forEach(g => {
+  GIFTS.forEach(gift => {
     const btn = document.createElement("button")
     btn.className = "gift-btn"
+
     btn.innerHTML = `
-      <span>${g.name}</span>
-      <small>${g.value} coins</small>
+      <span>${gift.name}</span>
+      <strong>${gift.value} 💰</strong>
     `
-    btn.onclick = () => sendGift(g)
+
+    btn.onclick = () => sendGift(gift)
+
     container.appendChild(btn)
   })
 }
+
 
 async function sendGift(gift) {
   if (currentUser.uid === liveData.hostId) return
