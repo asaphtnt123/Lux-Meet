@@ -11,57 +11,30 @@ let currentUser = null
 let userData = null
 let liveId = null
 let liveData = null
-let viewersUnsub = null
-let isHost = false // você já deve ter isso
+
+let isHost = false
+let liveEnded = false
 
 let viewerCount = 0
 let viewerUnsub = null
-let liveEnded = false
+let chatUnsub = null
+let giftsUnsub = null
 
 // =======================================
 // AGORA
 // =======================================
 let client = null
 let localTracks = []
-let joined = false
 
 // =======================================
-// CHAT
-// =======================================
-let chatUnsub = null
-
-
-
-// =======================================
-// GIFTS CATALOG (FRONTEND)
+// GIFTS
 // =======================================
 const GIFTS = [
-  {
-    id: "rose",
-    name: "Rosa",
-    emoji: "🌹",
-    value: 5
-  },
-  {
-    id: "heart",
-    name: "Coração",
-    emoji: "❤️",
-    value: 10
-  },
-  {
-    id: "diamond",
-    name: "Diamante",
-    emoji: "💎",
-    value: 50
-  },
-  {
-    id: "crown",
-    name: "Coroa",
-    emoji: "👑",
-    value: 100
-  }
+  { id: "rose", name: "Rosa", emoji: "🌹", value: 5 },
+  { id: "heart", name: "Coração", emoji: "❤️", value: 10 },
+  { id: "diamond", name: "Diamante", emoji: "💎", value: 50 },
+  { id: "crown", name: "Coroa", emoji: "👑", value: 100 }
 ]
-
 
 // =======================================
 // INIT
@@ -74,7 +47,8 @@ function init() {
 
   if (!liveId) {
     alert("Live inválida")
-    return (location.href = "lux-meet-live.html")
+    location.href = "lux-meet-live.html"
+    return
   }
 
   if (!firebase.apps.length) {
@@ -89,75 +63,46 @@ function init() {
   db = firebase.firestore()
 
   auth.onAuthStateChanged(handleAuth)
-
-  viewersUnsub = db
-  .collection("lives")
-  .doc(liveId)
-  .collection("viewers")
-  .onSnapshot(snap => {
-    if (liveEnded) return
-
-    const el = document.getElementById("viewerCount")
-    if (el) el.textContent = `👁 ${snap.size}`
-  })
-
-
-
 }
 
 // =======================================
-// AUTH
+// AUTH FLOW
 // =======================================
 async function handleAuth(user) {
-  if (!user) return (location.href = "/login.html")
+  if (!user) {
+    location.href = "/login.html"
+    return
+  }
 
   currentUser = user
 
   await loadUser()
   await loadLive()
-  
+
+  isHost = liveData.hostId === currentUser.uid
+
   await validateAccess()
   await setupUI()
+
   renderGifts()
   bindLeaveButton()
 
-db.collection("lives").doc(liveId)
-  .onSnapshot(doc => {
-    if (!doc.exists) return
+  await startAgora(isHost ? "host" : "viewer")
 
-    const data = doc.data()
+  if (!isHost) {
+    await registerViewer()
+  }
 
-    if (data.status === "finished") {
-      handleLiveEndedByHost()
-    }
-  })
-
-
-  const role =
-    liveData.hostId === currentUser.uid ? "host" : "viewer"
-
-  await startAgora(role)
-  await registerViewer()
   initChat()
-  watchViewerCount()
-
-  db.collection("lives")
-  .doc(liveId)
-  .onSnapshot(doc => {
-    if (!doc.exists) return
-    if (doc.data().status === "ended") {
-      showLiveEndedForViewer()
-    }
-  })
-viewerUnsub = listenViewerCount()
-
+  listenViewerCount()
+  listenLiveStatus()
 
   document.getElementById("loading").classList.add("hidden")
   document.getElementById("app").classList.remove("hidden")
 }
 
 // =======================================
-// LOAD USER
+// LOAD DATA
 // =======================================
 async function loadUser() {
   const snap = await db.collection("users").doc(currentUser.uid).get()
@@ -168,9 +113,6 @@ async function loadUser() {
   userData = snap.data()
 }
 
-// =======================================
-// LOAD LIVE
-// =======================================
 async function loadLive() {
   const snap = await db.collection("lives").doc(liveId).get()
   if (!snap.exists || snap.data().status !== "active") {
@@ -181,11 +123,10 @@ async function loadLive() {
 }
 
 // =======================================
-// VALIDATE ACCESS
+// ACCESS
 // =======================================
 async function validateAccess() {
-  if (liveData.type === "public") return
-  if (liveData.hostId === currentUser.uid) return
+  if (liveData.type === "public" || isHost) return
 
   const viewerSnap = await db
     .collection("lives")
@@ -207,80 +148,39 @@ async function setupUI() {
   const hostSnap = await db.collection("users").doc(liveData.hostId).get()
   const host = hostSnap.data()
 
-  document.getElementById("hostName").textContent =
-    host.name || "Host"
-
+  document.getElementById("hostName").textContent = host.name || "Host"
   document.getElementById("hostAvatar").src =
     host.profilePhotoURL || "https://via.placeholder.com/50"
-
   document.getElementById("liveTitle").textContent =
     liveData.title || ""
-
-document.getElementById("leaveBtn").onclick = () => {
-  if (currentUser.uid === liveData.hostId) {
-    endLiveAsHost()
-  } else {
-    leaveLive()
-  }
-}
-
 }
 
 // =======================================
-// AGORA START
+// AGORA
 // =======================================
 async function startAgora(role) {
-  const response = await fetch("/.netlify/functions/getAgoraToken", {
+  const res = await fetch("/.netlify/functions/getAgoraToken", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      channelName: liveId,
-      role
-    })
+    body: JSON.stringify({ channelName: liveId, role })
   })
 
-  if (!response.ok) {
-    throw new Error(await response.text())
-  }
+  const { token, uid } = await res.json()
 
-  const { token, uid } = await response.json()
-  if (!token) throw new Error("Token inválido")
+  client = AgoraRTC.createClient({ mode: "live", codec: "vp8" })
+  await client.setClientRole(role === "host" ? "host" : "audience")
+  await client.join(AGORA_APP_ID, liveId, token, uid || null)
 
-  client = AgoraRTC.createClient({
-    mode: "live",
-    codec: "vp8"
-  })
-
-  await client.setClientRole(
-    role === "host" ? "host" : "audience"
-  )
-
-  await client.join(
-    AGORA_APP_ID,
-    liveId,
-    token,
-    uid || null
-  )
-
-  joined = true
-
-  // 🎥 HOST
   if (role === "host") {
     localTracks = await AgoraRTC.createMicrophoneAndCameraTracks()
     localTracks[1].play("videoContainer")
     await client.publish(localTracks)
   }
 
-  // 👀 VIEWERS
   client.on("user-published", async (user, mediaType) => {
     await client.subscribe(user, mediaType)
-
-    if (mediaType === "video") {
-      user.videoTrack.play("videoContainer")
-    }
-    if (mediaType === "audio") {
-      user.audioTrack.play()
-    }
+    if (mediaType === "video") user.videoTrack.play("videoContainer")
+    if (mediaType === "audio") user.audioTrack.play()
   })
 }
 
@@ -288,463 +188,190 @@ async function startAgora(role) {
 // VIEWERS
 // =======================================
 async function registerViewer() {
-  await db
-    .collection("lives")
-    .doc(liveId)
-    .collection("viewers")
-    .doc(currentUser.uid)
-    .set(
-      {
-        uid: currentUser.uid,
-        joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-      },
-      { merge: true }
-    )
+  await db.collection("lives").doc(liveId)
+    .collection("viewers").doc(currentUser.uid).set({
+      uid: currentUser.uid,
+      joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
 }
 
-function watchViewerCount() {
-  db.collection("lives")
-    .doc(liveId)
+function listenViewerCount() {
+  viewerUnsub = db.collection("lives").doc(liveId)
     .collection("viewers")
     .onSnapshot(snap => {
-      document.getElementById(
-        "viewerCount"
-      ).textContent = `👁 ${snap.size}`
+      viewerCount = snap.size
+      const el = document.getElementById("viewerCount")
+      if (el && !liveEnded) {
+        el.textContent = `👁 ${viewerCount}`
+      }
     })
 }
 
 // =======================================
-// CHAT
+// LIVE STATUS
 // =======================================
-let giftsUnsub = null
+function listenLiveStatus() {
+  db.collection("lives").doc(liveId)
+    .onSnapshot(doc => {
+      if (!doc.exists) return
+      if (doc.data().status !== "finished") return
 
+      liveEnded = true
+
+      if (isHost) {
+        showLiveSummary()
+      } else {
+        showViewerEndedScreen()
+      }
+    })
+}
+
+// =======================================
+// CHAT + GIFTS
+// =======================================
 function initChat() {
-  // ================= CHAT TEXTO =================
-  const chatRef = db
-    .collection("lives")
-    .doc(liveId)
+  chatUnsub = db.collection("lives").doc(liveId)
     .collection("chat")
     .orderBy("createdAt", "asc")
     .limit(100)
-
-  chatUnsub = chatRef.onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        renderMessage(change.doc.data())
-      }
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(c => {
+        if (c.type === "added") renderMessage(c.doc.data())
+      })
     })
-  })
 
-  document
-    .getElementById("chatForm")
+  document.getElementById("chatForm")
     .addEventListener("submit", sendMessage)
-
-  // ================= GIFTS =================
-  const giftsRef = db
-    .collection("lives")
-    .doc(liveId)
-    .collection("gifts")
-    .orderBy("createdAt", "desc")
-    .limit(20)
-
-  giftsUnsub = giftsRef.onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        const g = change.doc.data()
-
-        // Mostra no chat
-        renderMessage({
-          name: "🎁 Sistema",
-          text: `${g.senderName} enviou ${g.giftName} (${g.value})`
-        })
-
-        // Animação (se quiser)
-        showGiftAnimation({
-          emoji: getGiftEmoji(g.giftId),
-          name: g.giftName
-        })
-      }
-    })
-  })
 }
-
-
-function getGiftEmoji(giftId) {
-  const gift = GIFTS.find(g => g.id === giftId)
-  return gift ? gift.emoji : "🎁"
-}
-
 
 async function sendMessage(e) {
   e.preventDefault()
-
   const input = document.getElementById("chatInput")
-  const text = input.value.trim()
-  if (!text) return
+  if (!input.value.trim()) return
 
-  input.value = ""
-
-  await db
-    .collection("lives")
-    .doc(liveId)
-    .collection("chat")
-    .add({
-      uid: currentUser.uid,
-      name: userData.name || "Usuário",
-      photo: userData.profilePhotoURL || "",
-      text,
+  await db.collection("lives").doc(liveId)
+    .collection("chat").add({
+      name: userData.name,
+      text: input.value,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
+
+  input.value = ""
 }
 
 function renderMessage(msg) {
-  const container = document.getElementById("chatMessages")
-
+  const box = document.getElementById("chatMessages")
   const div = document.createElement("div")
   div.className = "chat-message"
-
-  div.innerHTML = `
-    <strong>${msg.name}:</strong> ${msg.text}
-  `
-
-  container.appendChild(div)
-  container.scrollTop = container.scrollHeight
+  div.innerHTML = `<strong>${msg.name}:</strong> ${msg.text}`
+  box.appendChild(div)
+  box.scrollTop = box.scrollHeight
 }
 
 // =======================================
-// LEAVE
+// GIFTS UI
 // =======================================
+function renderGifts() {
+  const box = document.getElementById("giftsList")
+  if (!box) return
+
+  box.innerHTML = ""
+  GIFTS.forEach(g => {
+    const btn = document.createElement("button")
+    btn.innerHTML = `${g.emoji} ${g.value}`
+    btn.onclick = () => sendGift(g)
+    box.appendChild(btn)
+  })
+}
+
+async function sendGift(gift) {
+  if (isHost) return alert("Host não envia presente")
+
+  const userRef = db.collection("users").doc(currentUser.uid)
+  const hostRef = db.collection("users").doc(liveData.hostId)
+
+  await db.runTransaction(async tx => {
+    const userSnap = await tx.get(userRef)
+    if ((userSnap.data().balance || 0) < gift.value) {
+      throw new Error("Saldo insuficiente")
+    }
+
+    tx.update(userRef, {
+      balance: firebase.firestore.FieldValue.increment(-gift.value)
+    })
+
+    tx.update(hostRef, {
+      earnings: firebase.firestore.FieldValue.increment(gift.value)
+    })
+
+    tx.set(
+      db.collection("lives").doc(liveId).collection("gifts").doc(),
+      {
+        senderName: userData.name,
+        giftName: gift.name,
+        value: gift.value,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }
+    )
+  })
+}
+
+// =======================================
+// LEAVE / END
+// =======================================
+function bindLeaveButton() {
+  document.getElementById("leaveBtn").onclick = () => {
+    if (isHost) endLiveAsHost()
+    else leaveLive()
+  }
+}
+
 async function leaveLive() {
   if (chatUnsub) chatUnsub()
-  if (giftsUnsub) giftsUnsub()
-
-  localTracks.forEach(track => {
-    track.stop()
-    track.close()
-  })
+  if (viewerUnsub) viewerUnsub()
 
   if (client) await client.leave()
 
-  await db
-    .collection("lives")
-    .doc(liveId)
-    .collection("viewers")
-    .doc(currentUser.uid)
-    .delete()
+  await db.collection("lives").doc(liveId)
+    .collection("viewers").doc(currentUser.uid).delete()
 
   location.href = "lux-meet-live.html"
 }
 
-
-// gifts
-
-function renderGifts() {
-  const container = document.getElementById("giftsList")
-  container.innerHTML = ""
-
-  GIFTS.forEach(gift => {
-    const btn = document.createElement("button")
-    btn.className = "gift-btn"
-    btn.innerHTML = `
-      ${gift.emoji}
-      <span>${gift.value}</span>
-    `
-    btn.onclick = () => sendGift(gift)
-    container.appendChild(btn)
-  })
-}
-
-
-
-async function sendGift(gift) {
-  if (currentUser.uid === liveData.hostId) {
-    alert("Você não pode enviar gift para si mesmo")
-    return
-  }
-
-  const userRef = db.collection("users").doc(currentUser.uid)
-  const hostRef = db.collection("users").doc(liveData.hostId)
-  const liveRef = db.collection("lives").doc(liveId)
-
-  try {
-    await db.runTransaction(async tx => {
-      const userSnap = await tx.get(userRef)
-      const hostSnap = await tx.get(hostRef)
-
-      const balance = userSnap.data().balance || 0
-      if (balance < gift.value) {
-        throw new Error("Saldo insuficiente")
-      }
-
-      // Desconta do viewer
-      tx.update(userRef, {
-        balance: balance - gift.value
-      })
-
-      // Credita ao host
-      tx.update(hostRef, {
-        earnings:
-          (hostSnap.data().earnings || 0) + gift.value
-      })
-
-      // Soma na live
-      tx.update(liveRef, {
-        totalGiftsValue:
-          firebase.firestore.FieldValue.increment(gift.value)
-      })
-
-      // Registra gift
-      tx.set(
-        liveRef.collection("gifts").doc(),
-        {
-          senderId: currentUser.uid,
-          senderName: userData.name,
-          giftId: gift.id,
-          giftName: gift.name,
-          value: gift.value,
-          createdAt:
-            firebase.firestore.FieldValue.serverTimestamp()
-        }
-      )
-    })
-
-    showGiftAnimation(gift)
-  } catch (e) {
-    alert(e.message)
-  }
-}
-
-function showGiftAnimation(gift) {
-  const div = document.createElement("div")
-  div.className = "gift-animation"
-  div.innerHTML = `${gift.emoji} ${gift.name}!`
-
-  document.body.appendChild(div)
-
-  setTimeout(() => div.remove(), 2000)
-}
-
-
-function showGiftAnimation({ emoji, name }) {
-  const el = document.createElement("div")
-  el.className = "gift-animation"
-  el.textContent = emoji + " " + name
-
-  document.body.appendChild(el)
-
-  setTimeout(() => el.remove(), 3000)
-}
-
-
-
-async function openEndLiveModal() {
-  const snap = await db
-    .collection("lives")
-    .doc(liveId)
-    .collection("viewers")
-    .get()
-
-  document.getElementById("modalViewerCount").textContent = snap.size
-  document.getElementById("endLiveModal").classList.remove("hidden")
-}
-
-document.getElementById("cancelEndLive").onclick = () => {
-  document.getElementById("endLiveModal").classList.add("hidden")
-}
-
-document.getElementById("confirmEndLive").onclick = async () => {
-  await endLiveAsHost()
-}
-
 async function endLiveAsHost() {
-  liveEnded = true
+  if (!confirm(`Finalizar live?\n👁 ${viewerCount} espectadores`)) return
 
-  // encerra Agora
-  await client.leave()
-
-  // encerra Firestore (IMPORTANTE)
-  if (viewerUnsubscribe) viewerUnsubscribe()
-  if (giftUnsubscribe) giftUnsubscribe()
-
-  showLiveSummary()
-}
-
-async function showLiveSummary() {
-  const summary = document.getElementById("summaryScreen")
-  const app = document.getElementById("liveApp")
-
-  if (!summary || !app) return
-
-  app.classList.add("hidden")
-  summary.classList.remove("hidden")
-
-  const giftsSnap = await db
-    .collection("lives")
-    .doc(liveId)
-    .collection("gifts")
-    .get()
-
-  let totalCoins = 0
-  const ranking = {}
-
-  giftsSnap.forEach(doc => {
-    const g = doc.data()
-    totalCoins += g.value
-    ranking[g.senderName] =
-      (ranking[g.senderName] || 0) + g.value
-  })
-
-  const topGifters = Object.entries(ranking)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-
-  summary.innerHTML = `
-    <div class="live-summary">
-      <h2>📊 Live Finalizada</h2>
-      <p>👁 Espectadores: ${viewerCount || 0}</p>
-      <p>💰 Ganhos totais: ${totalCoins} coins</p>
-
-      <h3>🏆 Top apoiadores</h3>
-      ${topGifters.map(
-        g => `<p>${g[0]} — ${g[1]} coins</p>`
-      ).join("")}
-
-      <button onclick="location.href='lux-meet-live.html'">
-        OK
-      </button>
-    </div>
-  `
-}
-
-
-function showLiveEndedForViewer() {
-  document.getElementById("app").innerHTML = `
-    <div class="ended-viewer">
-      <h2>🔴 Live finalizada</h2>
-      <p>O host encerrou a transmissão</p>
-
-      <button onclick="followHost()">⭐ Tornar Fã</button>
-      <button onclick="addFriend()">➕ Adicionar amigo</button>
-      <button onclick="openGiftPanel()">🎁 Enviar presente</button>
-    </div>
-  `
-}
-
-
-
-function bindLeaveButton() {
-  const btn = document.getElementById("leaveBtn")
-
-  if (!btn) {
-    console.warn("leaveBtn não encontrado")
-    return
-  }
-
-  btn.addEventListener("click", () => {
-    if (liveData.hostId === currentUser.uid) {
-      openEndLiveModal()
-    } else {
-      leaveLive()
-    }
-  })
-}
-
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  const cancel = document.getElementById("cancelEndLive")
-  const confirm = document.getElementById("confirmEndLive")
-
-  if (cancel) {
-    cancel.onclick = () => {
-      document.getElementById("endLiveModal").classList.add("hidden")
-    }
-  }
-
-  if (confirm) {
-    confirm.onclick = async () => {
-      await endLiveAsHost()
-    }
-  }
-})
-
-
-async function endLiveAsHost() {
-  const confirmEnd = confirm(
-    `Deseja finalizar a live agora?\n\n👁 Espectadores ativos: ${viewerCount}`
-  )
-
-  if (!confirmEnd) return
-
-  // 🔴 1. Marcar live como finalizada
   await db.collection("lives").doc(liveId).update({
     status: "finished",
     endedAt: firebase.firestore.FieldValue.serverTimestamp()
   })
 
-  // 🔴 2. Desconectar Agora
   if (localTracks.length) {
-    localTracks.forEach(t => {
-      t.stop()
-      t.close()
-    })
+    localTracks.forEach(t => { t.stop(); t.close() })
   }
 
   if (client) await client.leave()
-
-  // 🔴 3. Mostrar tela final (SEM REDIRECIONAR AINDA)
-  await showLiveSummary()
-
-}
-function handleLiveEndedByHost() {
-  if (isHost) return
-
-  liveEnded = true
-
-  showViewerEndedScreen()
 }
 
-
-
-
-function listenViewerCount() {
-  return db
-    .collection("lives")
-    .doc(liveId)
-    .collection("viewers")
-    .onSnapshot(snap => {
-      viewerCount = snap.size
-      const el = document.getElementById("viewerCount")
-if (el && !liveEnded) {
-  el.textContent = count
+// =======================================
+// SCREENS
+// =======================================
+async function showLiveSummary() {
+  document.body.innerHTML = `
+    <div class="live-summary">
+      <h2>📊 Live Finalizada</h2>
+      <p>👁 Espectadores: ${viewerCount}</p>
+      <button onclick="location.href='lux-meet-live.html'">OK</button>
+    </div>
+  `
 }
-
-    })
-}
-
 
 function showViewerEndedScreen() {
-  const app = document.getElementById("liveApp")
-  const summary = document.getElementById("summaryScreen")
-
-  if (app) app.classList.add("hidden")
-  if (summary) summary.classList.add("hidden")
-
-  document.body.insertAdjacentHTML(
-    "beforeend",
-    `
-    <div id="viewerEndedScreen" class="viewer-ended">
-      <div class="viewer-ended-box">
-        <h2>📴 Live encerrada</h2>
-        <p>O host finalizou a transmissão.</p>
-
-        <div class="viewer-actions">
-          <button onclick="location.href='lux-meet-live.html'">
-            Voltar
-          </button>
-        </div>
-      </div>
+  document.body.innerHTML = `
+    <div class="viewer-ended">
+      <h2>📴 Live encerrada</h2>
+      <p>O host finalizou a transmissão</p>
+      <button onclick="location.href='lux-meet-live.html'">Voltar</button>
     </div>
-    `
-  )
+  `
 }
