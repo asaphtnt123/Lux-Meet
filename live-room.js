@@ -277,14 +277,9 @@ function renderMessage(msg) {
 // =======================================
 // GIFTS UI
 // =======================================
-
 function renderGifts() {
   const container = document.getElementById("giftsContainer")
-
-  if (!container) {
-    console.warn("giftsContainer não encontrado")
-    return
-  }
+  if (!container) return
 
   container.innerHTML = ""
 
@@ -293,7 +288,7 @@ function renderGifts() {
     btn.className = "gift-btn"
 
     btn.innerHTML = `
-      <span>${gift.name}</span>
+      <span>${gift.emoji} ${gift.name}</span>
       <strong>${gift.value} 💰</strong>
     `
 
@@ -302,78 +297,107 @@ function renderGifts() {
     container.appendChild(btn)
   })
 }
-
-
 async function sendGift(gift) {
+  // host não pode enviar presente
   if (currentUser.uid === liveData.hostId) return
 
   const userRef = db.collection("users").doc(currentUser.uid)
   const hostRef = db.collection("users").doc(liveData.hostId)
+  const liveRef = db.collection("lives").doc(liveId)
 
-  await db.runTransaction(async tx => {
-    const userSnap = await tx.get(userRef)
-    if (!userSnap.exists) throw "Usuário inválido"
+  try {
+    await db.runTransaction(async tx => {
+      const userSnap = await tx.get(userRef)
+      const hostSnap = await tx.get(hostRef)
 
-    const balance = userSnap.data().balance || 0
+      const balance = userSnap.data().balance || 0
 
-    if (balance < gift.value) {
-      alert("Coins insuficientes")
-      throw "Saldo insuficiente"
-    }
+      if (balance < gift.value) {
+        throw new Error("Saldo insuficiente")
+      }
 
-    // Debita do espectador
-    tx.update(userRef, {
-      balance: balance - gift.value
-    })
+      // 🔻 desconta do espectador
+      tx.update(userRef, {
+        balance: balance - gift.value
+      })
 
-    // Credita ao host
-    const hostSnap = await tx.get(hostRef)
-    const hostBalance = hostSnap.data().balance || 0
+      // 🔺 credita no host
+      tx.update(hostRef, {
+        earnings: (hostSnap.data().earnings || 0) + gift.value
+      })
 
-    tx.update(hostRef, {
-      balance: hostBalance + gift.value
-    })
+      // 🔺 soma na live
+      tx.update(liveRef, {
+        totalGiftsValue: firebase.firestore.FieldValue.increment(gift.value)
+      })
 
-    // Registra o gift na live
-    tx.set(
-      db
-        .collection("lives")
-        .doc(liveId)
-        .collection("gifts")
-        .doc(),
-      {
+      // 🎁 registra gift
+      tx.set(liveRef.collection("gifts").doc(), {
         senderId: currentUser.uid,
         senderName: userData.name || "Usuário",
         giftId: gift.id,
         giftName: gift.name,
         value: gift.value,
-        createdAt:
-          firebase.firestore.FieldValue.serverTimestamp()
-      }
-    )
-  })
-}
-function listenToGifts() {
-  giftsUnsub = db
-    .collection("lives")
-    .doc(liveId)
-    .collection("gifts")
-    .orderBy("createdAt", "desc")
-    .limit(20)
-    .onSnapshot(snap => {
-      snap.docChanges().forEach(change => {
-        if (change.type === "added") {
-          const g = change.doc.data()
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
 
-          renderMessage({
-            name: "🎁 Sistema",
-            text: `${g.senderName} enviou ${g.giftName} (${g.value} coins)`
-          })
-        }
+      // 💬 mensagem no chat
+      tx.set(liveRef.collection("chat").doc(), {
+        system: true,
+        name: "🎁 Sistema",
+        text: `${userData.name} enviou ${gift.emoji} ${gift.name} (${gift.value} coins)`,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       })
     })
+
+    // 🎉 animação local imediata
+    showGiftAnimation(gift)
+
+  } catch (err) {
+    alert(err.message)
+  }
 }
 
+function listenToGifts() {
+  giftsUnsub = db
+  .collection("lives")
+  .doc(liveId)
+  .collection("gifts")
+  .orderBy("createdAt", "desc")
+  .limit(20)
+  .onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+        const g = change.doc.data()
+
+        // mensagem no chat
+        renderMessage({
+          name: "🎁 Sistema",
+          text: `${g.senderName} enviou ${getGiftEmoji(g.giftId)} ${g.giftName} (${g.value})`
+        })
+
+        // animação global
+        showGiftAnimation({
+          emoji: getGiftEmoji(g.giftId),
+          name: g.giftName
+        })
+      }
+    })
+  })
+
+}
+
+function showGiftAnimation({ emoji, name }) {
+  const el = document.createElement("div")
+  el.className = "gift-animation"
+  el.textContent = `${emoji} ${name}`
+
+  document.body.appendChild(el)
+
+  setTimeout(() => {
+    el.remove()
+  }, 3000)
+}
 
 // =======================================
 // LEAVE / END

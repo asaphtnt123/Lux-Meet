@@ -602,3 +602,21 @@ body {
 .gift-btn:hover {
   background: #ff0057;
 }
+.gift-animation {
+  position: fixed;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
+  background: rgba(0,0,0,0.7);
+  padding: 12px 20px;
+  border-radius: 30px;
+  color: #fff;
+  animation: floatUp 3s ease forwards;
+  z-index: 9999;
+}
+
+@keyframes floatUp {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, -120px); }
+}
