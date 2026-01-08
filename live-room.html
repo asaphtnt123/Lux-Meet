@@ -60,16 +60,43 @@
 
   <!-- ================= CHAT INPUT ================= -->
   <footer class="live-footer">
-    <form id="chatForm" class="chat-form">
-      <input
-        id="chatInput"
-        type="text"
-        placeholder="Diga algo legal..."
-        autocomplete="off"
-      />
-      <button type="submit" class="send-btn">➤</button>
-    </form>
-  </footer>
+  <form id="chatForm" class="chat-form">
+
+    <!-- AÇÕES À ESQUERDA -->
+    <div class="chat-actions-left">
+      <button
+        type="button"
+        id="privateChatBtn"
+        class="chat-icon-btn"
+        title="Chat privado"
+      >
+        1-1
+      </button>
+
+      <button
+        type="button"
+        id="moreOptionsBtn"
+        class="chat-icon-btn"
+        title="Mais opções"
+      >
+        ⋯
+      </button>
+    </div>
+
+    <!-- INPUT -->
+    <input
+      id="chatInput"
+      type="text"
+      placeholder="Diga algo legal..."
+      autocomplete="off"
+    />
+
+    <!-- ENVIAR -->
+    <button type="submit" class="send-btn">➤</button>
+
+  </form>
+</footer>
+
 
 </div>
 

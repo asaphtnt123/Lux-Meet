@@ -231,51 +231,66 @@ body {
   cursor: pointer;
   pointer-events: auto;
 }
-
-/* ================= FOOTER ================= */
-.live-footer {
-  position: fixed;
-  bottom: env(safe-area-inset-bottom);
-  left: 0;
-  right: 0;
-  padding: 10px;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.85),
-    rgba(0, 0, 0, 0)
-  );
-  z-index: 40;
-}
-
 .chat-form {
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
+  padding: 10px;
 }
 
-.chat-form input {
-  flex: 1;
-  height: 42px;
-  border-radius: 22px;
-  border: none;
-  padding: 0 14px;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+/* Área esquerda */
+.chat-actions-left {
+  display: flex;
+  gap: 6px;
 }
 
-.chat-form input::placeholder {
-  color: #ccc;
-}
+/* Botões de ícone */
+.chat-icon-btn {
+  width: 32px;
+  height: 32px;
 
-.send-btn {
-  width: 42px;
-  height: 42px;
   border-radius: 50%;
   border: none;
-  background: #ff2d55;
+
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  font-size: 18px;
+
+  font-size: 14px;
+  font-weight: bold;
+
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.chat-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.05);
+}
+
+/* Input ocupa o espaço */
+#chatInput {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 20px;
+  border: none;
+  outline: none;
+}
+
+/* Botão enviar */
+.send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+
+  background: linear-gradient(135deg, #d4af37, #f5d76e);
+  color: #000;
+  font-size: 16px;
+
   cursor: pointer;
 }
 
@@ -752,3 +767,7 @@ body {
 .add-friend-btn:active {
   transform: scale(0.95);
 }
+
+
+
+
