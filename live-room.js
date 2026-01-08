@@ -277,8 +277,9 @@ function renderMessage(msg) {
 // =======================================
 // GIFTS UI
 // =======================================
+
 function renderGifts() {
-  const container = document.getElementById("giftsContainer")
+  const container = document.getElementById("giftsList")
   if (!container) return
 
   container.innerHTML = ""
@@ -286,14 +287,11 @@ function renderGifts() {
   GIFTS.forEach(gift => {
     const btn = document.createElement("button")
     btn.className = "gift-btn"
-
     btn.innerHTML = `
-      <span>${gift.emoji} ${gift.name}</span>
-      <strong>${gift.value} 💰</strong>
+      ${gift.emoji}
+      <span>${gift.value}</span>
     `
-
     btn.onclick = () => sendGift(gift)
-
     container.appendChild(btn)
   })
 }
@@ -598,4 +596,21 @@ function openGiftPanel() {
 function getGiftEmoji(giftId) {
   const gift = GIFTS.find(g => g.id === giftId)
   return gift ? gift.emoji : "🎁"
+}
+
+
+function initGiftsUI() {
+  const openBtn = document.getElementById("openGiftsBtn")
+  const closeBtn = document.getElementById("closeGiftsBtn")
+  const panel = document.getElementById("giftsPanel")
+
+  if (!openBtn || !closeBtn || !panel) return
+
+  openBtn.onclick = () => {
+    panel.classList.remove("hidden")
+  }
+
+  closeBtn.onclick = () => {
+    panel.classList.add("hidden")
+  }
 }

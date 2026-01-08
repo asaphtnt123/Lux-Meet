@@ -82,11 +82,21 @@
 
 
     <section class="live-gifts">
-  <div class="gifts-list" id="giftsList"></div>
-  <div id="giftsPanel" class="gifts-panel">
-  <h3>🎁 Enviar presente</h3>
-  <div id="giftsContainer"></div>
+ <!-- BOTÃO GIFT -->
+<button id="openGiftsBtn" class="open-gifts-btn">
+  🎁
+</button>
+
+<!-- PAINEL DE GIFTS -->
+<div id="giftsPanel" class="gifts-panel hidden">
+  <div class="gifts-header">
+    <span>Enviar presente</span>
+    <button id="closeGiftsBtn">✕</button>
+  </div>
+
+  <div id="giftsList" class="gifts-list"></div>
 </div>
+
 
 </section>
 
