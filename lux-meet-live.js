@@ -523,17 +523,3 @@ function renderCountryNavbar(defaultCountry) {
   })
 }
 
-
-auth.onAuthStateChanged(async user => {
-  if (!user) return
-
-  currentUser = user
-
-  await loadUserData()
-
-  // 🔥 RENDERIZA A NAVBAR
-  renderCountryNavbar(userData.country)
-
-  // 🔥 CARREGA LIVES DO PAÍS
-  loadLives(userData.country)
-})
