@@ -45,7 +45,10 @@ async function initializeApp() {
         auth.onAuthStateChanged(handleAuthStateChange)
 
 
-        
+        if (!isLiveRoomPage()) {
+  updateUserUI()
+}
+
 
     } catch (error) {
         console.error('Erro ao inicializar Firebase:', error)
@@ -169,6 +172,9 @@ function updateUserUI() {
     userBalanceEl.textContent =
       (userData.balance || 0).toFixed(2)
   }
+}
+function isLiveRoomPage() {
+  return document.body.classList.contains('live-room')
 }
 
 // =======================================
