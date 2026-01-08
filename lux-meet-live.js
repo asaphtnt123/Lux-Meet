@@ -151,15 +151,24 @@ function onUserReady() {
 // UPDATE USER UI
 // =======================================
 function updateUserUI() {
-    document.getElementById('userName').textContent =
-        userData.name || 'Usuário'
+  const userNameEl = document.getElementById('userName')
+  const userAvatarEl = document.getElementById('userAvatar')
+  const userBalanceEl = document.getElementById('userBalance')
 
-    document.getElementById('userAvatar').src =
-        userData.profilePhotoURL ||
-        'https://via.placeholder.com/40'
+  if (userNameEl) {
+    userNameEl.textContent = userData.name || 'Usuário'
+  }
 
-    document.getElementById('userBalance').textContent =
-        (userData.balance || 0).toFixed(2)
+  if (userAvatarEl) {
+    userAvatarEl.src =
+      userData.profilePhotoURL ||
+      'https://via.placeholder.com/40'
+  }
+
+  if (userBalanceEl) {
+    userBalanceEl.textContent =
+      (userData.balance || 0).toFixed(2)
+  }
 }
 
 // =======================================
