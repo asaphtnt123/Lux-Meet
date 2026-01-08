@@ -30,11 +30,12 @@ let localTracks = []
 // GIFTS
 // =======================================
 const GIFTS = [
-  { id: "rose", name: "Rosa", emoji: "🌹", value: 5 },
-  { id: "heart", name: "Coração", emoji: "❤️", value: 10 },
-  { id: "diamond", name: "Diamante", emoji: "💎", value: 50 },
-  { id: "crown", name: "Coroa", emoji: "👑", value: 100 }
+  { id: "rose", name: "🌹 Rosa", value: 5 },
+  { id: "fire", name: "🔥 Fogo", value: 20 },
+  { id: "crown", name: "👑 Coroa", value: 100 },
+  { id: "diamond", name: "💎 Diamante", value: 300 }
 ]
+
 
 // =======================================
 // INIT
@@ -63,6 +64,9 @@ function init() {
   db = firebase.firestore()
 
   auth.onAuthStateChanged(handleAuth)
+
+
+
 }
 
 // =======================================
@@ -92,10 +96,12 @@ async function handleAuth(user) {
   if (!isHost) {
     await registerViewer()
   }
+listenToGifts()
 
   initChat()
   listenViewerCount()
   listenLiveStatus()
+renderGifts()
 
   document.getElementById("loading").classList.add("hidden")
   document.getElementById("app").classList.remove("hidden")
@@ -272,49 +278,93 @@ function renderMessage(msg) {
 // GIFTS UI
 // =======================================
 function renderGifts() {
-  const box = document.getElementById("giftsList")
-  if (!box) return
+  const container = document.getElementById("giftsContainer")
+  if (!container) return
 
-  box.innerHTML = ""
+  container.innerHTML = ""
+
   GIFTS.forEach(g => {
     const btn = document.createElement("button")
-    btn.innerHTML = `${g.emoji} ${g.value}`
+    btn.className = "gift-btn"
+    btn.innerHTML = `
+      <span>${g.name}</span>
+      <small>${g.value} coins</small>
+    `
     btn.onclick = () => sendGift(g)
-    box.appendChild(btn)
+    container.appendChild(btn)
   })
 }
 
 async function sendGift(gift) {
-  if (isHost) return alert("Host não envia presente")
+  if (currentUser.uid === liveData.hostId) return
 
   const userRef = db.collection("users").doc(currentUser.uid)
   const hostRef = db.collection("users").doc(liveData.hostId)
 
   await db.runTransaction(async tx => {
     const userSnap = await tx.get(userRef)
-    if ((userSnap.data().balance || 0) < gift.value) {
-      throw new Error("Saldo insuficiente")
+    if (!userSnap.exists) throw "Usuário inválido"
+
+    const balance = userSnap.data().balance || 0
+
+    if (balance < gift.value) {
+      alert("Coins insuficientes")
+      throw "Saldo insuficiente"
     }
 
+    // Debita do espectador
     tx.update(userRef, {
-      balance: firebase.firestore.FieldValue.increment(-gift.value)
+      balance: balance - gift.value
     })
+
+    // Credita ao host
+    const hostSnap = await tx.get(hostRef)
+    const hostBalance = hostSnap.data().balance || 0
 
     tx.update(hostRef, {
-      earnings: firebase.firestore.FieldValue.increment(gift.value)
+      balance: hostBalance + gift.value
     })
 
+    // Registra o gift na live
     tx.set(
-      db.collection("lives").doc(liveId).collection("gifts").doc(),
+      db
+        .collection("lives")
+        .doc(liveId)
+        .collection("gifts")
+        .doc(),
       {
-        senderName: userData.name,
+        senderId: currentUser.uid,
+        senderName: userData.name || "Usuário",
+        giftId: gift.id,
         giftName: gift.name,
         value: gift.value,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt:
+          firebase.firestore.FieldValue.serverTimestamp()
       }
     )
   })
 }
+function listenToGifts() {
+  giftsUnsub = db
+    .collection("lives")
+    .doc(liveId)
+    .collection("gifts")
+    .orderBy("createdAt", "desc")
+    .limit(20)
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === "added") {
+          const g = change.doc.data()
+
+          renderMessage({
+            name: "🎁 Sistema",
+            text: `${g.senderName} enviou ${g.giftName} (${g.value} coins)`
+          })
+        }
+      })
+    })
+}
+
 
 // =======================================
 // LEAVE / END
