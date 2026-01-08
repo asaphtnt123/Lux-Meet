@@ -492,28 +492,33 @@ async function enterLive(liveId) {
 // =======================================
 document.addEventListener('DOMContentLoaded', initializeApp)
 
-
 function renderCountryNavbar(defaultCountry) {
   const navbar = document.getElementById('countryNavbar')
-
-  if (!navbar) {
-    console.error('Navbar de países não encontrada')
-    return
-  }
+  if (!navbar) return
 
   navbar.innerHTML = ''
 
   COUNTRIES.forEach(country => {
     const div = document.createElement('div')
     div.className = 'country-item'
+
     if (country.code === defaultCountry) {
       div.classList.add('active')
       selectedCountry = country.code
     }
 
+    // 🌍 FLAG
+    let flagHTML = ''
+
+    if (country.flag.startsWith('http')) {
+      flagHTML = `<img src="${country.flag}" class="country-flag-img">`
+    } else {
+      flagHTML = `<span class="country-flag-emoji">${country.flag}</span>`
+    }
+
     div.innerHTML = `
-      <span class="country-flag">${country.flag}</span>
-      <span>${country.name}</span>
+      ${flagHTML}
+      <span class="country-name">${country.name}</span>
     `
 
     div.onclick = () => {
@@ -523,11 +528,9 @@ function renderCountryNavbar(defaultCountry) {
 
       div.classList.add('active')
       selectedCountry = country.code
-
       loadLives(country.code)
     }
 
     navbar.appendChild(div)
   })
 }
-

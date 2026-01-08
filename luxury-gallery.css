@@ -943,4 +943,47 @@ body.modal-open {
 
 body:not(.modal-open) {
     overflow: auto !important;
+}/* NAVBAR */
+.country-navbar {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  border-bottom: 1px solid #222;
+}
+
+.country-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.country-item:hover {
+  background: #1c1c1c;
+}
+
+.country-item.active {
+  background: #ff2d55;
+  color: #fff;
+}
+
+/* FLAG IMG */
+.country-flag-img {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* FLAG EMOJI */
+.country-flag-emoji {
+  font-size: 18px;
 }
