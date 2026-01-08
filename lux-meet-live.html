@@ -13,41 +13,19 @@
     <!-- APP CONTAINER -->
     <div id="app" class="app hidden">
 
-        <!-- ================= COUNTRY NAV ================= -->
-<nav class="country-nav">
-  <div class="country-list" id="countryList">
-    <!-- Gerado via JS -->
-  </div>
-</nav>
-
-
-       <!-- HEADER / USER INFO -->
+<!-- HEADER / USER INFO -->
 <header class="app-header">
 
   <div class="user-info">
-    <img
-      id="userAvatar"
-      class="user-avatar"
-      src=""
-      alt="Avatar do usuário"
-    >
-
+    <img id="userAvatar" class="user-avatar" />
     <div class="user-meta">
       <span id="userName" class="user-name">Usuário</span>
-
-      <div class="user-balances">
-        <span class="user-balance">
-          💰 <strong id="userBalance">0</strong> moedas
-        </span>
-
-        <!-- ganhos (só aparece se > 0) -->
-        <span
-          id="userEarnings"
-          class="user-earnings hidden"
-        >
-          ⭐ Ganhos: <strong id="userEarningsValue">0</strong>
-        </span>
-      </div>
+      <span class="user-balance">
+        💰 <strong id="userBalance">0</strong> moedas
+      </span>
+      <span id="userEarnings" class="user-earnings hidden">
+        🏆 <strong>0</strong> ganhos
+      </span>
     </div>
   </div>
 
@@ -55,7 +33,13 @@
     🔴 Criar Live
   </button>
 
+  <!-- 🔥 NAVBAR DE PAÍSES -->
+  <nav id="countryNavbar" class="country-navbar">
+    <!-- países entram aqui -->
+  </nav>
+
 </header>
+
 
 
         <!-- MAIN CONTENT -->

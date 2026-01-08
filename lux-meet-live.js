@@ -485,32 +485,55 @@ async function enterLive(liveId) {
 document.addEventListener('DOMContentLoaded', initializeApp)
 
 
-function renderCountryNav() {
-  const container = document.getElementById('countryList')
-  container.innerHTML = ''
+function renderCountryNavbar(defaultCountry) {
+  const navbar = document.getElementById('countryNavbar')
+
+  if (!navbar) {
+    console.error('Navbar de países não encontrada')
+    return
+  }
+
+  navbar.innerHTML = ''
 
   COUNTRIES.forEach(country => {
     const div = document.createElement('div')
     div.className = 'country-item'
-    if (country.code === selectedCountry) {
+    if (country.code === defaultCountry) {
       div.classList.add('active')
+      selectedCountry = country.code
     }
 
     div.innerHTML = `
-      ${
-        country.flag.startsWith('http')
-          ? `<img src="${country.flag}">`
-          : `<span>${country.flag}</span>`
-      }
+      <span class="country-flag">${country.flag}</span>
       <span>${country.name}</span>
     `
 
     div.onclick = () => {
+      document
+        .querySelectorAll('.country-item')
+        .forEach(el => el.classList.remove('active'))
+
+      div.classList.add('active')
       selectedCountry = country.code
-      renderCountryNav()
-      loadLives()
+
+      loadLives(country.code)
     }
 
-    container.appendChild(div)
+    navbar.appendChild(div)
   })
 }
+
+
+auth.onAuthStateChanged(async user => {
+  if (!user) return
+
+  currentUser = user
+
+  await loadUserData()
+
+  // 🔥 RENDERIZA A NAVBAR
+  renderCountryNavbar(userData.country)
+
+  // 🔥 CARREGA LIVES DO PAÍS
+  loadLives(userData.country)
+})
