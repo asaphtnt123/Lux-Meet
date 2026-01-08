@@ -6,6 +6,20 @@ let currentUser = null
 let userData = null
 let livesUnsubscribe = null
 
+
+// ================= COUNTRIES =================
+const COUNTRIES = [
+  { code: 'all', name: 'Todos', flag: '🌍' },
+  { code: 'BR', name: 'Brasil', flag: 'https://flagcdn.com/br.svg' },
+  { code: 'US', name: 'USA', flag: 'https://flagcdn.com/us.svg' },
+  { code: 'PT', name: 'Portugal', flag: 'https://flagcdn.com/pt.svg' },
+  { code: 'ES', name: 'Espanha', flag: 'https://flagcdn.com/es.svg' },
+  { code: 'FR', name: 'França', flag: 'https://flagcdn.com/fr.svg' }
+]
+
+let selectedCountry = 'all'
+
+
 // =======================================
 // INIT APP
 // =======================================
@@ -237,16 +251,42 @@ function handleLiveTypeChange(e) {
 // =======================================
 // LOAD LIVES
 // =======================================
-function loadLives() {
-    if (livesUnsubscribe) livesUnsubscribe()
+async function loadLives() {
+  let query = db
+    .collection('lives')
+    .where('status', '==', 'active')
 
-    livesUnsubscribe = db
-        .collection('lives')
-        .where('status', '==', 'active')
-        .onSnapshot(snapshot => {
-            renderLiveList(snapshot.docs)
-        })
+  if (selectedCountry !== 'all') {
+    query = query.where('country', '==', selectedCountry)
+  }
+
+  const snap = await query.get()
+  const list = document.getElementById('liveList')
+  list.innerHTML = ''
+
+  snap.forEach(doc => {
+    const live = doc.data()
+
+    const div = document.createElement('div')
+    div.className = 'live-card'
+    div.innerHTML = `
+      <img class="live-avatar" src="${live.hostAvatar}">
+      <div class="live-info">
+        <span class="live-host-name">${live.hostName}</span>
+        <span class="live-status">🔴 Ao vivo</span>
+      </div>
+      <button class="btn-secondary" onclick="enterLive('${doc.id}')">
+        Entrar
+      </button>
+    `
+    list.appendChild(div)
+  })
 }
+document.addEventListener('DOMContentLoaded', () => {
+  renderCountryNav()
+  loadLives()
+})
+
 
 // =======================================
 // RENDER LIVE LIST
@@ -408,3 +448,34 @@ async function enterLive(liveId) {
 // START
 // =======================================
 document.addEventListener('DOMContentLoaded', initializeApp)
+
+
+function renderCountryNav() {
+  const container = document.getElementById('countryList')
+  container.innerHTML = ''
+
+  COUNTRIES.forEach(country => {
+    const div = document.createElement('div')
+    div.className = 'country-item'
+    if (country.code === selectedCountry) {
+      div.classList.add('active')
+    }
+
+    div.innerHTML = `
+      ${
+        country.flag.startsWith('http')
+          ? `<img src="${country.flag}">`
+          : `<span>${country.flag}</span>`
+      }
+      <span>${country.name}</span>
+    `
+
+    div.onclick = () => {
+      selectedCountry = country.code
+      renderCountryNav()
+      loadLives()
+    }
+
+    container.appendChild(div)
+  })
+}
