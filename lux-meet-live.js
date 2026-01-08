@@ -175,53 +175,70 @@ function setupEvents() {
         .getElementById('liveType')
         .addEventListener('change', handleLiveTypeChange)
 }
+
 async function createLive() {
-    try {
-        const title =
-            document.getElementById('liveTitle').value.trim()
+  try {
+    const title =
+      document.getElementById('liveTitle').value.trim()
 
-        const description =
-            document.getElementById('liveDescription').value.trim()
+    const description =
+      document.getElementById('liveDescription').value.trim()
 
-        const type =
-            document.getElementById('liveType').value
+    const type =
+      document.getElementById('liveType').value
 
-        const price =
-            Number(document.getElementById('livePrice').value) || 0
+    const price =
+      Number(document.getElementById('livePrice').value) || 0
 
-        if (!title) {
-            alert('Informe o nome da live')
-            return
-        }
-
-        const liveData = {
-            hostId: currentUser.uid,
-
-            title,
-            description,
-
-            type, // public | private
-            price: type === 'private' ? price : 0,
-
-            status: 'active',
-
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }
-
-        const liveRef =
-            await db.collection('lives').add(liveData)
-
-        closeCreateLiveModal()
-
-        window.location.href =
-            `live-room.html?liveId=${liveRef.id}`
-
-    } catch (error) {
-        console.error('Erro ao criar live:', error)
-        alert('Erro ao criar live')
+    if (!title) {
+      alert('Informe o nome da live')
+      return
     }
-}
 
+    // 🔹 Buscar país do usuário
+    const userSnap = await db
+      .collection('users')
+      .doc(currentUser.uid)
+      .get()
+
+    if (!userSnap.exists) {
+      alert('Usuário inválido')
+      return
+    }
+
+    const userData = userSnap.data()
+    const country = userData.country || 'BR' // fallback seguro
+
+    // 🔹 Dados da live
+    const liveData = {
+      hostId: currentUser.uid,
+
+      title,
+      description,
+
+      type, // public | private
+      price: type === 'private' ? price : 0,
+
+      country, // 🌍 IMPORTANTE PARA FILTRO
+
+      status: 'active',
+
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }
+
+    const liveRef =
+      await db.collection('lives').add(liveData)
+
+    closeCreateLiveModal()
+
+    window.location.href =
+      `live-room.html?liveId=${liveRef.id}`
+
+  } catch (error) {
+    console.error('Erro ao criar live:', error)
+    alert('Erro ao criar live')
+  }
+}
 
 
 function openCreateLiveModal() {
