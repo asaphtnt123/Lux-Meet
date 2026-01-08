@@ -268,37 +268,54 @@ function handleLiveTypeChange(e) {
 // =======================================
 // LOAD LIVES
 // =======================================
-async function loadLives() {
-  let query = db
+async function loadLives(country) {
+  const liveList = document.getElementById('liveList')
+  liveList.innerHTML = ''
+
+  const query = db
     .collection('lives')
     .where('status', '==', 'active')
-
-  if (selectedCountry !== 'all') {
-    query = query.where('country', '==', selectedCountry)
-  }
+    .where('country', '==', country)
+    .orderBy('createdAt', 'desc')
 
   const snap = await query.get()
-  const list = document.getElementById('liveList')
-  list.innerHTML = ''
+
+  if (snap.empty) {
+    liveList.innerHTML = `
+      <p class="empty-state">
+        Nenhuma live ao vivo neste país 🇨🇴
+      </p>
+    `
+    return
+  }
 
   snap.forEach(doc => {
     const live = doc.data()
 
-    const div = document.createElement('div')
-    div.className = 'live-card'
-    div.innerHTML = `
-      <img class="live-avatar" src="${live.hostAvatar}">
+    const card = document.createElement('div')
+    card.className = 'live-card'
+
+    card.innerHTML = `
+      <img class="live-avatar"
+        src="${live.hostAvatar || 'https://via.placeholder.com/80'}">
+
       <div class="live-info">
-        <span class="live-host-name">${live.hostName}</span>
+        <span class="live-host-name">
+          ${live.hostName || 'Host'}
+        </span>
         <span class="live-status">🔴 Ao vivo</span>
       </div>
-      <button class="btn-secondary" onclick="enterLive('${doc.id}')">
+
+      <button class="btn-secondary"
+        onclick="enterLive('${doc.id}')">
         Entrar
       </button>
     `
-    list.appendChild(div)
+
+    liveList.appendChild(card)
   })
 }
+
 document.addEventListener('DOMContentLoaded', () => {
   renderCountryNav()
   loadLives()
