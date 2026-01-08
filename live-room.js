@@ -297,6 +297,8 @@ function renderGifts() {
     container.appendChild(btn)
   })
 }
+
+
 async function sendGift(gift) {
   // host não pode enviar presente
   if (currentUser.uid === liveData.hostId) return
@@ -578,3 +580,12 @@ function openGiftPanel() {
 
 
 
+
+
+// =======================================
+// GIFT HELPERS
+// =======================================
+function getGiftEmoji(giftId) {
+  const gift = GIFTS.find(g => g.id === giftId)
+  return gift ? gift.emoji : "🎁"
+}
