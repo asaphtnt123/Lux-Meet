@@ -12,6 +12,7 @@ let userData = null
 let liveId = null
 let liveData = null
 let viewersUnsub = null
+let isHost = false // você já deve ter isso
 
 let viewerCount = 0
 let viewerUnsub = null
@@ -558,44 +559,24 @@ document.getElementById("confirmEndLive").onclick = async () => {
 async function endLiveAsHost() {
   liveEnded = true
 
-  // 🔕 Desliga listeners
-  if (chatUnsub) chatUnsub()
-  if (giftsUnsub) giftsUnsub()
-  if (viewersUnsub) viewersUnsub()
+  // encerra Agora
+  await client.leave()
 
-  // 🔴 Marca live como encerrada
-  await db.collection("lives").doc(liveId).update({
-    status: "ended",
-    endedAt: firebase.firestore.FieldValue.serverTimestamp()
-  })
+  // encerra Firestore (IMPORTANTE)
+  if (viewerUnsubscribe) viewerUnsubscribe()
+  if (giftUnsubscribe) giftUnsubscribe()
 
-  // 🎥 Agora
-  localTracks.forEach(t => {
-    t.stop()
-    t.close()
-  })
-
-  if (client) await client.leave()
-
-  // 📊 Mostra resumo
-  await showLiveSummary()
+  showLiveSummary()
 }
 
 async function showLiveSummary() {
-  const summary = document.getElementById("liveSummary")
-  const viewersEl = document.getElementById("sumViewers")
-  const coinsEl = document.getElementById("sumCoins")
-  const topGiftersEl = document.getElementById("topGifters")
+  const summary = document.getElementById("summaryScreen")
+  const app = document.getElementById("liveApp")
 
-   liveEnded = true
+  if (!summary || !app) return
 
-  
-  if (!summary) return
-
-  if (!summary || !viewersEl || !coinsEl || !topGiftersEl) {
-    console.error("❌ HTML do resumo não encontrado")
-    return
-  }
+  app.classList.add("hidden")
+  summary.classList.remove("hidden")
 
   const giftsSnap = await db
     .collection("lives")
@@ -617,30 +598,22 @@ async function showLiveSummary() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
 
-  viewersEl.textContent = viewerCount || 0
-  coinsEl.textContent = totalCoins
+  summary.innerHTML = `
+    <div class="live-summary">
+      <h2>📊 Live Finalizada</h2>
+      <p>👁 Espectadores: ${viewerCount || 0}</p>
+      <p>💰 Ganhos totais: ${totalCoins} coins</p>
 
-  topGiftersEl.innerHTML = ""
+      <h3>🏆 Top apoiadores</h3>
+      ${topGifters.map(
+        g => `<p>${g[0]} — ${g[1]} coins</p>`
+      ).join("")}
 
-  if (topGifters.length === 0) {
-    topGiftersEl.innerHTML = `<p style="color:#aaa">Nenhum presente recebido</p>`
-  }
-
-  topGifters.forEach(([name, value]) => {
-    const div = document.createElement("div")
-    div.className = "top-gifter"
-    div.innerHTML = `
-      <span>${name}</span>
-      <strong>${value} coins</strong>
-    `
-    topGiftersEl.appendChild(div)
-  })
-
-  summary.classList.remove("hidden")
-
-  document.getElementById("closeSummaryBtn").onclick = () => {
-    location.href = "lux-meet-live.html"
-  }
+      <button onclick="location.href='lux-meet-live.html'">
+        OK
+      </button>
+    </div>
+  `
 }
 
 
@@ -727,6 +700,11 @@ async function endLiveAsHost() {
 
 function handleLiveEndedByHost() {
   if (client) client.leave()
+
+    if (!isHost) {
+  showViewerEndedScreen()
+}
+
 
   document.body.innerHTML = `
     <div class="live-ended-screen">
