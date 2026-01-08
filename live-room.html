@@ -74,28 +74,16 @@
 
       <!-- Floating actions (likes/gifts futuros) -->
       <div class="floating-actions">
-        <button class="action-btn like-btn">❤️</button>
-        <button class="action-btn gift-btn">🎁</button>
+        
+        <button id="openGiftsBtn" class="open-gifts-btn">
+  🎁
+</button>
       </div>
 
     </section>
 
 
     <section class="live-gifts">
- <!-- BOTÃO GIFT -->
-<button id="openGiftsBtn" class="open-gifts-btn">
-  🎁
-</button>
-
-<!-- PAINEL DE GIFTS -->
-<div id="giftsPanel" class="gifts-panel hidden">
-  <div class="gifts-header">
-    <span>Enviar presente</span>
-    <button id="closeGiftsBtn">✕</button>
-  </div>
-
-  <div id="giftsList" class="gifts-list"></div>
-</div>
 
 
 </section>
@@ -104,6 +92,16 @@
 
 
   </main>
+
+
+<div id="giftsPanel" class="gifts-panel hidden">
+  <div class="gifts-header">
+    <span>Enviar presente</span>
+    <button id="closeGiftsBtn">✕</button>
+  </div>
+
+  <div id="giftsList" class="gifts-list"></div>
+</div>
 
 
   <div id="liveSummary" class="summary-screen hidden">

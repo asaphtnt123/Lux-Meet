@@ -89,6 +89,8 @@ async function handleAuth(user) {
   await setupUI()
 
   renderGifts()
+  initGiftsUI() // 👈 TEM que ser aqui
+
   bindLeaveButton()
 
   await startAgora(isHost ? "host" : "viewer")
@@ -598,19 +600,25 @@ function getGiftEmoji(giftId) {
   return gift ? gift.emoji : "🎁"
 }
 
-
 function initGiftsUI() {
   const openBtn = document.getElementById("openGiftsBtn")
   const closeBtn = document.getElementById("closeGiftsBtn")
   const panel = document.getElementById("giftsPanel")
 
-  if (!openBtn || !closeBtn || !panel) return
+  console.log("🎁 initGiftsUI", { openBtn, closeBtn, panel })
 
-  openBtn.onclick = () => {
+  if (!openBtn || !closeBtn || !panel) {
+    console.warn("❌ Gifts UI não encontrada no DOM")
+    return
+  }
+
+  openBtn.addEventListener("click", () => {
+    console.log("🎁 Abrindo painel de gifts")
     panel.classList.remove("hidden")
-  }
+  })
 
-  closeBtn.onclick = () => {
+  closeBtn.addEventListener("click", () => {
+    console.log("❌ Fechando painel de gifts")
     panel.classList.add("hidden")
-  }
+  })
 }
