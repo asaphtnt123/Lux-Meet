@@ -45,10 +45,7 @@ async function initializeApp() {
         auth.onAuthStateChanged(handleAuthStateChange)
 
 
-        if (!isLiveRoomPage()) {
-  updateUserUI()
-}
-
+        
 
     } catch (error) {
         console.error('Erro ao inicializar Firebase:', error)
@@ -154,27 +151,15 @@ function onUserReady() {
 // UPDATE USER UI
 // =======================================
 function updateUserUI() {
-  const userNameEl = document.getElementById('userName')
-  const userAvatarEl = document.getElementById('userAvatar')
-  const userBalanceEl = document.getElementById('userBalance')
+    document.getElementById('userName').textContent =
+        userData.name || 'Usuário'
 
-  if (userNameEl) {
-    userNameEl.textContent = userData.name || 'Usuário'
-  }
+    document.getElementById('userAvatar').src =
+        userData.profilePhotoURL ||
+        'https://via.placeholder.com/40'
 
-  if (userAvatarEl) {
-    userAvatarEl.src =
-      userData.profilePhotoURL ||
-      'https://via.placeholder.com/40'
-  }
-
-  if (userBalanceEl) {
-    userBalanceEl.textContent =
-      (userData.balance || 0).toFixed(2)
-  }
-}
-function isLiveRoomPage() {
-  return document.body.classList.contains('live-room')
+    document.getElementById('userBalance').textContent =
+        (userData.balance || 0).toFixed(2)
 }
 
 // =======================================
@@ -507,33 +492,28 @@ async function enterLive(liveId) {
 // =======================================
 document.addEventListener('DOMContentLoaded', initializeApp)
 
+
 function renderCountryNavbar(defaultCountry) {
   const navbar = document.getElementById('countryNavbar')
-  if (!navbar) return
+
+  if (!navbar) {
+    console.error('Navbar de países não encontrada')
+    return
+  }
 
   navbar.innerHTML = ''
 
   COUNTRIES.forEach(country => {
     const div = document.createElement('div')
     div.className = 'country-item'
-
     if (country.code === defaultCountry) {
       div.classList.add('active')
       selectedCountry = country.code
     }
 
-    // 🌍 FLAG
-    let flagHTML = ''
-
-    if (country.flag.startsWith('http')) {
-      flagHTML = `<img src="${country.flag}" class="country-flag-img">`
-    } else {
-      flagHTML = `<span class="country-flag-emoji">${country.flag}</span>`
-    }
-
     div.innerHTML = `
-      ${flagHTML}
-      <span class="country-name">${country.name}</span>
+      <span class="country-flag">${country.flag}</span>
+      <span>${country.name}</span>
     `
 
     div.onclick = () => {
@@ -543,9 +523,11 @@ function renderCountryNavbar(defaultCountry) {
 
       div.classList.add('active')
       selectedCountry = country.code
+
       loadLives(country.code)
     }
 
     navbar.appendChild(div)
   })
 }
+
