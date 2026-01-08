@@ -268,38 +268,60 @@ function handleLiveTypeChange(e) {
 // =======================================
 // LOAD LIVES
 // =======================================
-async function loadLives() {
+async function loadLives(country) {
+  if (!country) {
+    console.warn('Country indefinido, usando BR')
+    country = 'BR'
+  }
+
+  const liveList = document.getElementById('liveList')
+  liveList.innerHTML = ''
+
   let query = db
     .collection('lives')
     .where('status', '==', 'active')
 
-  if (selectedCountry !== 'all') {
-    query = query.where('country', '==', selectedCountry)
+  // ⚠️ só filtra se existir
+  if (country) {
+    query = query.where('country', '==', country)
   }
 
+  query = query.orderBy('createdAt', 'desc')
+
   const snap = await query.get()
-  const list = document.getElementById('liveList')
-  list.innerHTML = ''
+
+  if (snap.empty) {
+    liveList.innerHTML = `
+      <p class="empty-state">
+        Nenhuma live ao vivo neste país
+      </p>
+    `
+    return
+  }
 
   snap.forEach(doc => {
     const live = doc.data()
 
-    const div = document.createElement('div')
-    div.className = 'live-card'
-    div.innerHTML = `
-      <img class="live-avatar" src="${live.hostAvatar}">
-      <div class="live-info">
-        <span class="live-host-name">${live.hostName}</span>
-        <span class="live-status">🔴 Ao vivo</span>
+    liveList.innerHTML += `
+      <div class="live-card">
+        <img class="live-avatar"
+          src="${live.hostAvatar || 'https://via.placeholder.com/80'}">
+
+        <div class="live-info">
+          <span class="live-host-name">
+            ${live.hostName || 'Host'}
+          </span>
+          <span class="live-status">🔴 Ao vivo</span>
+        </div>
+
+        <button class="btn-secondary"
+          onclick="enterLive('${doc.id}')">
+          Entrar
+        </button>
       </div>
-      <button class="btn-secondary" onclick="enterLive('${doc.id}')">
-        Entrar
-      </button>
     `
-    list.appendChild(div)
   })
 }
-
 
 // =======================================
 // RENDER LIVE LIST
