@@ -359,7 +359,7 @@ async function endLiveAsHost() {
 async function showLiveSummary() {
   liveEnded = true
 
-  // Busca espectadores únicos
+  // Busca espectadores
   const viewersSnap = await db
     .collection("lives")
     .doc(liveId)
@@ -381,14 +381,11 @@ async function showLiveSummary() {
 
   giftsSnap.forEach(doc => {
     const g = doc.data()
-
     totalCoins += g.value
 
-    // Contagem de presentes
     giftCount[g.giftName] =
       (giftCount[g.giftName] || 0) + 1
 
-    // Ranking de usuários
     ranking[g.senderName] =
       (ranking[g.senderName] || 0) + g.value
   })
@@ -397,38 +394,65 @@ async function showLiveSummary() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
 
-  document.body.innerHTML = `
-    <div class="live-summary">
-      <h2>📊 Live Finalizada</h2>
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    `
+    <div class="host-summary-overlay">
+      <div class="host-summary-box">
 
-      <p>👁 <strong>${totalViewers}</strong> espectadores participaram</p>
-      <p>💰 <strong>${totalCoins}</strong> coins arrecadados</p>
+        <h2>📊 Live Finalizada</h2>
 
-      <h3>🎁 Presentes recebidos</h3>
-      ${
-        Object.keys(giftCount).length === 0
-          ? "<p>Nenhum presente recebido</p>"
-          : Object.entries(giftCount)
-              .map(g => `<p>${g[0]} — ${g[1]}x</p>`)
-              .join("")
-      }
+        <div class="summary-cards">
+          <div class="summary-card">
+            <span>👁</span>
+            <strong>${totalViewers}</strong>
+            <small>Espectadores</small>
+          </div>
 
-      <h3>🏆 Top apoiadores</h3>
-      ${
-        topGifters.length === 0
-          ? "<p>Nenhum apoiador</p>"
-          : topGifters
-              .map(
-                g => `<p>${g[0]} — ${g[1]} coins</p>`
-              )
-              .join("")
-      }
+          <div class="summary-card">
+            <span>💰</span>
+            <strong>${totalCoins}</strong>
+            <small>Coins ganhos</small>
+          </div>
+        </div>
 
-      <button class="summary-ok" onclick="location.href='lux-meet-live.html'">
-        OK
-      </button>
+        <div class="summary-section">
+          <h3>🎁 Presentes recebidos</h3>
+          ${
+            Object.keys(giftCount).length === 0
+              ? "<p>Nenhum presente recebido</p>"
+              : Object.entries(giftCount)
+                  .map(
+                    g =>
+                      `<div class="summary-row">${g[0]} <span>${g[1]}x</span></div>`
+                  )
+                  .join("")
+          }
+        </div>
+
+        <div class="summary-section">
+          <h3>🏆 Top apoiadores</h3>
+          ${
+            topGifters.length === 0
+              ? "<p>Nenhum apoiador</p>"
+              : topGifters
+                  .map(
+                    g =>
+                      `<div class="summary-row">${g[0]} <span>${g[1]} coins</span></div>`
+                  )
+                  .join("")
+          }
+        </div>
+
+        <button class="summary-ok"
+          onclick="location.href='lux-meet-live.html'">
+          Finalizar
+        </button>
+
+      </div>
     </div>
-  `
+    `
+  )
 }
 
 function showViewerEndedScreen() {
@@ -467,4 +491,7 @@ function addFriend() {
 function openGiftPanel() {
   alert("🎁 Envio de presentes disponível na próxima versão")
 }
+
+
+
 

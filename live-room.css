@@ -465,3 +465,109 @@ body {
   font-size: 16px;
   cursor: pointer;
 }
+
+
+
+
+
+/* ================= HOST SUMMARY ================= */
+
+.host-summary-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.host-summary-box {
+  background: #0f0f0f;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.host-summary-box h2 {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.summary-cards {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  flex: 1;
+  background: #1b1b1b;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.summary-card span {
+  font-size: 22px;
+}
+
+.summary-card strong {
+  display: block;
+  font-size: 24px;
+  margin: 4px 0;
+}
+
+.summary-card small {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.summary-section {
+  text-align: left;
+  margin-top: 16px;
+}
+
+.summary-section h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #f0f0f0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  background: #181818;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.summary-ok {
+  margin-top: 20px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff0057, #ff8f00);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* Desktop refinamento */
+@media (min-width: 768px) {
+  .host-summary-box {
+    max-width: 520px;
+    padding: 32px;
+  }
+
+  .summary-card strong {
+    font-size: 28px;
+  }
+}
