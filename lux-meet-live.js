@@ -316,10 +316,7 @@ async function loadLives(country) {
   })
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  renderCountryNav()
-  loadLives()
-})
+
 
 
 // =======================================
