@@ -4,14 +4,9 @@
   <meta charset="UTF-8" />
   <title>Lux Meet • Live</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
 
-  <!-- CSS -->
   <link rel="stylesheet" href="live-room.css" />
 </head>
 
@@ -28,72 +23,56 @@
 
   <!-- ================= HEADER ================= -->
   <header class="live-header">
-
-    <div class="header-left">
-      <div class="host-info">
-        <img id="hostAvatar" class="host-avatar" />
-        <div class="host-meta">
-          <span id="hostName" class="host-name">Host</span>
-          <small id="liveTitle" class="live-title"></small>
-        </div>
+    <div class="host-info">
+      <img id="hostAvatar" class="host-avatar" />
+      <div class="host-meta">
+        <span id="hostName" class="host-name">Host</span>
+        <small id="liveTitle" class="live-title"></small>
       </div>
     </div>
 
-    <div class="header-right">
-      <div id="viewerCount" class="viewer-count">
-        👁 <span>0</span>
-      </div>
-
-      <button id="leaveBtn" class="leave-btn">
-        ✕
-      </button>
+    <div class="header-actions">
+      <div id="viewerCount" class="viewer-count">👁 0</div>
+      <button id="leaveBtn" class="leave-btn">✕</button>
     </div>
-
   </header>
 
   <!-- ================= STAGE ================= -->
   <main class="live-stage">
 
-    <!-- ===== VIDEO LAYER ===== -->
+    <!-- VIDEO -->
     <section class="video-stage">
-      <div id="videoContainer" class="video-container">
-        <!-- Agora injeta o vídeo aqui -->
-      </div>
+      <div id="videoContainer" class="video-container"></div>
     </section>
 
-    <!-- ===== OVERLAYS ===== -->
-    <section class="live-overlays">
-
-      <!-- System messages (ex: entrou na live) -->
-      <div id="systemMessages" class="system-messages"></div>
-
-      <!-- Floating chat -->
-      <div class="chat-overlay">
-        <div id="chatMessages" class="chat-messages"></div>
-      </div>
-
-      <!-- Floating actions (likes/gifts futuros) -->
-      <div class="floating-actions">
-        
-        <button id="openGiftsBtn" class="open-gifts-btn">
-  🎁
-</button>
-      </div>
-
+    <!-- CHAT -->
+    <section class="chat-overlay">
+      <div id="chatMessages" class="chat-messages"></div>
     </section>
 
-
-    <section class="live-gifts">
-
-
-</section>
-
-
-
+    <!-- FLOATING ACTIONS -->
+    <div class="floating-actions">
+      <button id="openGiftsBtn" class="open-gifts-btn">🎁</button>
+    </div>
 
   </main>
 
+  <!-- ================= CHAT INPUT ================= -->
+  <footer class="live-footer">
+    <form id="chatForm" class="chat-form">
+      <input
+        id="chatInput"
+        type="text"
+        placeholder="Diga algo legal..."
+        autocomplete="off"
+      />
+      <button type="submit" class="send-btn">➤</button>
+    </form>
+  </footer>
 
+</div>
+
+<!-- ================= GIFTS PANEL ================= -->
 <div id="giftsPanel" class="gifts-panel hidden">
   <div class="gifts-header">
     <span>Enviar presente</span>
@@ -103,46 +82,11 @@
   <div id="giftsList" class="gifts-list"></div>
 </div>
 
-
-  <div id="liveSummary" class="summary-screen hidden">
-  <h2>Live encerrada 🎉</h2>
-
-  <p>👁 Espectadores: <span id="sumViewers"></span></p>
-  <p>💰 Total ganho: <span id="sumTotal"></span> coins</p>
-
-  <h3>🏆 Top Gifters</h3>
-  <ul id="topGifters"></ul>
-
-  <h3>🎁 Presentes recebidos</h3>
-  <div id="giftThumbs" class="gift-thumbs"></div>
-
-  <button onclick="location.href='lux-meet-live.html'">OK</button>
-</div>
-
-  <!-- ================= FOOTER / CHAT INPUT ================= -->
-  <footer class="live-footer">
-
-    <form id="chatForm" class="chat-form">
-      <input
-        id="chatInput"
-        type="text"
-        placeholder="Diga algo legal..."
-        autocomplete="off"
-      />
-      <button type="submit" class="send-btn">
-        ➤
-      </button>
-    </form>
-
-  </footer>
-
-</div>
+<!-- ================= END LIVE MODAL ================= -->
 <div id="endLiveModal" class="modal hidden">
   <div class="modal-box">
     <h3>Encerrar live?</h3>
-    <p>
-      👁 <strong id="modalViewerCount">0</strong> espectadores assistindo
-    </p>
+    <p>👁 <strong id="modalViewerCount">0</strong> espectadores assistindo</p>
 
     <div class="modal-actions">
       <button id="cancelEndLive">Cancelar</button>
@@ -150,57 +94,18 @@
     </div>
   </div>
 </div>
-<div id="liveSummary" class="live-summary hidden">
-  <div class="summary-card">
-    <h2>📊 Live Finalizada</h2>
 
-    <div class="summary-stats">
-      <div class="stat">
-        <span>👁</span>
-        <strong id="sumViewers">0</strong>
-        <small>Espectadores</small>
-      </div>
-
-      <div class="stat">
-        <span>💰</span>
-        <strong id="sumCoins">0</strong>
-        <small>Coins ganhos</small>
-      </div>
-    </div>
-
-    <h3>🏆 Top Apoiadores</h3>
-    <div id="topGifters" class="top-gifters"></div>
-
-    <button class="summary-btn" id="closeSummaryBtn">
-      OK
-    </button>
-  </div>
-</div>
-
-
-<div id="liveApp">
-  <!-- live -->
-</div>
-
-<div id="summaryScreen" class="hidden"></div>
-
-
-<!-- ================= MODALS (FUTURO) ================= -->
-<div id="modalRoot">
-  <!-- gifts, ranking, perfil -->
-</div>
+<!-- ================= SUMMARY (HOST) ================= -->
+<div id="summaryScreen" class="summary-screen hidden"></div>
 
 <!-- ================= SCRIPTS ================= -->
 
-<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-<!-- AGORA SDK -->
 <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
 
-<!-- APP -->
 <script src="live-room.js"></script>
 
 </body>
