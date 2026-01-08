@@ -696,33 +696,14 @@ async function endLiveAsHost() {
   await showLiveSummary()
 
 }
-
-
 function handleLiveEndedByHost() {
-  if (client) client.leave()
+  if (isHost) return
 
-    if (!isHost) {
+  liveEnded = true
+
   showViewerEndedScreen()
 }
 
-
-  document.body.innerHTML = `
-    <div class="live-ended-screen">
-      <h2>📴 Live encerrada</h2>
-      <p>O host finalizou a transmissão.</p>
-
-      <div class="ended-actions">
-        <button onclick="followHost()">⭐ Tornar fã</button>
-        <button onclick="addFriend()">👤 Adicionar amigo</button>
-        <button onclick="sendGift()">🎁 Enviar presente</button>
-      </div>
-
-      <button onclick="location.href='lux-meet-live.html'">
-        Voltar
-      </button>
-    </div>
-  `
-}
 
 
 
@@ -739,4 +720,31 @@ if (el && !liveEnded) {
 }
 
     })
+}
+
+
+function showViewerEndedScreen() {
+  const app = document.getElementById("liveApp")
+  const summary = document.getElementById("summaryScreen")
+
+  if (app) app.classList.add("hidden")
+  if (summary) summary.classList.add("hidden")
+
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    `
+    <div id="viewerEndedScreen" class="viewer-ended">
+      <div class="viewer-ended-box">
+        <h2>📴 Live encerrada</h2>
+        <p>O host finalizou a transmissão.</p>
+
+        <div class="viewer-actions">
+          <button onclick="location.href='lux-meet-live.html'">
+            Voltar
+          </button>
+        </div>
+      </div>
+    </div>
+    `
+  )
 }

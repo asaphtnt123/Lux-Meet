@@ -430,3 +430,38 @@ body {
 .hidden {
   display: none;
 }
+
+
+.viewer-ended {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.viewer-ended-box {
+  background: #111;
+  color: #fff;
+  padding: 24px;
+  border-radius: 14px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.viewer-ended-box h2 {
+  margin-bottom: 10px;
+}
+
+.viewer-actions button {
+  margin-top: 18px;
+  padding: 12px;
+  width: 100%;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
