@@ -334,14 +334,18 @@ async function sendGift(gift) {
       })
 
       // 🎁 registra gift
-      tx.set(liveRef.collection("gifts").doc(), {
-        senderId: currentUser.uid,
-        senderName: userData.name || "Usuário",
-        giftId: gift.id,
-        giftName: gift.name,
-        value: gift.value,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      })
+     tx.set(
+  liveRef.collection("gifts").doc(),
+  {
+    senderId: currentUser.uid,
+    senderName: userData.name || "Usuário",
+    giftId: gift.id,
+    giftName: gift.name,
+    value: gift.value,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }
+)
+
 
       // 💬 mensagem no chat
       tx.set(liveRef.collection("chat").doc(), {
@@ -373,10 +377,16 @@ function listenToGifts() {
         const g = change.doc.data()
 
         // mensagem no chat
-        renderMessage({
-          name: "🎁 Sistema",
-          text: `${g.senderName} enviou ${getGiftEmoji(g.giftId)} ${g.giftName} (${g.value})`
-        })
+       renderMessage({
+  name: "🎁 Presente",
+  text: `<span class="gift-msg">
+    ${g.senderName || "Alguém"} enviou 
+    <strong>${getGiftEmoji(g.giftId)} ${g.giftName}</strong> 
+    (${g.value} coins)
+  </span>`
+})
+
+
 
         // animação global
         showGiftAnimation({

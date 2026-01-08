@@ -620,3 +620,9 @@ body {
   from { opacity: 1; transform: translate(-50%, 0); }
   to { opacity: 0; transform: translate(-50%, -120px); }
 }
+
+
+.gift-msg {
+  color: #ffd700;
+  font-weight: 600;
+}
