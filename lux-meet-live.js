@@ -31,15 +31,7 @@ async function initializeApp() {
         auth.onAuthStateChanged(handleAuthStateChange)
 
 
-        const snap = await db
-  .collection("users")
-  .doc(currentUser.uid)
-  .get()
-
-const userData = snap.data()
-
-updateUserHeader(userData)
-
+        
 
     } catch (error) {
         console.error('Erro ao inicializar Firebase:', error)
@@ -67,35 +59,42 @@ async function handleAuthStateChange(user) {
 
     onUserReady()
 }
-
 // =======================================
 // LOAD USER DATA
 // =======================================
 async function loadUserData() {
-    try {
-        const userRef = db.collection('users').doc(currentUser.uid)
-        const snap = await userRef.get()
+  try {
+    const userRef = db.collection('users').doc(currentUser.uid)
+    const snap = await userRef.get()
 
-        if (snap.exists) {
-            userData = snap.data()
-        } else {
-            userData = {
-                name: currentUser.displayName || 'Usuário',
-                profilePhotoURL:
-                    currentUser.photoURL ||
-                    'https://via.placeholder.com/150',
-                balance: 0,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }
-            await userRef.set(userData)
-        }
+    if (snap.exists) {
+      userData = snap.data()
+    } else {
+      userData = {
+        name: currentUser.displayName || 'Usuário',
+        profilePhotoURL:
+          currentUser.photoURL ||
+          'https://via.placeholder.com/150',
+        balance: 0,
+        earnings: 0
+      }
 
-        return true
-    } catch (error) {
-        console.error('Erro ao carregar usuário:', error)
-        return false
+      await userRef.set({
+        ...userData,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
     }
+
+    // 🔥 Atualiza header (saldo + ganhos)
+    updateUserHeader(userData)
+
+    return true
+  } catch (error) {
+    console.error('Erro ao carregar usuário:', error)
+    return false
+  }
 }
+
 
 function updateUserHeader(userData) {
   // saldo normal
