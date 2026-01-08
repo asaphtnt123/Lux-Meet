@@ -65,6 +65,9 @@ function init() {
 
   auth.onAuthStateChanged(handleAuth)
 
+if (currentUser.uid === hostId) {
+  addFriendBtn.style.display = 'none'
+}
 
 
 }
@@ -622,3 +625,11 @@ function initGiftsUI() {
     panel.classList.add("hidden")
   })
 }
+
+
+const addFriendBtn = document.getElementById('addFriendBtn')
+
+addFriendBtn.addEventListener('click', async () => {
+  alert('Pedido de amizade enviado 💛')
+})
+

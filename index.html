@@ -681,6 +681,21 @@
                         <option value="both">Ambos</option>
                     </select>
                 </div>
+
+                <div class="form-group">
+  <label for="country">País</label>
+  <select id="country" class="form-control" required>
+    <option value="">Selecione</option>
+    <option value="BR">Brasil</option>
+    <option value="US">Estados Unidos</option>
+    <option value="PT">Portugal</option>
+    <option value="ES">Espanha</option>
+    <option value="FR">França</option>
+  </select>
+</div>
+
+
+
                 <div class="form-group">
                     <label for="cidade">Cidade</label>
                     <input type="text" id="cidade" class="form-control" required>
@@ -880,90 +895,124 @@
     const interestIn = tipouser === 'sugar_baby' ? document.getElementById('interest_in').value : null;
     const profilePhoto = document.getElementById('profile_photo').files[0];
 
-    // Validação básica
-    if (!profilePhoto) {
-        loading.style.display = 'none'; // Esconde o loading se houver erro
-        alert('Por favor, selecione uma foto de perfil');
-        return;
-    }
+   // Validação básica
+if (!profilePhoto) {
+  loading.style.display = 'none'
+  alert('Por favor, selecione uma foto de perfil')
+  return
+}
 
-    // Primeiro criar o usuário no Authentication
-    auth.createUserWithEmailAndPassword(email, password)
-        .then(userCredential => {
-            const user = userCredential.user;
-            
-            // Upload da foto de perfil usando o UID como referência
-            const storageRef = storage.ref();
-            const fileExtension = profilePhoto.name.split('.').pop();
-            const profilePhotoRef = storageRef.child(`profile_photos/${user.uid}/profile.${fileExtension}`);
-            
-            return profilePhotoRef.put(profilePhoto)
-                .then(snapshot => snapshot.ref.getDownloadURL())
-                .then(photoURL => {
-                    // Salvar dados no Firestore
-                    return db.collection('users').doc(user.uid).set({
-                        userId: user.uid,
-                        name: name,
-                        email: email,
-                        dateOfBirth: dateOfBirth,
-                        gender: gender,
-                        tipouser: tipouser,
-                        income: income,
-                        cidade: cidade,
-                        bio: bio,
-                        interestIn: interestIn,
-                        profilePhotoURL: photoURL,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                });
+// 🔹 País selecionado no cadastro
+const country = document.getElementById('country').value
+
+if (!country) {
+  loading.style.display = 'none'
+  alert('Selecione seu país')
+  return
+}
+
+// Primeiro criar o usuário no Authentication
+auth.createUserWithEmailAndPassword(email, password)
+  .then(userCredential => {
+    const user = userCredential.user
+
+    // Upload da foto de perfil usando o UID como referência
+    const storageRef = storage.ref()
+    const fileExtension = profilePhoto.name.split('.').pop()
+    const profilePhotoRef = storageRef.child(
+      `profile_photos/${user.uid}/profile.${fileExtension}`
+    )
+
+    return profilePhotoRef
+      .put(profilePhoto)
+      .then(snapshot => snapshot.ref.getDownloadURL())
+      .then(photoURL => {
+        // 🔥 Salvar dados no Firestore
+        return db.collection('users').doc(user.uid).set({
+          userId: user.uid,
+
+          name: name,
+          email: email,
+          dateOfBirth: dateOfBirth,
+          gender: gender,
+          tipouser: tipouser,
+          income: income || null,
+          cidade: cidade,
+          bio: bio,
+          interestIn: interestIn || null,
+
+          country: country, // 🌍 PAÍS DO USUÁRIO
+
+          profilePhotoURL: photoURL,
+
+          // 💰 Sistema LuxMeet
+          balance: 0,
+          earnings: 0,
+
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
         })
-        .then(() => {
-            loading.style.display = 'none'; // Esconde o loading
-            const successModal = document.getElementById('signup-success-modal');
-            successModal.style.display = 'block';
-            
-            document.getElementById('signup-success-btn').onclick = function() {
-                successModal.style.display = 'none';
-                document.getElementById('cadastro-modal').style.display = 'none';
-                document.getElementById('cadastro-form').reset();
-            };
-            
-            successModal.querySelector('.lux-close').onclick = function() {
-                successModal.style.display = 'none';
-                document.getElementById('cadastro-modal').style.display = 'none';
-                document.getElementById('cadastro-form').reset();
-            };
-        })
-        .catch(error => {
-            loading.style.display = 'none'; // Esconde o loading em caso de erro
-            
-            if (error.code === 'auth/email-already-in-use') {
-                const errorModal = document.getElementById('signup-error-modal');
-                errorModal.style.display = 'block';
-                
-                document.getElementById('signup-error-btn').onclick = function() {
-                    errorModal.style.display = 'none';
-                };
-                
-                errorModal.querySelector('.lux-close').onclick = function() {
-                    errorModal.style.display = 'none';
-                };
-            } else {
-                const errorModal = document.getElementById('login-error-modal');
-                document.getElementById('login-error-message').textContent = 
-                    'Erro: ' + error.message.replace('Firebase: ', '');
-                errorModal.style.display = 'block';
-                
-                document.getElementById('login-error-btn').onclick = function() {
-                    errorModal.style.display = 'none';
-                };
-                
-                errorModal.querySelector('.lux-close').onclick = function() {
-                    errorModal.style.display = 'none';
-                };
-            }
-        });
-});
+      })
+  })
+  .then(() => {
+    loading.style.display = 'none'
+
+    const successModal =
+      document.getElementById('signup-success-modal')
+    successModal.style.display = 'block'
+
+    document.getElementById('signup-success-btn').onclick =
+      function () {
+        successModal.style.display = 'none'
+        document.getElementById('cadastro-modal').style.display =
+          'none'
+        document.getElementById('cadastro-form').reset()
+      }
+
+    successModal.querySelector('.lux-close').onclick =
+      function () {
+        successModal.style.display = 'none'
+        document.getElementById('cadastro-modal').style.display =
+          'none'
+        document.getElementById('cadastro-form').reset()
+      }
+  })
+  .catch(error => {
+    loading.style.display = 'none'
+
+    if (error.code === 'auth/email-already-in-use') {
+      const errorModal =
+        document.getElementById('signup-error-modal')
+      errorModal.style.display = 'block'
+
+      document.getElementById('signup-error-btn').onclick =
+        function () {
+          errorModal.style.display = 'none'
+        }
+
+      errorModal.querySelector('.lux-close').onclick =
+        function () {
+          errorModal.style.display = 'none'
+        }
+    } else {
+      const errorModal =
+        document.getElementById('login-error-modal')
+      document.getElementById(
+        'login-error-message'
+      ).textContent =
+        'Erro: ' + error.message.replace('Firebase: ', '')
+      errorModal.style.display = 'block'
+
+      document.getElementById('login-error-btn').onclick =
+        function () {
+          errorModal.style.display = 'none'
+        }
+
+      errorModal.querySelector('.lux-close').onclick =
+        function () {
+          errorModal.style.display = 'none'
+        }
+    }
+  })
 
       // Formulário de Login
 document.getElementById('login-form').addEventListener('submit', function(e) {
@@ -1002,7 +1051,7 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
         };
     });
 });
-
+    });
     </script>
 </body>
 </html>

@@ -21,21 +21,22 @@
 <!-- ================= APP ================= -->
 <div id="app" class="app hidden">
 
-  <!-- ================= HEADER ================= -->
-  <header class="live-header">
-    <div class="host-info">
-      <img id="hostAvatar" class="host-avatar" />
-      <div class="host-meta">
-        <span id="hostName" class="host-name">Host</span>
-        <small id="liveTitle" class="live-title"></small>
-      </div>
-    </div>
+ <div class="host-meta">
+  <div class="host-name-row">
+    <span id="hostName" class="host-name">Host</span>
 
-    <div class="header-actions">
-      <div id="viewerCount" class="viewer-count">👁 0</div>
-      <button id="leaveBtn" class="leave-btn">✕</button>
-    </div>
-  </header>
+    <button
+      id="addFriendBtn"
+      class="add-friend-btn"
+      title="Adicionar aos amigos"
+    >
+      +
+    </button>
+  </div>
+
+  <small id="liveTitle" class="live-title"></small>
+</div>
+
 
   <!-- ================= STAGE ================= -->
   <main class="live-stage">
