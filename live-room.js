@@ -357,21 +357,114 @@ async function endLiveAsHost() {
 // SCREENS
 // =======================================
 async function showLiveSummary() {
+  liveEnded = true
+
+  // Busca espectadores únicos
+  const viewersSnap = await db
+    .collection("lives")
+    .doc(liveId)
+    .collection("viewers")
+    .get()
+
+  const totalViewers = viewersSnap.size
+
+  // Busca gifts
+  const giftsSnap = await db
+    .collection("lives")
+    .doc(liveId)
+    .collection("gifts")
+    .get()
+
+  let totalCoins = 0
+  const giftCount = {}
+  const ranking = {}
+
+  giftsSnap.forEach(doc => {
+    const g = doc.data()
+
+    totalCoins += g.value
+
+    // Contagem de presentes
+    giftCount[g.giftName] =
+      (giftCount[g.giftName] || 0) + 1
+
+    // Ranking de usuários
+    ranking[g.senderName] =
+      (ranking[g.senderName] || 0) + g.value
+  })
+
+  const topGifters = Object.entries(ranking)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+
   document.body.innerHTML = `
     <div class="live-summary">
       <h2>📊 Live Finalizada</h2>
-      <p>👁 Espectadores: ${viewerCount}</p>
-      <button onclick="location.href='lux-meet-live.html'">OK</button>
+
+      <p>👁 <strong>${totalViewers}</strong> espectadores participaram</p>
+      <p>💰 <strong>${totalCoins}</strong> coins arrecadados</p>
+
+      <h3>🎁 Presentes recebidos</h3>
+      ${
+        Object.keys(giftCount).length === 0
+          ? "<p>Nenhum presente recebido</p>"
+          : Object.entries(giftCount)
+              .map(g => `<p>${g[0]} — ${g[1]}x</p>`)
+              .join("")
+      }
+
+      <h3>🏆 Top apoiadores</h3>
+      ${
+        topGifters.length === 0
+          ? "<p>Nenhum apoiador</p>"
+          : topGifters
+              .map(
+                g => `<p>${g[0]} — ${g[1]} coins</p>`
+              )
+              .join("")
+      }
+
+      <button class="summary-ok" onclick="location.href='lux-meet-live.html'">
+        OK
+      </button>
     </div>
   `
 }
 
 function showViewerEndedScreen() {
+  liveEnded = true
+
   document.body.innerHTML = `
     <div class="viewer-ended">
-      <h2>📴 Live encerrada</h2>
-      <p>O host finalizou a transmissão</p>
-      <button onclick="location.href='lux-meet-live.html'">Voltar</button>
+      <div class="viewer-ended-box">
+        <h2>📴 Live encerrada</h2>
+        <p>O host finalizou a transmissão</p>
+
+        <div class="viewer-actions">
+          <button onclick="followHost()">⭐ Tornar fã</button>
+          <button onclick="addFriend()">👤 Adicionar amigo</button>
+          <button onclick="openGiftPanel()">🎁 Enviar presente</button>
+        </div>
+
+        <button class="viewer-back"
+          onclick="location.href='lux-meet-live.html'">
+          Voltar
+        </button>
+      </div>
     </div>
   `
 }
+
+
+function followHost() {
+  alert("⭐ Agora você é fã do host!")
+}
+
+function addFriend() {
+  alert("👤 Pedido de amizade enviado!")
+}
+
+function openGiftPanel() {
+  alert("🎁 Envio de presentes disponível na próxima versão")
+}
+
