@@ -65,6 +65,9 @@ function init() {
 
   auth.onAuthStateChanged(handleAuth)
 
+if (currentUser.uid === hostId) {
+  addFriendBtn.style.display = 'none'
+}
 
 
 }
@@ -86,10 +89,7 @@ async function handleAuth(user) {
   isHost = liveData.hostId === currentUser.uid
 
   await validateAccess()
-  document.addEventListener("DOMContentLoaded", () => {
-  setupUI()
-})
-
+  await setupUI()
 
   renderGifts()
   initGiftsUI() // 👈 TEM que ser aqui
@@ -151,34 +151,20 @@ async function validateAccess() {
     location.href = "lux-meet-live.html"
   }
 }
+
+// =======================================
+// UI
+// =======================================
 async function setupUI() {
-  const hostSnap = await db
-    .collection("users")
-    .doc(liveData.hostId)
-    .get()
-
-  if (!hostSnap.exists) return
-
+  const hostSnap = await db.collection("users").doc(liveData.hostId).get()
   const host = hostSnap.data()
 
-  const hostNameEl = document.getElementById("hostName")
-  const hostAvatarEl = document.getElementById("hostAvatar")
-  const liveTitleEl = document.getElementById("liveTitle")
-
-  if (hostNameEl) {
-    hostNameEl.textContent = host.name || "Host"
-  }
-
-  if (hostAvatarEl) {
-    hostAvatarEl.src =
-      host.profilePhotoURL || "https://via.placeholder.com/50"
-  }
-
-  if (liveTitleEl) {
-    liveTitleEl.textContent = liveData.title || ""
-  }
+  document.getElementById("hostName").textContent = host.name || "Host"
+  document.getElementById("hostAvatar").src =
+    host.profilePhotoURL || "https://via.placeholder.com/50"
+  document.getElementById("liveTitle").textContent =
+    liveData.title || ""
 }
-
 
 // =======================================
 // AGORA
@@ -639,3 +625,20 @@ function initGiftsUI() {
     panel.classList.add("hidden")
   })
 }
+
+
+const addFriendBtn = document.getElementById('addFriendBtn')
+
+addFriendBtn.addEventListener('click', async () => {
+  alert('Pedido de amizade enviado 💛')
+})
+
+
+
+document.getElementById('privateChatBtn').addEventListener('click', () => {
+  alert('Abrir chat privado 💬')
+})
+
+document.getElementById('moreOptionsBtn').addEventListener('click', () => {
+  alert('Opções: Reportar / Compartilhar')
+})
