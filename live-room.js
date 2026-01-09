@@ -350,8 +350,12 @@ async function sendGift(gift) {
 
       // 🔺 credita no host
       tx.update(hostRef, {
-        earnings: (hostSnap.data().earnings || 0) + gift.value
-      })
+  earnings_pending:
+    (hostSnap.data().earnings_pending || 0) + gift.value,
+  total_earnings:
+    (hostSnap.data().total_earnings || 0) + gift.value
+})
+
 
       // 🔺 soma na live
       tx.update(liveRef, {
@@ -360,16 +364,21 @@ async function sendGift(gift) {
 
       // 🎁 registra gift
      tx.set(
-  liveRef.collection("gifts").doc(),
+  liveRef.collection('transactions').doc(),
   {
-    senderId: currentUser.uid,
-    senderName: userData.name || "Usuário",
-    giftId: gift.id,
-    giftName: gift.name,
-    value: gift.value,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    type: 'gift',
+    amount: gift.value,
+    from: currentUser.uid,
+    to: liveData.hostId,
+    status: 'pending',
+    liveId,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    releaseAt: firebase.firestore.Timestamp.fromDate(
+      new Date(Date.now() + 12 * 60 * 60 * 1000) // 12h
+    )
   }
 )
+
 
 
       // 💬 mensagem no chat

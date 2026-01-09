@@ -450,47 +450,59 @@ async function enterLive(liveId) {
         }
 
         // 🔥 TRANSAÇÃO ATÔMICA
-      await db.runTransaction(async transaction => {
+     await db.runTransaction(async transaction => {
   const userRef =
     db.collection('users').doc(currentUser.uid)
 
   const hostRef =
     db.collection('users').doc(live.hostId)
 
-  const userSnap =
-    await transaction.get(userRef)
+  const txRef =
+    liveRef.collection('transactions').doc()
 
-  const hostSnap =
-    await transaction.get(hostRef)
+  const userSnap = await transaction.get(userRef)
+  const hostSnap = await transaction.get(hostRef)
 
-  const userBalance =
-    userSnap.data().balance || 0
+  const balance = userSnap.data().balance || 0
 
-  const hostEarnings =
-    hostSnap.data().earnings || 0
-
-  if (userBalance < price) {
+  if (balance < price) {
     throw new Error('Saldo insuficiente')
   }
 
-  // 🔻 Debita espectador
+  // 🔻 desconta do espectador
   transaction.update(userRef, {
-    balance: userBalance - price
+    balance: balance - price
   })
 
-  // 🔺 Credita host
+  // 🔺 vai para PENDING do host
   transaction.update(hostRef, {
-    earnings: hostEarnings + price
+    earnings_pending:
+      (hostSnap.data().earnings_pending || 0) + price,
+    total_earnings:
+      (hostSnap.data().total_earnings || 0) + price
   })
 
-  // 📌 Marca espectador como pago
+  // 👁 libera acesso
   transaction.set(viewerRef, {
-    joinedAt:
-      firebase.firestore.FieldValue.serverTimestamp(),
-    paid: true,
-    price
+    joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    paid: true
+  })
+
+  // 📄 registra transação
+  transaction.set(txRef, {
+    type: 'private_entry',
+    amount: price,
+    from: currentUser.uid,
+    to: live.hostId,
+    status: 'pending',
+    liveId,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    releaseAt: firebase.firestore.Timestamp.fromDate(
+      new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+    )
   })
 })
+
 
 transaction.set(
   liveRef.collection('transactions').doc(),
