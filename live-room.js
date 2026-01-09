@@ -87,6 +87,8 @@ async function handleAuth(user) {
   await loadLive()
 
   isHost = liveData.hostId === currentUser.uid
+  toggleGiftsForRole()
+
 
   await validateAccess()
   await setupUI()
@@ -579,6 +581,21 @@ async function showLiveSummary() {
     </div>
     `
   )
+}
+function toggleGiftsForRole() {
+  const openGiftsBtn = document.getElementById("openGiftsBtn")
+  const giftsPanel = document.getElementById("giftsPanel")
+
+  if (!openGiftsBtn || !giftsPanel) return
+
+  if (isHost) {
+    // 👑 HOST → não envia presentes
+    openGiftsBtn.style.display = "none"
+    giftsPanel.classList.add("hidden")
+  } else {
+    // 👀 ESPECTADOR → pode enviar
+    openGiftsBtn.style.display = "flex"
+  }
 }
 
 function showViewerEndedScreen() {
