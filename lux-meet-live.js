@@ -512,9 +512,14 @@ function renderCountryNavbar(defaultCountry) {
     }
 
     div.innerHTML = `
-      <span class="country-flag">${country.flag}</span>
-      <span>${country.name}</span>
-    `
+  <img
+    class="country-flag"
+    src="${country.flag}"
+    alt="${country.name}"
+  />
+  <span class="country-name">${country.name}</span>
+`
+
 
     div.onclick = () => {
       document

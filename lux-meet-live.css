@@ -218,56 +218,46 @@ body {
     margin-top: 15px;
 }
 
-/* NAVBAR */
+
+
 .country-navbar {
   display: flex;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 14px;
+  padding: 10px 12px;
   overflow-x: auto;
-  border-bottom: 1px solid #222;
+  background: #000;
 }
 
-/* ITEM */
 .country-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 16px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
   cursor: pointer;
-  background: #111;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  transition: background 0.2s, transform 0.2s;
 }
 
-/* HOVER */
 .country-item:hover {
-  background: #1c1c1c;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-/* ATIVO */
 .country-item.active {
-  background: #ff2d55;
-  color: #fff;
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid gold;
 }
 
-/* BANDEIRA IMAGEM (MINI) */
-.country-flag-img {
-  width: 14px;
-  height: 14px;
+.country-flag {
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
-/* BANDEIRA EMOJI (MINI) */
-.country-flag-emoji {
-  font-size: 14px;
-}
-
-/* TEXTO */
 .country-name {
-  font-size: 12px;
-  line-height: 1;
+  font-weight: 500;
 }
