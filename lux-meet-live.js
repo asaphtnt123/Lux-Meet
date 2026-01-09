@@ -394,139 +394,112 @@ async function renderLiveList(docs) {
         }
     }
 }
-
-
 async function enterLive(liveId) {
-    try {
-        console.log('Tentando entrar na live:', liveId)
-
-        if (!liveId) {
-            alert('Live inválida (ID vazio)')
-            return
-        }
-
-        if (!currentUser || !userData) {
-            alert('Usuário não autenticado')
-            return
-        }
-
-        const liveRef = db.collection('lives').doc(liveId)
-        const liveSnap = await liveRef.get()
-
-        if (!liveSnap.exists) {
-            alert('Live não encontrada')
-            return
-        }
-
-        const live = liveSnap.data()
-
-        // 🔓 LIVE PÚBLICA
-        if (live.type === 'public') {
-            window.location.href =
-                `live-room.html?liveId=${liveId}`
-            return
-        }
-
-        // 🔒 LIVE PRIVADA
-        const price = live.price || 0
-
-        const viewerRef = liveRef
-            .collection('viewers')
-            .doc(currentUser.uid)
-
-        const viewerSnap = await viewerRef.get()
-
-        // Já pagou antes
-        if (viewerSnap.exists) {
-            window.location.href =
-                `live-room.html?liveId=${liveId}`
-            return
-        }
-
-        // Verificar saldo
-        if ((userData.balance || 0) < price) {
-            alert(`Saldo insuficiente. Valor: ${price}`)
-            return
-        }
-
-        // 🔥 TRANSAÇÃO ATÔMICA
-    await db.runTransaction(async (transaction) => {
-  const userRef =
-    db.collection('users').doc(currentUser.uid)
-
-  const hostRef =
-    db.collection('users').doc(live.hostId)
-
-  const txRef =
-    liveRef.collection('transactions').doc()
-
-  const userSnap = await transaction.get(userRef)
-  const hostSnap = await transaction.get(hostRef)
-
-  const balance = userSnap.data().balance || 0
-
-  if (balance < price) {
-    throw new Error('Saldo insuficiente')
-  }
-
-  // 🔻 desconta do espectador
-  transaction.update(userRef, {
-    balance: balance - price
-  })
-
-  // 🔺 vai para pending do host
-  transaction.update(hostRef, {
-    earnings_pending:
-      (hostSnap.data().earnings_pending || 0) + price,
-    total_earnings:
-      (hostSnap.data().total_earnings || 0) + price
-  })
-
-  // 👁 libera acesso
-  transaction.set(viewerRef, {
-    joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    paid: true
-  })
-
-  // 📄 registra transação
-  transaction.set(txRef, {
-    type: 'private_entry',
-    amount: price,
-    from: currentUser.uid,
-    to: live.hostId,
-    status: 'pending',
-    liveId,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    releaseAt: firebase.firestore.Timestamp.fromDate(
-      new Date(Date.now() + 24 * 60 * 60 * 1000)
-    )
-  })
-})
-
-
-transaction.set(
-  liveRef.collection('transactions').doc(),
-  {
-    from: currentUser.uid,
-    to: live.hostId,
-    type: 'private_entry',
-    amount: price,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  }
-)
-
-        // Atualizar UI local
-        userData.balance -= price
-        updateUserUI()
-
-        // ✅ REDIRECIONA SÓ NO FINAL
-        window.location.href =
-            `live-room.html?liveId=${liveId}`
-
-    } catch (error) {
-        console.error('Erro ao entrar na live:', error)
-        alert(error.message || 'Erro ao entrar na live')
+  try {
+    if (!liveId) {
+      alert('Live inválida')
+      return
     }
+
+    if (!currentUser || !userData) {
+      alert('Usuário não autenticado')
+      return
+    }
+
+    const liveRef = db.collection('lives').doc(liveId)
+    const liveSnap = await liveRef.get()
+
+    if (!liveSnap.exists) {
+      alert('Live não encontrada')
+      return
+    }
+
+    const live = liveSnap.data()
+
+    // 🔓 LIVE PÚBLICA
+    if (live.type === 'public') {
+      window.location.href = `live-room.html?liveId=${liveId}`
+      return
+    }
+
+    // 🔒 LIVE PRIVADA
+    const price = live.price || 0
+
+    const viewerRef = liveRef
+      .collection('viewers')
+      .doc(currentUser.uid)
+
+    const viewerSnap = await viewerRef.get()
+
+    if (viewerSnap.exists) {
+      window.location.href = `live-room.html?liveId=${liveId}`
+      return
+    }
+
+    if ((userData.balance || 0) < price) {
+      alert(`Saldo insuficiente. Valor: ${price}`)
+      return
+    }
+
+    // 🔥 TRANSAÇÃO ATÔMICA (TUDO AQUI DENTRO)
+    await db.runTransaction(async (tx) => {
+      const userRef = db.collection('users').doc(currentUser.uid)
+      const hostRef = db.collection('users').doc(live.hostId)
+      const txRef = liveRef.collection('transactions').doc()
+
+      const userSnap = await tx.get(userRef)
+      const hostSnap = await tx.get(hostRef)
+
+      const balance = userSnap.data().balance || 0
+      if (balance < price) {
+        throw new Error('Saldo insuficiente')
+      }
+
+      // 🔻 desconta do espectador
+      tx.update(userRef, {
+        balance: balance - price
+      })
+
+      // 🔺 entra como pending para o host
+      tx.update(hostRef, {
+        earnings_pending:
+          (hostSnap.data().earnings_pending || 0) + price,
+        total_earnings:
+          (hostSnap.data().total_earnings || 0) + price
+      })
+
+      // 👁 libera acesso
+      tx.set(viewerRef, {
+        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        paid: true
+      })
+
+      // 📄 registra transação
+      tx.set(txRef, {
+        type: 'private_entry',
+        amount: price,
+        from: currentUser.uid,
+        to: live.hostId,
+        status: 'pending',
+        liveId,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        releaseAt: firebase.firestore.Timestamp.fromDate(
+          new Date(Date.now() + 24 * 60 * 60 * 1000)
+        )
+      })
+    })
+
+    // 🔄 Atualiza UI local
+    userData.balance -= price
+    updateUserUI()
+
+    // ✅ Redireciona
+    window.location.href = `live-room.html?liveId=${liveId}`
+
+  } catch (error) {
+    console.error('Erro ao entrar na live:', error)
+    alert(error.message || 'Erro ao entrar na live')
+  }
 }
 
 
