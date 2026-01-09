@@ -450,7 +450,7 @@ async function enterLive(liveId) {
         }
 
         // 🔥 TRANSAÇÃO ATÔMICA
-     await db.runTransaction(async transaction => {
+    await db.runTransaction(async (transaction) => {
   const userRef =
     db.collection('users').doc(currentUser.uid)
 
@@ -474,7 +474,7 @@ async function enterLive(liveId) {
     balance: balance - price
   })
 
-  // 🔺 vai para PENDING do host
+  // 🔺 vai para pending do host
   transaction.update(hostRef, {
     earnings_pending:
       (hostSnap.data().earnings_pending || 0) + price,
@@ -498,7 +498,7 @@ async function enterLive(liveId) {
     liveId,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     releaseAt: firebase.firestore.Timestamp.fromDate(
-      new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+      new Date(Date.now() + 24 * 60 * 60 * 1000)
     )
   })
 })
