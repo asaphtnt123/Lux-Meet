@@ -156,15 +156,33 @@ async function validateAccess() {
 // UI
 // =======================================
 async function setupUI() {
-  const hostSnap = await db.collection("users").doc(liveData.hostId).get()
+  const hostSnap = await db
+    .collection("users")
+    .doc(liveData.hostId)
+    .get()
+
+  if (!hostSnap.exists) return
+
   const host = hostSnap.data()
 
-  document.getElementById("hostName").textContent = host.name || "Host"
-  document.getElementById("hostAvatar").src =
-    host.profilePhotoURL || "https://via.placeholder.com/50"
-  document.getElementById("liveTitle").textContent =
-    liveData.title || ""
+  const hostNameEl = document.getElementById("hostName")
+  const hostAvatarEl = document.getElementById("hostAvatar")
+  const liveTitleEl = document.getElementById("liveTitle")
+
+  if (hostNameEl) {
+    hostNameEl.textContent = host.name || "Host"
+  }
+
+  if (hostAvatarEl) {
+    hostAvatarEl.src =
+      host.profilePhotoURL || "https://via.placeholder.com/50"
+  }
+
+  if (liveTitleEl) {
+    liveTitleEl.textContent = liveData.title || ""
+  }
 }
+
 
 // =======================================
 // AGORA
