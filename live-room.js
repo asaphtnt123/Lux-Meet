@@ -90,6 +90,8 @@ async function handleAuth(user) {
 
   await validateAccess()
   await setupUI()
+  bindLeaveButton()
+bindExtraUI()
 
   renderGifts()
   initGiftsUI() // 👈 TEM que ser aqui
@@ -436,11 +438,19 @@ function showGiftAnimation({ emoji, name }) {
 // LEAVE / END
 // =======================================
 function bindLeaveButton() {
-  document.getElementById("leaveBtn").onclick = () => {
+  const leaveBtn = document.getElementById("leaveBtn")
+
+  if (!leaveBtn) {
+    console.warn("❌ leaveBtn não encontrado no DOM")
+    return
+  }
+
+  leaveBtn.onclick = () => {
     if (isHost) endLiveAsHost()
     else leaveLive()
   }
 }
+
 
 async function leaveLive() {
   if (chatUnsub) chatUnsub()
@@ -644,12 +654,25 @@ function initGiftsUI() {
   })
 }
 
+function bindExtraUI() {
+  const addFriendBtn = document.getElementById("addFriendBtn")
+  if (addFriendBtn) {
+    addFriendBtn.onclick = () => {
+      alert("Pedido de amizade enviado 💛")
+    }
+  }
 
-const addFriendBtn = document.getElementById('addFriendBtn')
+  const privateBtn = document.getElementById("privateChatBtn")
+  if (privateBtn) {
+    privateBtn.onclick = () => alert("Abrir chat privado 💬")
+  }
 
-addFriendBtn.addEventListener('click', async () => {
-  alert('Pedido de amizade enviado 💛')
-})
+  const moreBtn = document.getElementById("moreOptionsBtn")
+  if (moreBtn) {
+    moreBtn.onclick = () => alert("Opções: Reportar / Compartilhar")
+  }
+}
+
 
 
 
