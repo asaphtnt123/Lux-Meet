@@ -394,6 +394,8 @@ async function renderLiveList(docs) {
         }
     }
 }
+
+
 async function enterLive(liveId) {
     try {
         console.log('Tentando entrar na live:', liveId)
@@ -448,29 +450,58 @@ async function enterLive(liveId) {
         }
 
         // 🔥 TRANSAÇÃO ATÔMICA
-        await db.runTransaction(async transaction => {
-            const userRef =
-                db.collection('users').doc(currentUser.uid)
+      await db.runTransaction(async transaction => {
+  const userRef =
+    db.collection('users').doc(currentUser.uid)
 
-            const userSnap =
-                await transaction.get(userRef)
+  const hostRef =
+    db.collection('users').doc(live.hostId)
 
-            const balance = userSnap.data().balance || 0
+  const userSnap =
+    await transaction.get(userRef)
 
-            if (balance < price) {
-                throw new Error('Saldo insuficiente')
-            }
+  const hostSnap =
+    await transaction.get(hostRef)
 
-            transaction.update(userRef, {
-                balance: balance - price
-            })
+  const userBalance =
+    userSnap.data().balance || 0
 
-            transaction.set(viewerRef, {
-                joinedAt:
-                    firebase.firestore.FieldValue.serverTimestamp(),
-                paid: true
-            })
-        })
+  const hostEarnings =
+    hostSnap.data().earnings || 0
+
+  if (userBalance < price) {
+    throw new Error('Saldo insuficiente')
+  }
+
+  // 🔻 Debita espectador
+  transaction.update(userRef, {
+    balance: userBalance - price
+  })
+
+  // 🔺 Credita host
+  transaction.update(hostRef, {
+    earnings: hostEarnings + price
+  })
+
+  // 📌 Marca espectador como pago
+  transaction.set(viewerRef, {
+    joinedAt:
+      firebase.firestore.FieldValue.serverTimestamp(),
+    paid: true,
+    price
+  })
+})
+
+transaction.set(
+  liveRef.collection('transactions').doc(),
+  {
+    from: currentUser.uid,
+    to: live.hostId,
+    type: 'private_entry',
+    amount: price,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }
+)
 
         // Atualizar UI local
         userData.balance -= price
