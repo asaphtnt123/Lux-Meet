@@ -633,13 +633,3 @@ addFriendBtn.addEventListener('click', async () => {
   alert('Pedido de amizade enviado 💛')
 })
 
-
-
-document.getElementById('privateChatBtn').addEventListener('click', () => {
-  alert('Abrir chat privado 💬')
-})
-
-document.getElementById('moreOptionsBtn').addEventListener('click', () => {
-  alert('Opções: Reportar / Compartilhar')
-})
-
