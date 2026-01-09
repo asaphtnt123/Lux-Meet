@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Lux Meet • Live</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
 
   <link rel="stylesheet" href="live-room.css" />
@@ -21,30 +21,22 @@
 <!-- ================= APP ================= -->
 <div id="app" class="app hidden">
 
-  <!-- ================= HEADER ================= -->
-  <header class="live-header">
-    <div class="host-info">
-      <img id="hostAvatar" class="host-avatar" />
+ <div class="host-meta">
+  <div class="host-name-row">
+    <span id="hostName" class="host-name">Host</span>
 
-      <div class="host-meta">
-        <div class="host-name-row">
-          <span id="hostName" class="host-name">Host</span>
+    <button
+      id="addFriendBtn"
+      class="add-friend-btn"
+      title="Adicionar aos amigos"
+    >
+      +
+    </button>
+  </div>
 
-          <button
-            id="addFriendBtn"
-            class="add-friend-btn"
-            title="Adicionar aos amigos"
-          >
-            +
-          </button>
-        </div>
+  <small id="liveTitle" class="live-title"></small>
+</div>
 
-        <small id="liveTitle" class="live-title"></small>
-      </div>
-    </div>
-
-    <button id="leaveBtn" class="leave-btn">✕</button>
-  </header>
 
   <!-- ================= STAGE ================= -->
   <main class="live-stage">
@@ -54,7 +46,7 @@
       <div id="videoContainer" class="video-container"></div>
     </section>
 
-    <!-- CHAT OVERLAY -->
+    <!-- CHAT -->
     <section class="chat-overlay">
       <div id="chatMessages" class="chat-messages"></div>
     </section>
@@ -68,29 +60,43 @@
 
   <!-- ================= CHAT INPUT ================= -->
   <footer class="live-footer">
-    <form id="chatForm" class="chat-form">
+  <form id="chatForm" class="chat-form">
 
-      <div class="chat-actions-left">
-        <button type="button" id="privateChatBtn" class="chat-icon-btn">
-          1-1
-        </button>
+    <!-- AÇÕES À ESQUERDA -->
+    <div class="chat-actions-left">
+      <button
+        type="button"
+        id="privateChatBtn"
+        class="chat-icon-btn"
+        title="Chat privado"
+      >
+        1-1
+      </button>
 
-        <button type="button" id="moreOptionsBtn" class="chat-icon-btn">
-          ⋯
-        </button>
-      </div>
+      <button
+        type="button"
+        id="moreOptionsBtn"
+        class="chat-icon-btn"
+        title="Mais opções"
+      >
+        ⋯
+      </button>
+    </div>
 
-      <input
-        id="chatInput"
-        type="text"
-        placeholder="Diga algo legal..."
-        autocomplete="off"
-      />
+    <!-- INPUT -->
+    <input
+      id="chatInput"
+      type="text"
+      placeholder="Diga algo legal..."
+      autocomplete="off"
+    />
 
-      <button type="submit" class="send-btn">➤</button>
+    <!-- ENVIAR -->
+    <button type="submit" class="send-btn">➤</button>
 
-    </form>
-  </footer>
+  </form>
+</footer>
+
 
 </div>
 
@@ -100,15 +106,34 @@
     <span>Enviar presente</span>
     <button id="closeGiftsBtn">✕</button>
   </div>
+
   <div id="giftsList" class="gifts-list"></div>
 </div>
 
-<!-- ================= FIREBASE ================= -->
+<!-- ================= END LIVE MODAL ================= -->
+<div id="endLiveModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Encerrar live?</h3>
+    <p>👁 <strong id="modalViewerCount">0</strong> espectadores assistindo</p>
+
+    <div class="modal-actions">
+      <button id="cancelEndLive">Cancelar</button>
+      <button id="confirmEndLive" class="danger">Encerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SUMMARY (HOST) ================= -->
+<div id="summaryScreen" class="summary-screen hidden"></div>
+
+<!-- ================= SCRIPTS ================= -->
+
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+
 <script src="live-room.js"></script>
 
 </body>
