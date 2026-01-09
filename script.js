@@ -995,48 +995,6 @@ async function loadNewsPosts() {
   }
 }
 
-function showSection(section) {
-  // Primeiro: Esconder todas as seções completamente
-  document.querySelectorAll('.lux-section').forEach(sec => {
-    sec.style.display = 'none';
-    sec.style.opacity = '0';
-    sec.style.transform = 'translateX(100%)'; // Animação de saída
-    sec.classList.remove('active-section');
-  });
-
-  // Mostrar a nova seção
-  const sectionElement = document.getElementById(`${section}Section`);
-  if (sectionElement) {
-    sectionElement.style.display = 'block';
-    
-    // Pequeno delay para a animação funcionar
-    setTimeout(() => {
-      sectionElement.style.opacity = '1';
-      sectionElement.style.transform = 'translateX(0)';
-      sectionElement.classList.add('active-section');
-    }, 50);
-    
-    // Carrega os dados específicos
-    switch (section) {
-      case 'matches':
-        loadMatches();
-        break;
-      case 'discover':
-        loadDiscoverUsers();
-        break;
-      case 'news':
-        loadNewsPosts();
-        break;
-      case 'messages':
-        loadMessages();
-        break;
-      case 'profile':
-        loadUserData2();
-        break;
-    }
-  }
-}
-
 
 function renderNewsCard(post) {
   const card = document.createElement('div');
@@ -1885,195 +1843,6 @@ document.addEventListener('DOMContentLoaded', function() {
   setupCitySearch();
 });
 
-async function loadDiscoverUsers() {
-  const grid = document.getElementById('discoverGrid');
-  if (!grid) return;
-
-  // Mostrar estado de carregamento
-  grid.innerHTML = `
-    <div class="lux-loading">
-      <i class="fas fa-spinner fa-spin"></i>
-      <p>Buscando perfis...</p>
-    </div>
-  `;
-
-  try {
-    const user = firebase.auth().currentUser;
-    if (!user) {
-      window.location.href = 'login.html';
-      return;
-    }
-
-    // Obter dados do usuário atual
-    const userDoc = await db.collection('users').doc(user.uid).get();
-    if (!userDoc.exists) {
-      grid.innerHTML = '<div class="error">Perfil não encontrado</div>';
-      return;
-    }
-
-    const currentUserData = userDoc.data();
-    const isVip = currentUserData.VIP === true;
-
-    // Obter valores dos filtros
-    const filters = {
-      gender: document.getElementById('filterGender')?.value || '',
-      minAge: parseInt(document.getElementById('filterMinAge')?.value) || 18,
-      maxAge: parseInt(document.getElementById('filterMaxAge')?.value) || 99,
-      city: document.getElementById('filterCity')?.value.toLowerCase().trim() || '',
-      userType: document.getElementById('filterUserType')?.value || '',
-      onlyVip: document.getElementById('filterOnlyVip')?.checked || false
-    };
-
-    // Construir query base - removemos a desigualdade e filtraremos manualmente
-    let query = db.collection('users');
-
-    // Aplicar filtros VIP
-    if (!isVip) {
-      query = query.where('VIP', '==', false);
-    } else if (filters.onlyVip) {
-      query = query.where('VIP', '==', true);
-    }
-
-    // Se houver texto na busca por cidade, usar filtro eficiente
-    if (filters.city) {
-      query = query
-        .orderBy('cidade')
-        .startAt(filters.city)
-        .endAt(filters.city + '\uf8ff');
-    } else {
-      // Ordenação padrão quando não há filtro de cidade
-      query = query.orderBy('name');
-    }
-
-    // Executar query
-    const snapshot = await query.limit(100).get();
-
-    // Processar resultados com filtros adicionais
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    let users = [];
-
-    snapshot.forEach(doc => {
-      // Filtro manual para excluir o próprio usuário
-      if (doc.id === user.uid) return;
-
-      const userData = doc.data();
-      
-      // Calcular idade
-      let age = 0;
-      if (userData.dateOfBirth) {
-        const birthYear = new Date(userData.dateOfBirth).getFullYear();
-        age = currentYear - birthYear;
-      }
-
-      // Aplicar filtros que não estão no Firestore query
-      const matchesGender = !filters.gender || 
-                          (userData.gender || '').toLowerCase() === filters.gender.toLowerCase();
-      const matchesAge = age >= filters.minAge && age <= filters.maxAge;
-      const matchesUserType = !filters.userType || 
-                             (userData.tipouser || '').toLowerCase() === filters.userType.toLowerCase();
-
-      if (matchesGender && matchesAge && matchesUserType) {
-        users.push({
-          id: doc.id,
-          ...userData,
-          age: age
-        });
-      }
-    });
-
-    // Ordenar resultados (VIPs primeiro)
-    users.sort((a, b) => (b.VIP - a.VIP) || a.name.localeCompare(b.name));
-
-    // Exibir resultados
-    grid.innerHTML = '';
-    if (users.length === 0) {
-      let message = 'Nenhum perfil encontrado';
-      if (filters.city) {
-        message = `Nenhum usuário encontrado em "${filters.city}"`;
-      }
-      
-      grid.innerHTML = `
-        <div class="lux-no-results">
-          <i class="fas ${filters.city ? 'fa-map-marker-alt' : 'fa-user-slash'}"></i>
-          <h3>${message}</h3>
-          <p>Tente ajustar seus filtros de busca</p>
-          <button class="lux-btn" onclick="resetFilters()">
-            <i class="fas fa-filter"></i> Limpar filtros
-          </button>
-        </div>
-      `;
-      return;
-    }
-
-    users.forEach(user => {
-      const card = createUserCard(user);
-      grid.appendChild(card);
-    });
-
-  } catch (error) {
-    console.error('Erro ao carregar usuários:', error);
-    grid.innerHTML = `
-      <div class="lux-error">
-        <i class="fas fa-exclamation-triangle"></i>
-        <p>Erro ao carregar perfis</p>
-        <button class="lux-btn" onclick="loadDiscoverUsers()">
-          <i class="fas fa-sync-alt"></i> Tentar novamente
-        </button>
-      </div>
-    `;
-  }
-}
-function createUserCard(user) {
-  const card = document.createElement('div');
-  card.className = 'lux-user-card';
-  
-  // Função para verificar URL da foto
-  const getProfilePhoto = (url) => {
-    if (!url) return 'https://via.placeholder.com/300';
-    
-    // Verifica se é uma URL do Firebase Storage
-    if (url.startsWith('gs://')) {
-      const path = url.split('gs://')[1];
-      return `https://firebasestorage.googleapis.com/v0/b/${path}?alt=media`;
-    }
-    
-    // Verifica se é um caminho relativo do Storage
-    if (url.startsWith('profile_photos/')) {
-      return `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${encodeURIComponent(url)}?alt=media`;
-    }
-    
-    return url; // Retorna URL normal se for válida
-  };
-
-  card.innerHTML = `
-    ${user.isVip ? '<span class="lux-user-card-vip">VIP</span>' : ''}
-    <img src="${getProfilePhoto(user.profilePhotoURL)}" 
-         alt="${user.name}" 
-         class="lux-user-card-img"
-         loading="lazy"
-         onerror="this.src='https://via.placeholder.com/300'">
-    <div class="lux-user-card-body">
-      <h3 class="lux-user-card-name">${user.name}</h3>
-      <p class="lux-user-card-info">
-        ${user.age ? user.age + ' anos • ' : ''}
-        ${user.cidade || ''}
-      </p>
-      <div class="lux-user-card-actions">
-        <button class="lux-btn lux-btn-primary" onclick="likeUser('${user.userId}')">
-          <i class="fas fa-heart"></i> Curtir
-        </button>
-        <button class="lux-btn lux-btn-secondary" onclick="viewProfile('${user.userId}')">
-          <i class="fas fa-eye"></i> Ver
-        </button>
-      </div>
-    </div>
-  `;
-  
-  return card;
-}
-
-
 
 async function getUserLikes(userId) {
   const doc = await db.collection('users').doc(userId).get();
@@ -2117,29 +1886,6 @@ function refreshDiscover() {
  * @param {string} message - Mensagem a ser exibida
  * @param {string} type - Tipo de toast (success, error, warning)
  */
-function showToast(message, type = 'success') {
-  const toast = document.createElement('div');
-  toast.className = `lux-toast lux-toast-${type}`;
-  toast.innerHTML = `
-    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}"></i>
-    <span>${message}</span>
-  `;
-  
-  document.body.appendChild(toast);
-  
-  // Mostra o toast
-  setTimeout(() => {
-    toast.classList.add('show');
-  }, 10);
-  
-  // Remove o toast após 3 segundos
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => {
-      toast.remove();
-    }, 300);
-  }, 3000);
-}
 /****************
  * MATCHES MOCK *
  ****************/
@@ -2862,13 +2608,6 @@ function renderMessage(message, currentUserId) {
   return messageElement;
 }
 
-function formatFileSize(bytes) {
-  if (!bytes) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
 function formatChatTime(date) {
   if (!date) return '';
   
@@ -4000,67 +3739,6 @@ async function openChat(chatId, otherUserId) {
     showToast('Erro ao abrir o chat', 'error');
   }
 }
-// Função para abrir o chatbox com um usuário
-async function openChatbox(partnerId) {
-  try {
-    const currentUser = firebase.auth().currentUser;
-    if (!currentUser) {
-      showToast('Você precisa estar logado para enviar mensagens', 'error');
-      return;
-    }
-
-    // Carrega os dados do parceiro de chat
-    const partnerDoc = await db.collection('users').doc(partnerId).get();
-    const partnerData = partnerDoc.data();
-    
-    // Verifica se já existe um chat entre os usuários
-    const existingChat = await findExistingChat(currentUser.uid, partnerId);
-    
-    // Atualiza o chat atual
-    currentChat = {
-      id: existingChat ? existingChat.id : null,
-      partnerId: partnerId,
-      partnerData: partnerData
-    };
-    
-    // Atualiza a UI do chatbox
-    updateChatboxUI(partnerData);
-    
-    // Se já existe um chat, carrega as mensagens
-    if (existingChat) {
-      await loadChatboxMessages(existingChat.id);
-    } else {
-      // Mostra estado vazio para novo chat
-      document.getElementById('chatboxMessages').innerHTML = `
-        <div class="lux-chatbox-empty">
-          <p>Inicie uma nova conversa com ${partnerData.name || 'este usuário'}</p>
-        </div>
-      `;
-    }
-    
-    // Mostra o chatbox
-    document.getElementById('chatboxModal').style.display = 'flex';
-    
-    // Configura o envio de mensagens
-    setupChatboxMessageSender();
-    
-  } catch (error) {
-    console.error('Erro ao abrir chatbox:', error);
-    showToast('Erro ao abrir conversa', 'error');
-  }
-
-   
-  // Limpa anexos pendentes ao abrir novo chat
-  pendingAttachments.images = [];
-  pendingAttachments.files = [];
-  updateAttachmentsPreview();
-  
-  // Configura listeners para os inputs de arquivo
-  setupFileInputs();
-
-
-}
-
 
 
 function setupFileInputs() {
@@ -4580,76 +4258,8 @@ async function openChatbox(partnerId) {
   }
 }
 
-// Atualiza a interface do chatbox
-function updateChatboxUI(partnerData) {
-  document.getElementById('chatboxUserName').textContent = partnerData.name || 'Usuário';
-  document.getElementById('chatboxAvatar').src = partnerData.profilePhotoURL || DEFAULT_AVATAR;
-  document.getElementById('chatboxAvatar').onerror = function() {
-    this.src = DEFAULT_AVATAR;
-  };
-}
 
-// Carrega as mensagens no chatbox
-async function loadChatboxMessages(chatId) {
-  const messagesContainer = document.getElementById('chatboxMessages');
-  
-  if (messageListener) {
-    messageListener();
-    messageListener = null;
-  }
 
-  messagesContainer.innerHTML = '<div class="lux-loading">Carregando mensagens...</div>';
-  
-  try {
-    const snapshot = await db.collection('chats')
-      .doc(chatId)
-      .collection('messages')
-      .orderBy('timestamp', 'asc')
-      .get();
-    
-    messagesContainer.innerHTML = '';
-    
-    if (snapshot.empty) {
-      messagesContainer.innerHTML = `
-        <div class="lux-chatbox-empty">
-          <p>Nenhuma mensagem ainda</p>
-        </div>
-      `;
-    } else {
-      snapshot.forEach(doc => {
-        const message = doc.data();
-        const messageElement = createChatboxMessageElement(message);
-        messageElement.dataset.messageId = doc.id;
-        messagesContainer.appendChild(messageElement);
-      });
-    }
-    
-    messageListener = db.collection('chats')
-      .doc(chatId)
-      .collection('messages')
-      .orderBy('timestamp', 'asc')
-      .onSnapshot((querySnapshot) => {
-        const currentMessages = Array.from(messagesContainer.children)
-          .map(el => el.dataset.messageId)
-          .filter(id => id);
-        
-        querySnapshot.docChanges().forEach((change) => {
-          if (change.type === 'added' && !currentMessages.includes(change.doc.id)) {
-            const message = change.doc.data();
-            const messageElement = createChatboxMessageElement(message);
-            messageElement.dataset.messageId = change.doc.id;
-            messagesContainer.appendChild(messageElement);
-          }
-        });
-        
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      });
-    
-  } catch (error) {
-    console.error('Erro ao carregar mensagens:', error);
-    messagesContainer.innerHTML = '<div class="lux-error">Erro ao carregar mensagens</div>';
-  }
-}
 
 
 function showImagePreview(imageData) {
@@ -4707,51 +4317,6 @@ function removeImagePreview() {
   currentUploads.image = null;
 }
 
-function closeChatbox() {
-  if (messageListener) {
-    messageListener();
-    messageListener = null;
-  }
-  
-  document.getElementById('chatboxModal').style.display = 'none';
-  currentChat = {
-    id: null,
-    partnerId: null,
-    partnerData: null
-  };
-  
-  currentUploads = {
-    image: null,
-    file: null
-  };
-  
-  removeImagePreview();
-}
-
-// Função para visualizar imagem em tela cheia
-function openMediaViewer(imageUrl) {
-  const modal = document.createElement('div');
-  modal.className = 'lux-media-viewer';
-  modal.innerHTML = `
-    <div class="lux-media-viewer-content">
-      <span class="lux-media-viewer-close">&times;</span>
-      <img src="${imageUrl}" class="lux-media-viewer-image">
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  // Fechar ao clicar no X ou fora
-  modal.querySelector('.lux-media-viewer-close').addEventListener('click', () => {
-    modal.remove();
-  });
-  
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.remove();
-    }
-  });
-}
 
 // Função para baixar arquivo
 function downloadFile(url, fileName) {
@@ -4770,16 +4335,6 @@ function formatMessageTime(date) {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-// Helper para formatar tamanho de arquivo
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i]);
-}
-
-
 function openMediaViewer(imageUrl) {
   const modal = document.getElementById('mediaViewerModal');
   const img = document.getElementById('mediaViewerImage');
@@ -4788,33 +4343,6 @@ function openMediaViewer(imageUrl) {
   img.src = imageUrl;
   modal.style.display = 'flex';
 }
-function formatChatboxTime(date) {
-  if (!date) return '';
-  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function showToast(message, type = 'success') {
-  const toast = document.createElement('div');
-  toast.className = `lux-toast lux-toast-${type}`;
-  toast.innerHTML = `
-    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}"></i>
-    <span>${message}</span>
-  `;
-  
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.classList.add('show');
-  }, 10);
-  
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => {
-      toast.remove();
-    }, 300);
-  }, 3000);
-}
-
 
 
 
@@ -6545,12 +6073,6 @@ async function openGiftShop(userId) {
   setupGiftModalEvents();
 }
 
-// Função para fechar todos os modais
-function closeAllModals() {
-  document.getElementById('giftModal').style.display = 'none';
-  document.getElementById('giftActionsModal').style.display = 'none';
-  document.body.style.overflow = 'auto';
-}
 
 function closeGiftModal() {
   document.getElementById('giftModal').style.display = 'none';
@@ -6569,37 +6091,6 @@ function getSafeImageUrl(url) {
 }
 
 
-
-async function fetchAvailableGifts() {
-  try {
-    // Verifica se o Firebase está inicializado
-    if (!firebase.apps.length) {
-      throw new Error('Firebase não inicializado');
-    }
-
-    const snapshot = await firebase.firestore().collection('gifts')
-      .where('available', '==', true)
-      .get();
-
-    if (snapshot.empty) {
-      console.warn('Nenhum presente encontrado no Firestore. Usando fallback.');
-      return getDefaultGifts(); // Retorna presentes padrão
-    }
-
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name || 'Presente sem nome',
-      price: doc.data().price || 0,
-      image: doc.data().image || defaultGiftImage,
-      category: doc.data().category || 'other',
-      available: true
-    }));
-
-  } catch (error) {
-    console.error('Erro ao buscar presentes:', error);
-    return getDefaultGifts(); // Retorna presentes padrão em caso de erro
-  }
-}
 
 // Função de fallback com presentes padrão
 function getDefaultGifts() {
@@ -6656,24 +6147,6 @@ function setupGiftCardEvents() {
 
 // Variáveis globais
 let selectedGiftForSending = null;
-
-// Função modificada para exibir ações do presente
-function setupGiftCardEvents() {
-  document.querySelectorAll('.lux-gift-card').forEach(card => {
-    card.addEventListener('click', function(e) {
-      // Previne que o evento chegue ao modal principal
-      e.stopPropagation();
-      
-      const giftId = this.getAttribute('data-id');
-      const gift = luxuryGifts.find(g => g.id === giftId);
-      
-      if (gift) {
-        selectedGiftForSending = gift;
-        showGiftActions(gift);
-      }
-    });
-  });
-}
 
 
 
@@ -6799,12 +6272,6 @@ async function sendCustomizedGift() {
   }
 }
 
-// Função para fechar todos os modais
-function closeAllModals() {
-  document.getElementById('giftModal').style.display = 'none';
-  document.getElementById('giftActionsModal').style.display = 'none';
-  document.body.style.overflow = 'auto';
-}
 function setupActionButtons(userId, gift) {
   // Botão Enviar
   document.querySelector('.lux-action-send').onclick = () => {
@@ -7355,144 +6822,6 @@ async function cleanDuplicateGifts() {
 }
 let isSendingGift = false;
 
-async function sendGift(giftId, direct = false) {
-  try {
-    // Debug inicial
-    console.log('[sendGift] Iniciando processo, giftId:', giftId, 'direct:', direct);
-    
-    // Verificar autenticação
-    const currentUser = firebase.auth().currentUser;
-    if (!currentUser) {
-      showToast('Faça login para enviar presentes', 'error');
-      console.log('[sendGift] Usuário não autenticado');
-      return;
-    }
-
-    // Obter dados do presente com tratamento de erro
-    console.log('[sendGift] Buscando presente no Firestore, ID:', giftId);
-    const giftDoc = await db.collection('gifts').doc(giftId).get();
-    
-    if (!giftDoc.exists) {
-      console.error('[sendGift] Presente não encontrado. ID:', giftId);
-      
-      // Debug adicional - listar alguns presentes existentes
-      const sampleGifts = await db.collection('gifts').limit(3).get();
-      console.log('[sendGift] Exemplos de IDs existentes:', 
-        sampleGifts.docs.map(doc => doc.id));
-      
-      showToast('Presente não encontrado', 'error');
-      return;
-    }
-
-    const gift = {
-      id: giftDoc.id,
-      ...giftDoc.data()
-    };
-    console.log('[sendGift] Presente encontrado:', gift);
-
-    // Envio direto com pesquisa de usuário
-    if (direct) {
-      console.log('[sendGift] Modo envio direto ativado');
-      
-      // Passo 1: Pesquisar usuário
-      const { value: searchTerm } = await Swal.fire({
-        title: 'Enviar presente diretamente',
-        input: 'text',
-        inputLabel: 'Digite o nome do usuário',
-        inputPlaceholder: 'Nome do destinatário...',
-        showCancelButton: true,
-        inputValidator: (value) => {
-          if (!value) return 'Digite um nome para pesquisar!';
-          if (value.length < 3) return 'Mínimo 3 caracteres';
-        }
-      });
-
-      if (!searchTerm) {
-        console.log('[sendGift] Pesquisa cancelada pelo usuário');
-        return;
-      }
-
-      // Passo 2: Buscar usuários no Firestore
-      console.log('[sendGift] Buscando usuários com termo:', searchTerm);
-      showLoading('Buscando usuários...');
-      
-      const usersSnapshot = await db.collection('users')
-        .where('name', '>=', searchTerm)
-        .where('name', '<=', searchTerm + '\uf8ff')
-        .limit(10)
-        .get();
-
-      hideLoading();
-
-      if (usersSnapshot.empty) {
-        console.log('[sendGift] Nenhum usuário encontrado para:', searchTerm);
-        await Swal.fire('Nenhum resultado', 'Não encontramos usuários com esse nome', 'info');
-        return;
-      }
-
-      // Passo 3: Selecionar usuário
-      console.log('[sendGift] Usuários encontrados:', usersSnapshot.size);
-      const usersOptions = usersSnapshot.docs.map(doc => {
-        const user = doc.data();
-        return `<option value="${doc.id}">${user.name} (${user.email || 'Sem email'})</option>`;
-      });
-
-      const { value: selectedUserId } = await Swal.fire({
-        title: 'Selecione o destinatário',
-        html: `
-          <div style="margin: 15px 0;">
-            <select id="userSelect" class="swal2-select" style="width: 100%; padding: 8px;">
-              ${usersOptions.join('')}
-            </select>
-          </div>
-          <p>Presente selecionado: <b>${gift.name}</b></p>
-          ${gift.price > 0 ? `<p>Valor: ${formatCurrency(gift.price)}</p>` : ''}
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Selecionar',
-        preConfirm: () => document.getElementById('userSelect').value
-      });
-
-      if (!selectedUserId) {
-        console.log('[sendGift] Seleção cancelada pelo usuário');
-        return;
-      }
-
-      // Passo 4: Confirmar envio
-      console.log('[sendGift] Usuário selecionado:', selectedUserId);
-      const confirmation = await Swal.fire({
-        title: 'Confirmar envio?',
-        html: `
-          <div style="text-align: left;">
-            <p>Você está enviando:</p>
-            <p><b>${gift.name}</b></p>
-            ${gift.image ? `<img src="${gift.image}" style="max-width: 100px; max-height: 100px; margin: 10px 0;">` : ''}
-            <p>Para: <b>${usersSnapshot.docs.find(d => d.id === selectedUserId).data().name}</b></p>
-            ${gift.price > 0 ? `<p>Valor: <b>${formatCurrency(gift.price)}</b></p>` : ''}
-          </div>
-        `,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Confirmar Envio',
-        cancelButtonText: 'Cancelar'
-      });
-
-      if (confirmation.isConfirmed) {
-        console.log('[sendGift] Confirmado, enviando presente...');
-        await sendGiftToUser(selectedUserId, gift);
-            await showGratitudeScreen(gift, receiverName);
-
-      }
-    } else {
-      // Lógica para envio não-direto (se necessário)
-      console.log('[sendGift] Envio padrão não implementado');
-      showToast('Método de envio não disponível', 'info');
-    }
-  } catch (error) {
-    console.error('[sendGift] Erro completo:', error);
-    showToast(`Erro: ${error.message}`, 'error');
-  }
-}
 
 // Função auxiliar para formatar moeda
 function formatCurrency(value) {
@@ -7639,37 +6968,8 @@ async function executeGiftTransaction(senderId, receiverId, giftData) {
   await batch.commit();
 }
 
-// Funções para controle de modais
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto'; // Restaura o scroll da página
-  }
-}
 
-function closeAllModals() {
-  // Fecha todos os modais que tenham a classe 'lux-modal'
-  document.querySelectorAll('.lux-modal').forEach(modal => {
-    modal.style.display = 'none';
-  });
-  document.body.style.overflow = 'auto';
-}
 
-// Funções auxiliares (já existentes no seu código)
-function showLoading(message) {
-  Swal.fire({
-    title: message,
-    allowOutsideClick: false,
-    didOpen: () => {
-      Swal.showLoading();
-    }
-  });
-}
-
-function hideLoading() {
-  Swal.close();
-}
 
 
 function closeAllGiftModals() {
@@ -7871,26 +7171,7 @@ function scheduleGiftDelivery(userId, gift) {
   modal.style.display = 'block';
 }
 
-// Mostrar loading
-function showLoading(message) {
-  const loadingDiv = document.createElement('div');
-  loadingDiv.id = 'lux-loading';
-  loadingDiv.innerHTML = `
-    <div class="lux-loading-overlay">
-      <div class="lux-loading-content">
-        <i class="fas fa-spinner fa-spin"></i>
-        <p>${message}</p>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(loadingDiv);
-}
 
-// Esconder loading
-function hideLoading() {
-  const loading = document.getElementById('lux-loading');
-  if (loading) loading.remove();
-}
 
 // Mostrar toast notification
 async function sendGift(giftId, direct = false) {
@@ -7980,20 +7261,9 @@ async function sendGift(giftId, direct = false) {
   }
 }
 
-// Funções auxiliares (já existentes no seu código)
-function showLoading(message) {
-  Swal.fire({
-    title: message,
-    allowOutsideClick: false,
-    didOpen: () => {
-      Swal.showLoading();
-    }
-  });
-}
 
-function hideLoading() {
-  Swal.close();
-}
+
+
 
 function showToast(message, type) {
   const Toast = Swal.mixin({
@@ -8013,27 +7283,6 @@ function showToast(message, type) {
     title: message
   });
 }
-async function addToWishlist(userId, giftData) {
-  try {
-    await firebase.firestore()
-      .collection('users')
-      .doc(userId)
-      .update({
-        'gifts.wishlist': firebase.firestore.FieldValue.arrayUnion({
-          ...giftData,
-          giftId: firebase.firestore().collection('gifts').doc().id,
-          addedDate: new Date().toISOString()
-        })
-      });
-    
-    console.log('Presente adicionado à lista de desejos!');
-    return true;
-  } catch (error) {
-    console.error('Erro ao adicionar à lista de desejos:', error);
-    return false;
-  }
-}
-
 async function removeFromWishlist(userId, giftId) {
   try {
     const userDoc = await firebase.firestore()
@@ -8281,40 +7530,6 @@ categoryButtons.forEach(btn => {
 
 
 
-async function updateGiftStatus(userId, giftId, newStatus, isReceived = false) {
-  try {
-    const userDoc = await firebase.firestore()
-      .collection('users')
-      .doc(userId)
-      .get();
-    
-    if (!userDoc.exists) {
-      throw new Error('Usuário não encontrado');
-    }
-    
-    const field = isReceived ? 'received' : 'sent';
-    const gifts = userDoc.data().gifts?.[field] || [];
-    const updatedGifts = gifts.map(gift => {
-      if (gift.giftId === giftId) {
-        return { ...gift, status: newStatus };
-      }
-      return gift;
-    });
-    
-    await firebase.firestore()
-      .collection('users')
-      .doc(userId)
-      .update({
-        [`gifts.${field}`]: updatedGifts
-      });
-    
-    console.log(`Status do presente atualizado para ${newStatus}!`);
-    return true;
-  } catch (error) {
-    console.error('Erro ao atualizar status do presente:', error);
-    return false;
-  }
-}
 
 
 
@@ -8460,10 +7675,7 @@ function launchConfetti() {
 }
 // Função para atualizar o badge
 // Formatar data
-function formatDate(dateString) {
-  const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-  return new Date(dateString).toLocaleDateString('pt-BR', options);
-}
+
 
 // Notificar o remetente
 async function notifySender(senderId, giftId) {
@@ -8960,21 +8172,6 @@ async function handleGiftAction(giftId, action, message = null, imageUrl = null)
   }
 }
 
-async function notifySender(senderId, giftId, action) {
-  try {
-    const notificationRef = db.collection('notifications').doc();
-    await notificationRef.set({
-      userId: senderId,
-      type: 'gift-' + action,
-      giftId: giftId,
-      date: new Date().toISOString(),
-      read: false,
-      message: `Seu presente foi ${action === 'accepted' ? 'aceito' : 'recusado'}`
-    });
-  } catch (error) {
-    console.error('Erro ao enviar notificação:', error);
-  }
-}
 // Listener em tempo real para novos presentes
 function setupGiftsListener() {
   const user = firebase.auth().currentUser;
