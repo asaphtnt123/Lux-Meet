@@ -8,6 +8,12 @@ let earningsOverTimeChart = null
 let earningsByTypeChart = null
 let efficiencyChart = null
 
+// 💰 CONFIGURAÇÃO OFICIAL
+const COIN_VALUE_BRL = 0.05
+const PLATFORM_FEE_PERCENT = 20
+const MIN_WITHDRAW_COINS = 100
+
+
 // =====================================================
 // FIREBASE INIT
 // =====================================================
@@ -23,9 +29,17 @@ const auth = firebase.auth()
 const db = firebase.firestore()
 const withdrawBtn = document.getElementById('withdrawBtn')
 
-// 💰 CONFIGURAÇÃO FINANCEIRA OFICIAL
-const COIN_VALUE_BRL = 0.05        // R$ por moeda
-const PLATFORM_FEE_PERCENT = 20   // 20%
+const withdrawModal = document.getElementById('withdrawModal')
+const closeWithdrawBtn = document.getElementById('closeWithdrawBtn')
+const confirmWithdrawBtn = document.getElementById('confirmWithdrawBtn')
+
+const withdrawAvailable = document.getElementById('withdrawAvailable')
+
+const coinsInput = document.getElementById('coinsInput')
+const grossValueEl = document.getElementById('grossValue')
+const feeValueEl = document.getElementById('feeValue')
+const netValueEl = document.getElementById('netValue')
+
 
 
 // =====================================================
@@ -302,158 +316,71 @@ function drawRanking(lives) {
   })
 }
 
-
-// SAQUE
-
-const withdrawModal = document.getElementById('withdrawModal')
-const closeWithdrawBtn = document.getElementById('closeWithdrawBtn')
-const withdrawInput = document.getElementById('withdrawInput')
-const feeValue = document.getElementById('feeValue')
-const netValue = document.getElementById('netValue')
-const confirmWithdrawBtn = document.getElementById('confirmWithdrawBtn')
-const withdrawAvailable = document.getElementById('withdrawAvailable')
-
-const PLATFORM_FEE = 0.10
-const MIN_WITHDRAW = 100
-
-// ABRIR MODAL
-withdrawBtn.onclick = () => {
-  withdrawModal.classList.remove('hidden')
+withdrawBtn?.addEventListener('click', () => {
   withdrawAvailable.textContent =
     document.getElementById('availableAmount').textContent
-}
 
-// FECHAR MODAL
-closeWithdrawBtn.onclick = () => {
-  withdrawModal.classList.add('hidden')
-}
+  coinsInput.value = ''
+  grossValueEl.textContent = 'R$ 0,00'
+  feeValueEl.textContent = 'R$ 0,00'
+  netValueEl.textContent = 'R$ 0,00'
 
-// CALCULADORA
-
-
-withdrawInput?.addEventListener('input', () => {
-  const value = Number(withdrawInput.value) || 0
-
-  const fee = Math.floor((value * PLATFORM_FEE_PERCENT) / 100)
-  const net = value - fee
-
-  feeValue.textContent = fee
-  netValue.textContent = net
+  withdrawModal.classList.remove('hidden')
 })
 
-
-// SOLICITAR SAQUE
-confirmWithdrawBtn.onclick = async () => {
-  const amount = Number(withdrawInput.value)
-
-  if (amount < MIN_WITHDRAW) {
-    alert(`Valor mínimo para saque é ${MIN_WITHDRAW}`)
-    return
-  }
-
-  if (amount > Number(withdrawAvailable.textContent)) {
-    alert('Saldo insuficiente')
-    return
-  }
-
-  await db.collection('withdraw_requests').add({
-    hostId: currentUser.uid,
-    amount,
-    fee: amount * PLATFORM_FEE,
-    netAmount: amount * (1 - PLATFORM_FEE),
-    status: 'pending_review',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  })
-
-  alert('✅ Solicitação de saque enviada com sucesso')
+closeWithdrawBtn?.addEventListener('click', () => {
   withdrawModal.classList.add('hidden')
-}
+})
+withdrawBtn?.addEventListener('click', () => {
+  withdrawAvailable.textContent =
+    document.getElementById('availableAmount').textContent
 
+  coinsInput.value = ''
+  grossValueEl.textContent = 'R$ 0,00'
+  feeValueEl.textContent = 'R$ 0,00'
+  netValueEl.textContent = 'R$ 0,00'
 
-// 🔘 ABRIR MODAL DE SAQUE
-if (withdrawBtn) {
-  withdrawBtn.addEventListener('click', () => {
-    const available =
-      Number(document.getElementById('availableAmount').textContent) || 0
+  withdrawModal.classList.remove('hidden')
+})
 
-    document.getElementById('withdrawAvailable').textContent = available
-    document.getElementById('withdrawInput').value = ''
-    document.getElementById('feeValue').textContent = '0'
-    document.getElementById('netValue').textContent = '0'
+closeWithdrawBtn?.addEventListener('click', () => {
+  withdrawModal.classList.add('hidden')
+})
+confirmWithdrawBtn?.addEventListener('click', async () => {
+  const coins = Number(coinsInput.value)
 
-    document
-      .getElementById('withdrawModal')
-      .classList.remove('hidden')
-  })
-}
+  if (!coins || coins < MIN_WITHDRAW_COINS) {
+    alert(`⚠️ Saque mínimo: ${MIN_WITHDRAW_COINS} moedas`)
+    return
+  }
 
-//FECHAR MODAL SAQUE
-document
-  .getElementById('closeWithdrawBtn')
-  ?.addEventListener('click', () => {
-    document
-      .getElementById('withdrawModal')
-      .classList.add('hidden')
-  })
+  const availableCoins =
+    Number(withdrawAvailable.textContent) || 0
 
+  if (coins > availableCoins) {
+    alert('❌ Saldo insuficiente')
+    return
+  }
 
-
-  document
-  .getElementById('confirmWithdrawBtn')
-  ?.addEventListener('click', async () => {
-    const amount = Number(withdrawInput.value)
-
-    if (!amount || amount <= 0) {
-      alert('Informe um valor válido')
-      return
-    }
-
-    const fee = Math.floor((amount * PLATFORM_FEE_PERCENT) / 100)
-    const netAmount = amount - fee
-
-    try {
-      await db.collection('withdraw_requests').add({
-        hostId: currentUser.uid,
-        requestedAmount: amount,
-        platformFee: fee,
-        netAmount,
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      })
-
-      alert('✅ Solicitação de saque enviada!')
-      document
-        .getElementById('withdrawModal')
-        .classList.add('hidden')
-    } catch (err) {
-      console.error(err)
-      alert('Erro ao solicitar saque')
-    }
-  })
-
-
-  const coinsInput = document.getElementById('coinsInput')
-const grossValueEl = document.getElementById('grossValue')
-const feeValueEl = document.getElementById('feeValue')
-const netValueEl = document.getElementById('netValue')
-
-function formatBRL(value) {
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  })
-}
-
-coinsInput?.addEventListener('input', () => {
-  const coins = Number(coinsInput.value) || 0
-
-  // 💰 Conversão
   const gross = coins * COIN_VALUE_BRL
   const fee = gross * (PLATFORM_FEE_PERCENT / 100)
   const net = gross - fee
 
-  grossValueEl.textContent = formatBRL(gross)
-  feeValueEl.textContent = formatBRL(fee)
-  netValueEl.textContent = formatBRL(net)
-})
+  try {
+    await db.collection('withdraw_requests').add({
+      hostId: currentUser.uid,
+      coins,
+      grossAmount: gross,
+      platformFee: fee,
+      netAmount: net,
+      status: 'pending',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
 
+    alert('✅ Saque solicitado com sucesso!')
+    withdrawModal.classList.add('hidden')
+  } catch (err) {
+    console.error(err)
+    alert('Erro ao solicitar saque')
+  }
+})
