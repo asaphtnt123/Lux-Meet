@@ -295,3 +295,66 @@ function drawRanking(lives) {
     `
   })
 }
+
+
+// SAQUE
+
+const withdrawModal = document.getElementById('withdrawModal')
+const closeWithdrawBtn = document.getElementById('closeWithdrawBtn')
+const withdrawInput = document.getElementById('withdrawInput')
+const feeValue = document.getElementById('feeValue')
+const netValue = document.getElementById('netValue')
+const confirmWithdrawBtn = document.getElementById('confirmWithdrawBtn')
+const withdrawAvailable = document.getElementById('withdrawAvailable')
+
+const PLATFORM_FEE = 0.10
+const MIN_WITHDRAW = 100
+
+// ABRIR MODAL
+withdrawBtn.onclick = () => {
+  withdrawModal.classList.remove('hidden')
+  withdrawAvailable.textContent =
+    document.getElementById('availableAmount').textContent
+}
+
+// FECHAR MODAL
+closeWithdrawBtn.onclick = () => {
+  withdrawModal.classList.add('hidden')
+}
+
+// CALCULADORA
+withdrawInput.addEventListener('input', () => {
+  const value = Number(withdrawInput.value || 0)
+  const fee = Math.floor(value * PLATFORM_FEE)
+  const net = value - fee
+
+  feeValue.textContent = fee
+  netValue.textContent = net
+})
+
+// SOLICITAR SAQUE
+confirmWithdrawBtn.onclick = async () => {
+  const amount = Number(withdrawInput.value)
+
+  if (amount < MIN_WITHDRAW) {
+    alert(`Valor mínimo para saque é ${MIN_WITHDRAW}`)
+    return
+  }
+
+  if (amount > Number(withdrawAvailable.textContent)) {
+    alert('Saldo insuficiente')
+    return
+  }
+
+  await db.collection('withdraw_requests').add({
+    hostId: currentUser.uid,
+    amount,
+    fee: amount * PLATFORM_FEE,
+    netAmount: amount * (1 - PLATFORM_FEE),
+    status: 'pending_review',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+
+  alert('✅ Solicitação de saque enviada com sucesso')
+  withdrawModal.classList.add('hidden')
+}

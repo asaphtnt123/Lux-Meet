@@ -104,6 +104,64 @@
 
     </div>
 
+    <!-- MODAL SAQUE -->
+<div id="withdrawModal" class="charts-modal hidden">
+  <div class="charts-box">
+
+    <div class="charts-header">
+      <h2>💸 Solicitar saque</h2>
+      <button id="closeWithdrawBtn">✕</button>
+    </div>
+
+    <div class="withdraw-info">
+
+      <div class="withdraw-card">
+        <small>Saldo disponível</small>
+        <strong id="withdrawAvailable">0</strong>
+      </div>
+
+      <div class="withdraw-card">
+        <small>Taxa da plataforma</small>
+        <strong>10%</strong>
+      </div>
+
+      <div class="withdraw-card">
+        <small>Valor mínimo</small>
+        <strong>100 coins</strong>
+      </div>
+
+    </div>
+
+    <div class="withdraw-calc">
+      <h3>🧮 Calculadora de saque</h3>
+
+      <label>Valor que deseja sacar</label>
+      <input
+        type="number"
+        id="withdrawInput"
+        placeholder="Ex: 500"
+        min="0"
+      />
+
+      <div class="calc-result">
+        <p>Taxa (10%): <strong id="feeValue">0</strong></p>
+        <p>Você receberá: <strong id="netValue">0</strong></p>
+      </div>
+
+      <button id="confirmWithdrawBtn" class="withdraw-btn">
+        Solicitar saque
+      </button>
+
+      <p class="withdraw-hint">
+        ⏱️ Saques são analisados manualmente e pagos em até 48h
+      </p>
+
+    </div>
+
+  </div>
+</div>
+
+
     <!-- ================= RANKING ================= -->
     <div class="ranking-section">
       <h3>🏆 Lives mais lucrativas</h3>
