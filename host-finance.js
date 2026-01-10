@@ -22,6 +22,8 @@ if (!firebase.apps.length) {
 const auth = firebase.auth()
 const db = firebase.firestore()
 const withdrawBtn = document.getElementById('withdrawBtn')
+// 💸 CONFIGURAÇÃO FINANCEIRA OFICIAL
+const PLATFORM_FEE_PERCENT = 10 // 10%
 
 // =====================================================
 // AUTH ÚNICA
@@ -324,14 +326,18 @@ closeWithdrawBtn.onclick = () => {
 }
 
 // CALCULADORA
-withdrawInput.addEventListener('input', () => {
-  const value = Number(withdrawInput.value || 0)
-  const fee = Math.floor(value * PLATFORM_FEE)
+
+
+withdrawInput?.addEventListener('input', () => {
+  const value = Number(withdrawInput.value) || 0
+
+  const fee = Math.floor((value * PLATFORM_FEE_PERCENT) / 100)
   const net = value - fee
 
   feeValue.textContent = fee
   netValue.textContent = net
 })
+
 
 // SOLICITAR SAQUE
 confirmWithdrawBtn.onclick = async () => {
@@ -385,4 +391,39 @@ document
     document
       .getElementById('withdrawModal')
       .classList.add('hidden')
+  })
+
+
+
+  document
+  .getElementById('confirmWithdrawBtn')
+  ?.addEventListener('click', async () => {
+    const amount = Number(withdrawInput.value)
+
+    if (!amount || amount <= 0) {
+      alert('Informe um valor válido')
+      return
+    }
+
+    const fee = Math.floor((amount * PLATFORM_FEE_PERCENT) / 100)
+    const netAmount = amount - fee
+
+    try {
+      await db.collection('withdraw_requests').add({
+        hostId: currentUser.uid,
+        requestedAmount: amount,
+        platformFee: fee,
+        netAmount,
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+
+      alert('✅ Solicitação de saque enviada!')
+      document
+        .getElementById('withdrawModal')
+        .classList.add('hidden')
+    } catch (err) {
+      console.error(err)
+      alert('Erro ao solicitar saque')
+    }
   })
