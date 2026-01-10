@@ -332,20 +332,46 @@ closeWithdrawBtn?.addEventListener('click', () => {
   withdrawModal.classList.add('hidden')
 })
 withdrawBtn?.addEventListener('click', () => {
-  withdrawAvailable.textContent =
-    document.getElementById('availableAmount').textContent
-
-  coinsInput.value = ''
-  grossValueEl.textContent = 'R$ 0,00'
-  feeValueEl.textContent = 'R$ 0,00'
-  netValueEl.textContent = 'R$ 0,00'
-
+  const withdrawModal = document.getElementById('withdrawModal')
   withdrawModal.classList.remove('hidden')
+
+  const coinsInput = document.getElementById('coinsInput')
+  const grossValueEl = document.getElementById('grossValue')
+  const feeValueEl = document.getElementById('feeValue')
+  const netValueEl = document.getElementById('netValue')
+
+  function formatBRL(value) {
+    return value.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    })
+  }
+
+  function calculate() {
+    const coins = Number(coinsInput.value) || 0
+    const gross = coins * COIN_VALUE_BRL
+    const fee = gross * (PLATFORM_FEE_PERCENT / 100)
+    const net = gross - fee
+
+    grossValueEl.textContent = formatBRL(gross)
+    feeValueEl.textContent = formatBRL(fee)
+    netValueEl.textContent = formatBRL(net)
+  }
+
+  // 🔥 AGORA FUNCIONA
+  coinsInput.addEventListener('input', calculate)
+
+  // Botão calcular (fallback)
+  document
+    .getElementById('calculateWithdrawBtn')
+    ?.addEventListener('click', calculate)
+})
+closeWithdrawBtn?.addEventListener('click', () => {
+  document.getElementById('withdrawModal').classList.add('hidden')
 })
 
-closeWithdrawBtn?.addEventListener('click', () => {
-  withdrawModal.classList.add('hidden')
-})
+
+
 confirmWithdrawBtn?.addEventListener('click', async () => {
   const coins = Number(coinsInput.value)
 
@@ -384,3 +410,5 @@ confirmWithdrawBtn?.addEventListener('click', async () => {
     alert('Erro ao solicitar saque')
   }
 })
+
+
