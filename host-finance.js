@@ -522,3 +522,64 @@ function drawEarningsByType(data) {
     }
   })
 }
+
+
+
+async function loadFinanceData() {
+  if (!currentUser) return
+
+  // 🔹 Dados do host
+  const userRef = db.collection('users').doc(currentUser.uid)
+  const userSnap = await userRef.get()
+
+  if (!userSnap.exists) return
+
+  const data = userSnap.data()
+
+  // 💰 Cards
+  document.getElementById('availableAmount').innerText =
+    data.earnings_available || 0
+
+  document.getElementById('pendingAmount').innerText =
+    data.earnings_pending || 0
+
+  document.getElementById('totalAmount').innerText =
+    data.total_earnings || 0
+
+  // 📄 Histórico global
+  loadTransactionsHistory()
+}
+
+
+// FUNÇAO DO HISTORICO
+
+async function loadTransactionsHistory() {
+  const list = document.getElementById('transactionsList')
+  list.innerHTML = ''
+
+  const snap = await db
+    .collection('transactions')
+    .where('to', '==', currentUser.uid)
+    .orderBy('createdAt', 'desc')
+    .limit(50)
+    .get()
+
+  if (snap.empty) {
+    list.innerHTML = '<p class="empty">Nenhuma transação encontrada</p>'
+    return
+  }
+
+  snap.forEach(doc => {
+    const tx = doc.data()
+
+    const div = document.createElement('div')
+    div.className = 'transaction-item'
+
+    div.innerHTML = `
+      <span>${tx.type === 'gift' ? '🎁 Presente' : '🔒 Live privada'}</span>
+      <strong>+ ${tx.amount}</strong>
+    `
+
+    list.appendChild(div)
+  })
+}
