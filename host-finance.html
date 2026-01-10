@@ -45,12 +45,51 @@
     </div>
   </div>
 
+  <button id="openChartsBtn" class="charts-btn">
+  📊 Exibir gráficos detalhados
+</button>
+
+
+<div id="chartsModal" class="charts-modal hidden">
+  <div class="charts-box">
+
+    <div class="charts-header">
+      <h2>📊 Análise detalhada de ganhos</h2>
+      <button id="closeChartsBtn">✕</button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="charts-filters">
+      <select id="filterPeriod">
+        <option value="7">Últimos 7 dias</option>
+        <option value="30">Últimos 30 dias</option>
+        <option value="all">Todo período</option>
+      </select>
+
+      <select id="filterType">
+        <option value="all">Todos ganhos</option>
+        <option value="gift">🎁 Presentes</option>
+        <option value="private_entry">🔒 Entradas privadas</option>
+      </select>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="charts-grid">
+      <canvas id="earningsByLiveChart"></canvas>
+      <canvas id="earningsOverTimeChart"></canvas>
+      <canvas id="earningsByTypeChart"></canvas>
+    </div>
+
+  </div>
+</div>
+
 </div>
 
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script src="firebase-init.js"></script>
 <script src="host-finance.js"></script>

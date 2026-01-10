@@ -168,3 +168,94 @@ async function loadInviteEarnings(hostId) {
     list.appendChild(item)
   })
 }
+
+
+
+// CONTROLE DO MODAL
+const chartsModal = document.getElementById('chartsModal')
+
+document
+  .getElementById('openChartsBtn')
+  .onclick = () => {
+    chartsModal.classList.remove('hidden')
+    loadCharts()
+  }
+
+document
+  .getElementById('closeChartsBtn')
+  .onclick = () => {
+    chartsModal.classList.add('hidden')
+  }
+
+
+  //CARREGA FONTE DE DADOS
+  async function loadCharts() {
+  const snap = await db
+    .collection('transactions')
+    .where('to', '==', currentUser.uid)
+    .orderBy('createdAt')
+    .get()
+
+  const byLive = {}
+  const byDate = {}
+  let gifts = 0
+  let invites = 0
+
+  snap.forEach(doc => {
+    const t = doc.data()
+    const date = t.createdAt?.toDate().toLocaleDateString()
+
+    // por live
+    byLive[t.liveId] = (byLive[t.liveId] || 0) + t.amount
+
+    // por tempo
+    byDate[date] = (byDate[date] || 0) + t.amount
+
+    // por tipo
+    if (t.type === 'gift') gifts += t.amount
+    if (t.type === 'private_entry') invites += t.amount
+  })
+
+  renderCharts(byLive, byDate, gifts, invites)
+}
+
+
+// RENDERIZAÇAO DE GRAFICOS 
+
+function renderCharts(byLive, byDate, gifts, invites) {
+
+  // 💰 Ganhos por live
+  new Chart(document.getElementById('earningsByLiveChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(byLive),
+      datasets: [{
+        label: 'Ganhos por live',
+        data: Object.values(byLive)
+      }]
+    }
+  })
+
+  // ⏱️ Ganhos ao longo do tempo
+  new Chart(document.getElementById('earningsOverTimeChart'), {
+    type: 'line',
+    data: {
+      labels: Object.keys(byDate),
+      datasets: [{
+        label: 'Ganhos ao longo do tempo',
+        data: Object.values(byDate)
+      }]
+    }
+  })
+
+  // 🎁 Origem dos ganhos
+  new Chart(document.getElementById('earningsByTypeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Presentes', 'Entradas privadas'],
+      datasets: [{
+        data: [gifts, invites]
+      }]
+    }
+  })
+}
