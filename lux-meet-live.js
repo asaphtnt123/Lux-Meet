@@ -552,3 +552,33 @@ function renderCountryNavbar(defaultCountry) {
   })
 }
 
+
+
+
+async function releaseTransactionManually(transactionId) {
+  const txRef = db.collection("transactions").doc(transactionId)
+
+  await db.runTransaction(async (transaction) => {
+    const txSnap = await transaction.get(txRef)
+    if (!txSnap.exists) throw new Error("Transação não existe")
+
+    const txData = txSnap.data()
+    if (txData.status !== "pending") return
+
+    const userRef = db.collection("users").doc(txData.hostId)
+    const userSnap = await transaction.get(userRef)
+
+    const pending = userSnap.data().earnings_pending || 0
+    const available = userSnap.data().earnings_available || 0
+
+    transaction.update(userRef, {
+      earnings_pending: pending - txData.amount,
+      earnings_available: available + txData.amount
+    })
+
+    transaction.update(txRef, {
+      status: "available",
+      releasedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+  })
+}

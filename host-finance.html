@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lux Meet • Financeiro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="host-finance.css" />
+</head>
+<body>
+
+<div class="finance-container">
+
+  <h1 class="finance-title">💰 Financeiro</h1>
+
+  <!-- CARDS -->
+  <div class="finance-cards">
+
+    <div class="finance-card available">
+      <small>Disponível para saque</small>
+      <strong id="availableAmount">0</strong>
+      <button id="withdrawBtn" class="withdraw-btn hidden">
+        Solicitar saque
+      </button>
+    </div>
+
+    <div class="finance-card pending">
+      <small>Ganhos pendentes</small>
+      <strong id="pendingAmount">0</strong>
+      <span class="hint">Liberação em até 24h</span>
+    </div>
+
+    <div class="finance-card total">
+      <small>Total acumulado</small>
+      <strong id="totalAmount">0</strong>
+    </div>
+
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div class="finance-history">
+    <h2>📄 Histórico de ganhos</h2>
+    <div id="transactionsList" class="transactions-list">
+      <p class="empty">Nenhuma transação encontrada</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script src="firebase-init.js"></script>
+<script src="host-finance.js"></script>
+
+</body>
+</html>

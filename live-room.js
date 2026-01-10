@@ -88,6 +88,7 @@ async function handleAuth(user) {
 
   isHost = liveData.hostId === currentUser.uid
   toggleGiftsForRole()
+  
 
 
   await validateAccess()
@@ -114,6 +115,22 @@ renderGifts()
 
   document.getElementById("loading").classList.add("hidden")
   document.getElementById("app").classList.remove("hidden")
+}
+
+
+
+function toggleGiftsForRole() {
+  const openGiftsBtn = document.getElementById("openGiftsBtn")
+  const giftsPanel = document.getElementById("giftsPanel")
+
+  if (!openGiftsBtn || !giftsPanel) return
+
+  if (isHost) {
+    openGiftsBtn.style.display = "none"
+    giftsPanel.classList.add("hidden")
+  } else {
+    openGiftsBtn.style.display = "flex"
+  }
 }
 
 // =======================================
@@ -496,21 +513,15 @@ async function endLiveAsHost() {
 async function showLiveSummary() {
   liveEnded = true
 
-  // Busca espectadores
-  const viewersSnap = await db
-    .collection("lives")
-    .doc(liveId)
-    .collection("viewers")
-    .get()
+  const liveRef = db.collection("lives").doc(liveId)
+  const hostRef = db.collection("users").doc(liveData.hostId)
 
+  // 🔹 Busca espectadores
+  const viewersSnap = await liveRef.collection("viewers").get()
   const totalViewers = viewersSnap.size
 
-  // Busca gifts
-  const giftsSnap = await db
-    .collection("lives")
-    .doc(liveId)
-    .collection("gifts")
-    .get()
+  // 🔹 Busca gifts
+  const giftsSnap = await liveRef.collection("gifts").get()
 
   let totalCoins = 0
   const giftCount = {}
@@ -531,6 +542,27 @@ async function showLiveSummary() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
 
+  // 🔥 FECHAMENTO FINANCEIRO
+  await db.runTransaction(async (tx) => {
+    const hostSnap = await tx.get(hostRef)
+
+    tx.update(hostRef, {
+      earnings_pending:
+        (hostSnap.data().earnings_pending || 0) + totalCoins,
+      total_earnings:
+        (hostSnap.data().total_earnings || 0) + totalCoins,
+      last_live_earnings: totalCoins
+    })
+
+    tx.update(liveRef, {
+      totalCoins,
+      totalViewers,
+      status: "finished",
+      endedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+  })
+
+  // 🔹 UI
   document.body.insertAdjacentHTML(
     "beforeend",
     `
@@ -590,21 +622,6 @@ async function showLiveSummary() {
     </div>
     `
   )
-}
-function toggleGiftsForRole() {
-  const openGiftsBtn = document.getElementById("openGiftsBtn")
-  const giftsPanel = document.getElementById("giftsPanel")
-
-  if (!openGiftsBtn || !giftsPanel) return
-
-  if (isHost) {
-    // 👑 HOST → não envia presentes
-    openGiftsBtn.style.display = "none"
-    giftsPanel.classList.add("hidden")
-  } else {
-    // 👀 ESPECTADOR → pode enviar
-    openGiftsBtn.style.display = "flex"
-  }
 }
 
 function showViewerEndedScreen() {
