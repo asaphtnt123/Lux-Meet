@@ -365,12 +365,33 @@ async function sendGift(gift) {
         balance: balance - gift.value
       })
 
+
+
+      const giftHistoryRef =
+  db.collection('users')
+    .doc(liveData.hostId)
+    .collection('gift_history')
+    .doc()
+
+transaction.set(giftHistoryRef, {
+  liveId,
+  senderId: currentUser.uid,
+  senderName: userData.name || 'Usuário',
+  giftId: gift.id,
+  giftName: gift.name,
+  value: gift.value,
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+})
+
+
       // 🔺 credita no host
       tx.update(hostRef, {
   earnings_pending:
     (hostSnap.data().earnings_pending || 0) + gift.value,
   total_earnings:
     (hostSnap.data().total_earnings || 0) + gift.value
+
+    
 })
 
 

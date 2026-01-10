@@ -11,7 +11,13 @@ if (!firebase.apps.length) {
 }
 
 const auth = firebase.auth()
-const db = firebase.firestore()
+const db = firebase.firestore(
+
+    loadGiftHistory(user.uid),
+
+    loadInviteEarnings(user.uid)
+
+)
 
 firebase.auth().onAuthStateChanged(async user => {
   if (!user) return
@@ -92,4 +98,78 @@ function formatDate(ts) {
   if (!ts) return ''
   const d = ts.toDate()
   return d.toLocaleDateString() + ' ' + d.toLocaleTimeString()
+}
+async function loadGiftHistory(hostId) {
+  const list = document.getElementById('giftHistoryList')
+  list.innerHTML = ''
+
+  const snap = await db
+    .collection('users')
+    .doc(hostId)
+    .collection('gift_history')
+    .orderBy('createdAt', 'desc')
+    .limit(50)
+    .get()
+
+  if (snap.empty) {
+    list.innerHTML = '<p class="empty">Nenhum presente recebido</p>'
+    return
+  }
+
+  snap.forEach(doc => {
+    const g = doc.data()
+
+    const item = document.createElement('div')
+    item.className = 'gift-item'
+
+    item.innerHTML = `
+      <div>
+        <strong>${g.senderName}</strong>
+        <small>🎁 ${g.giftName}</small>
+      </div>
+      <div>
+        <strong>+${g.value}</strong>
+        <small>${formatDate(g.createdAt)}</small>
+      </div>
+    `
+
+    list.appendChild(item)
+  })
+}
+async function loadInviteEarnings(hostId) {
+  const list = document.getElementById('inviteEarningsList')
+  list.innerHTML = ''
+
+  const snap = await db
+    .collection('lives')
+    .where('hostId', '==', hostId)
+    .where('type', '==', 'private')
+    .orderBy('createdAt', 'desc')
+    .get()
+
+  if (snap.empty) {
+    list.innerHTML =
+      '<p class="empty">Nenhuma live privada</p>'
+    return
+  }
+
+  snap.forEach(doc => {
+    const live = doc.data()
+
+    const item = document.createElement('div')
+    item.className = 'live-earnings-item'
+
+    item.innerHTML = `
+      <div>
+        <strong>${live.title || 'Live privada'}</strong>
+        <small>👥 ${live.paid_viewers || 0} pagantes</small>
+      </div>
+      <div>
+        <strong>+${live.total_invite_earnings || 0}</strong>
+        <small>Entrada</small>
+      </div>
+    `
+
+    list.appendChild(item)
+  })
 }

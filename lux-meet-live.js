@@ -455,6 +455,16 @@ async function enterLive(liveId) {
         throw new Error('Saldo insuficiente')
       }
 
+      transaction.update(liveRef, {
+  paid_viewers:
+    firebase.firestore.FieldValue.increment(1),
+
+  total_invite_earnings:
+    firebase.firestore.FieldValue.increment(price)
+})
+
+
+
       // 🔻 desconta do espectador
       tx.update(userRef, {
         balance: balance - price
