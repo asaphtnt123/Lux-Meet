@@ -259,3 +259,128 @@ function renderCharts(byLive, byDate, gifts, invites) {
     }
   })
 }
+
+
+
+//GRAFICOS DE BARRAS 
+function buildEfficiencyData(lives) {
+  const labels = []
+  const values = []
+
+  lives.forEach(live => {
+    if (!live.startedAt || !live.endedAt) return
+
+    const durationMin =
+      (live.endedAt.toDate() - live.startedAt.toDate()) / 60000
+
+    if (durationMin <= 0) return
+
+    const total =
+      (live.total_invite_earnings || 0) +
+      (live.totalGiftsValue || 0)
+
+    labels.push(live.title || 'Live')
+    values.push((total / durationMin).toFixed(2))
+  })
+
+  return { labels, values }
+}
+
+new Chart(efficiencyChart, {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Coins por minuto',
+      data: values
+    }]
+  }
+})
+
+
+//RANKING DAS LIVES MAIS LUCRATIVAS Tipo Tabela + gráfico horizontal
+
+function buildRanking(lives) {
+  return lives
+    .map(l => ({
+      title: l.title || 'Live',
+      total:
+        (l.total_invite_earnings || 0) +
+        (l.totalGiftsValue || 0)
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10)
+}
+
+
+ranking.forEach((l, i) => {
+  rankingList.innerHTML += `
+    <li>
+      <strong>#${i + 1} ${l.title}</strong>
+      <span>${l.total} coins</span>
+    </li>
+  `
+})
+
+// EXPORTAR RELATORIO 
+function exportCSV(data) {
+  const rows = [
+    ['Live', 'Total ganhos', 'Presentes', 'Entradas']
+  ]
+
+  data.forEach(l => {
+    rows.push([
+      l.title,
+      l.total,
+      l.totalGiftsValue || 0,
+      l.total_invite_earnings || 0
+    ])
+  })
+
+  const csv = rows.map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+
+  downloadFile(blob, 'relatorio-lives.csv')
+}
+
+
+function exportPDF(data) {
+  const doc = new jsPDF()
+
+  doc.text('Relatório financeiro do host', 14, 16)
+
+  doc.autoTable({
+    startY: 24,
+    head: [['Live', 'Total', 'Presentes', 'Entradas']],
+    body: data.map(l => [
+      l.title,
+      l.total,
+      l.totalGiftsValue || 0,
+      l.total_invite_earnings || 0
+    ])
+  })
+
+  doc.save('relatorio-financeiro.pdf')
+}
+
+
+// GRAFICOS DE PREVISAO DE GANHOS
+
+function buildForecast(dailyEarnings) {
+  const avg =
+    dailyEarnings.reduce((a, b) => a + b, 0) /
+    dailyEarnings.length
+
+  return Array(7).fill(avg)
+}
+
+new Chart(forecastChart, {
+  type: 'line',
+  data: {
+    labels: ['D+1','D+2','D+3','D+4','D+5','D+6','D+7'],
+    datasets: [{
+      label: 'Previsão de ganhos',
+      data: forecast
+    }]
+  }
+})
