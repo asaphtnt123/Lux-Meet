@@ -442,6 +442,16 @@ async function enterLive(liveId) {
       const hostRef = db.collection('users').doc(live.hostId)
       const txRef = liveRef.collection('transactions').doc()
 
+  tx.set(txRef, {
+    type: 'private_entry',
+    amount: price,
+    from: currentUser.uid,
+    to: live.hostId,
+    liveId,
+    status: 'pending',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+})
       const userSnap = await transaction.get(userRef)
       const hostSnap = await transaction.get(hostRef)
 
@@ -479,16 +489,6 @@ async function enterLive(liveId) {
 
       // 📄 histórico financeiro
 
-  tx.set(txRef, {
-    type: 'private_entry',
-    amount: price,
-    from: currentUser.uid,
-    to: live.hostId,
-    liveId,
-    status: 'pending',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  })
-})
 
     // ✅ Atualiza UI local
     userData.balance -= price
