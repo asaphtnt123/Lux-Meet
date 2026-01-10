@@ -394,7 +394,6 @@ async function renderLiveList(docs) {
         }
     }
 }
-
 async function enterLive(liveId) {
   try {
     if (!currentUser || !userData) {
@@ -436,24 +435,14 @@ async function enterLive(liveId) {
       return
     }
 
-    // 🔥 TRANSAÇÃO ATÔMICA (TUDO AQUI DENTRO)
-    await db.runTransaction(async (transaction) => {
+    // 🔥 TRANSAÇÃO ATÔMICA
+    await db.runTransaction(async (tx) => {
       const userRef = db.collection('users').doc(currentUser.uid)
       const hostRef = db.collection('users').doc(live.hostId)
-      const txRef = liveRef.collection('transactions').doc()
+      const globalTxRef = db.collection('transactions').doc()
 
-  tx.set(txRef, {
-    type: 'private_entry',
-    amount: price,
-    from: currentUser.uid,
-    to: live.hostId,
-    liveId,
-    status: 'pending',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  })
-})
-      const userSnap = await transaction.get(userRef)
-      const hostSnap = await transaction.get(hostRef)
+      const userSnap = await tx.get(userRef)
+      const hostSnap = await tx.get(hostRef)
 
       const balance = userSnap.data().balance || 0
       if (balance < price) {
@@ -461,12 +450,12 @@ async function enterLive(liveId) {
       }
 
       // 🔻 desconta do espectador
-      transaction.update(userRef, {
+      tx.update(userRef, {
         balance: balance - price
       })
 
-      // 🔺 adiciona aos ganhos do host (PENDING)
-      transaction.update(hostRef, {
+      // 🔺 ganhos do host
+      tx.update(hostRef, {
         earnings_pending:
           (hostSnap.data().earnings_pending || 0) + price,
         total_earnings:
@@ -474,21 +463,30 @@ async function enterLive(liveId) {
       })
 
       // 👁 libera acesso à live
-      transaction.set(viewerRef, {
+      tx.set(viewerRef, {
         joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
         paid: true
       })
 
-      // 📊 soma métricas da live
-      transaction.update(liveRef, {
+      // 📊 métricas da live
+      tx.update(liveRef, {
         paid_viewers:
           firebase.firestore.FieldValue.increment(1),
         total_invite_earnings:
           firebase.firestore.FieldValue.increment(price)
       })
 
-      // 📄 histórico financeiro
-
+      // 📄 HISTÓRICO GLOBAL (host-finance)
+      tx.set(globalTxRef, {
+        type: 'private_entry',
+        amount: price,
+        from: currentUser.uid,
+        to: live.hostId,
+        liveId,
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+    })
 
     // ✅ Atualiza UI local
     userData.balance -= price
