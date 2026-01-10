@@ -11,15 +11,8 @@ if (!firebase.apps.length) {
 }
 
 const auth = firebase.auth()
-const db = firebase.firestore(
-
-    loadGiftHistory(user.uid),
-
-    loadInviteEarnings(user.uid)
-
-)
-
-firebase.auth().onAuthStateChanged(async user => {
+const db = firebase.firestore()
+auth.onAuthStateChanged(async user => {
   if (!user) return
 
   const userRef = db.collection('users').doc(user.uid)
@@ -45,8 +38,12 @@ firebase.auth().onAuthStateChanged(async user => {
     }
   }
 
+  // ✅ AGORA SIM
   loadTransactions(user.uid)
+  loadGiftHistory(user.uid)
+  loadInviteEarnings(user.uid)
 })
+
 
 async function loadTransactions(hostId) {
   const list = document.getElementById('transactionsList')
