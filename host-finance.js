@@ -384,3 +384,124 @@ new Chart(forecastChart, {
     }]
   }
 })
+
+
+
+const openChartsBtn = document.getElementById('openChartsBtn')
+const closeChartsBtn = document.getElementById('closeChartsBtn')
+
+openChartsBtn.addEventListener('click', () => {
+  chartsModal.classList.remove('hidden')
+
+  // ⏱️ Espera o modal aparecer antes de desenhar
+  setTimeout(() => {
+    renderCharts()
+  }, 100)
+})
+
+closeChartsBtn.addEventListener('click', () => {
+  chartsModal.classList.add('hidden')
+})
+
+//RENDER GRAFICOS
+let earningsByLiveChart
+let earningsOverTimeChart
+let earningsByTypeChart
+
+async function renderCharts() {
+  const snap = await db
+    .collection('transactions')
+    .where('to', '==', auth.currentUser.uid)
+    .orderBy('createdAt')
+    .get()
+
+  if (snap.empty) return
+
+  const byLive = {}
+  const byType = { gift: 0, private_entry: 0 }
+  const byDate = {}
+
+  snap.forEach(doc => {
+    const t = doc.data()
+    const date = t.createdAt?.toDate().toLocaleDateString()
+
+    // por live
+    byLive[t.liveId] = (byLive[t.liveId] || 0) + t.amount
+
+    // por tipo
+    byType[t.type] = (byType[t.type] || 0) + t.amount
+
+    // por data
+    byDate[date] = (byDate[date] || 0) + t.amount
+  })
+
+  drawEarningsByLive(byLive)
+  drawEarningsOverTime(byDate)
+  drawEarningsByType(byType)
+}
+
+
+//GRAFICOS DE GANHOS POR LIVE 
+function drawEarningsByLive(data) {
+  const ctx = document
+    .getElementById('earningsByLiveChart')
+    .getContext('2d')
+
+  if (earningsByLiveChart) earningsByLiveChart.destroy()
+
+  earningsByLiveChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(data),
+      datasets: [{
+        label: 'Ganhos por live',
+        data: Object.values(data)
+      }]
+    },
+    options: { responsive: true }
+  })
+}
+
+// GANHOS AO LONGO DO TEMPO
+function drawEarningsOverTime(data) {
+  const ctx = document
+    .getElementById('earningsOverTimeChart')
+    .getContext('2d')
+
+  if (earningsOverTimeChart) earningsOverTimeChart.destroy()
+
+  earningsOverTimeChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Object.keys(data),
+      datasets: [{
+        label: 'Ganhos por dia',
+        data: Object.values(data),
+        tension: 0.3
+      }]
+    }
+  })
+}
+
+
+//GANHOS POR Tipo
+function drawEarningsByType(data) {
+  const ctx = document
+    .getElementById('earningsByTypeChart')
+    .getContext('2d')
+
+  if (earningsByTypeChart) earningsByTypeChart.destroy()
+
+  earningsByTypeChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['🎁 Presentes', '🔒 Entradas privadas'],
+      datasets: [{
+        data: [
+          data.gift || 0,
+          data.private_entry || 0
+        ]
+      }]
+    }
+  })
+}
