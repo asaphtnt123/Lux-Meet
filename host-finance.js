@@ -22,8 +22,11 @@ if (!firebase.apps.length) {
 const auth = firebase.auth()
 const db = firebase.firestore()
 const withdrawBtn = document.getElementById('withdrawBtn')
-// 💸 CONFIGURAÇÃO FINANCEIRA OFICIAL
-const PLATFORM_FEE_PERCENT = 10 // 10%
+
+// 💰 CONFIGURAÇÃO FINANCEIRA OFICIAL
+const COIN_VALUE_BRL = 0.05        // R$ por moeda
+const PLATFORM_FEE_PERCENT = 20   // 20%
+
 
 // =====================================================
 // AUTH ÚNICA
@@ -427,3 +430,30 @@ document
       alert('Erro ao solicitar saque')
     }
   })
+
+
+  const coinsInput = document.getElementById('coinsInput')
+const grossValueEl = document.getElementById('grossValue')
+const feeValueEl = document.getElementById('feeValue')
+const netValueEl = document.getElementById('netValue')
+
+function formatBRL(value) {
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  })
+}
+
+coinsInput?.addEventListener('input', () => {
+  const coins = Number(coinsInput.value) || 0
+
+  // 💰 Conversão
+  const gross = coins * COIN_VALUE_BRL
+  const fee = gross * (PLATFORM_FEE_PERCENT / 100)
+  const net = gross - fee
+
+  grossValueEl.textContent = formatBRL(gross)
+  feeValueEl.textContent = formatBRL(fee)
+  netValueEl.textContent = formatBRL(net)
+})
+
