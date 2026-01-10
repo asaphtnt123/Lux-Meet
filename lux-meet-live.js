@@ -394,13 +394,9 @@ async function renderLiveList(docs) {
         }
     }
 }
+
 async function enterLive(liveId) {
   try {
-    if (!liveId) {
-      alert('Live inválida')
-      return
-    }
-
     if (!currentUser || !userData) {
       alert('Usuário não autenticado')
       return
@@ -430,7 +426,6 @@ async function enterLive(liveId) {
       .doc(currentUser.uid)
 
     const viewerSnap = await viewerRef.get()
-
     if (viewerSnap.exists) {
       window.location.href = `live-room.html?liveId=${liveId}`
       return
@@ -442,64 +437,59 @@ async function enterLive(liveId) {
     }
 
     // 🔥 TRANSAÇÃO ATÔMICA (TUDO AQUI DENTRO)
-    await db.runTransaction(async (tx) => {
+    await db.runTransaction(async (transaction) => {
       const userRef = db.collection('users').doc(currentUser.uid)
       const hostRef = db.collection('users').doc(live.hostId)
       const txRef = liveRef.collection('transactions').doc()
 
-      const userSnap = await tx.get(userRef)
-      const hostSnap = await tx.get(hostRef)
+      const userSnap = await transaction.get(userRef)
+      const hostSnap = await transaction.get(hostRef)
 
       const balance = userSnap.data().balance || 0
       if (balance < price) {
         throw new Error('Saldo insuficiente')
       }
 
-      transaction.update(liveRef, {
-  paid_viewers:
-    firebase.firestore.FieldValue.increment(1),
-
-  total_invite_earnings:
-    firebase.firestore.FieldValue.increment(price)
-})
-
-
-
       // 🔻 desconta do espectador
-      tx.update(userRef, {
+      transaction.update(userRef, {
         balance: balance - price
       })
 
-      // 🔺 entra como pending para o host
-      tx.update(hostRef, {
+      // 🔺 adiciona aos ganhos do host (PENDING)
+      transaction.update(hostRef, {
         earnings_pending:
           (hostSnap.data().earnings_pending || 0) + price,
         total_earnings:
           (hostSnap.data().total_earnings || 0) + price
       })
 
-      // 👁 libera acesso
-      tx.set(viewerRef, {
+      // 👁 libera acesso à live
+      transaction.set(viewerRef, {
         joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
         paid: true
       })
 
-      // 📄 registra transação
-      tx.set(txRef, {
+      // 📊 soma métricas da live
+      transaction.update(liveRef, {
+        paid_viewers:
+          firebase.firestore.FieldValue.increment(1),
+        total_invite_earnings:
+          firebase.firestore.FieldValue.increment(price)
+      })
+
+      // 📄 histórico financeiro
+      transaction.set(txRef, {
         type: 'private_entry',
         amount: price,
         from: currentUser.uid,
         to: live.hostId,
         status: 'pending',
         liveId,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        releaseAt: firebase.firestore.Timestamp.fromDate(
-          new Date(Date.now() + 24 * 60 * 60 * 1000)
-        )
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       })
     })
 
-    // 🔄 Atualiza UI local
+    // ✅ Atualiza UI local
     userData.balance -= price
     updateUserUI()
 
