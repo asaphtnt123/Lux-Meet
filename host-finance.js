@@ -1,3 +1,8 @@
+let currentUser = null
+let earningsByLiveChart = null
+let earningsOverTimeChart = null
+let earningsByTypeChart = null
+let efficiencyChart = null
 
 // =======================================
 // FIREBASE INIT
@@ -42,6 +47,17 @@ auth.onAuthStateChanged(async user => {
   loadTransactions(user.uid)
 })
 
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'login.html'
+    return
+  }
+
+  currentUser = user
+
+  // aqui você pode carregar dados financeiros básicos
+  loadFinanceData()
+})
 
 async function loadTransactions(hostId) {
   const list = document.getElementById('transactionsList')
@@ -286,16 +302,20 @@ function buildEfficiencyData(lives) {
   return { labels, values }
 }
 
-new Chart(efficiencyChart, {
-  type: 'bar',
+const ctx = document
+  .getElementById('efficiencyChart')
+  .getContext('2d')
+
+efficiencyChart = new Chart(ctx, {
+  type: 'scatter',
   data: {
-    labels,
     datasets: [{
-      label: 'Coins por minuto',
-      data: values
+      label: 'Tempo de live × Faturamento',
+      data: efficiencyData
     }]
   }
 })
+
 
 
 //RANKING DAS LIVES MAIS LUCRATIVAS Tipo Tabela + gráfico horizontal
@@ -403,10 +423,7 @@ closeChartsBtn.addEventListener('click', () => {
   chartsModal.classList.add('hidden')
 })
 
-//RENDER GRAFICOS
-let earningsByLiveChart
-let earningsOverTimeChart
-let earningsByTypeChart
+
 
 async function renderCharts() {
   const snap = await db
