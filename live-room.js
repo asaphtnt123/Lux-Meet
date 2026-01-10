@@ -339,14 +339,13 @@ function renderGifts() {
     container.appendChild(btn)
   })
 }
-
 async function sendGift(gift) {
   // host não pode enviar presente
   if (currentUser.uid === liveData.hostId) return
 
-  const userRef = db.collection("users").doc(currentUser.uid)
-  const hostRef = db.collection("users").doc(liveData.hostId)
-  const liveRef = db.collection("lives").doc(liveId)
+  const userRef = db.collection('users').doc(currentUser.uid)
+  const hostRef = db.collection('users').doc(liveData.hostId)
+  const liveRef = db.collection('lives').doc(liveId)
 
   try {
     await db.runTransaction(async (tx) => {
@@ -354,9 +353,8 @@ async function sendGift(gift) {
       const hostSnap = await tx.get(hostRef)
 
       const balance = userSnap.data().balance || 0
-
       if (balance < gift.value) {
-        throw new Error("Saldo insuficiente")
+        throw new Error('Saldo insuficiente')
       }
 
       // 🔻 desconta do espectador
@@ -364,7 +362,7 @@ async function sendGift(gift) {
         balance: balance - gift.value
       })
 
-      // 🔺 credita no host
+      // 🔺 ganhos do host (PENDING)
       tx.update(hostRef, {
         earnings_pending:
           (hostSnap.data().earnings_pending || 0) + gift.value,
@@ -372,46 +370,45 @@ async function sendGift(gift) {
           (hostSnap.data().total_earnings || 0) + gift.value
       })
 
-      // 📊 soma na live
+      // 📊 métricas da live
       tx.update(liveRef, {
-        totalGiftsValue: firebase.firestore.FieldValue.increment(gift.value)
+        totalGiftsValue:
+          firebase.firestore.FieldValue.increment(gift.value)
       })
 
-      // 🎁 histórico de presentes do host
+      // 💰 histórico financeiro GLOBAL (host-finance)
+      const globalTxRef = db.collection('transactions').doc()
+      tx.set(globalTxRef, {
+        type: 'gift',
+        amount: gift.value,
+        from: currentUser.uid,
+        to: liveData.hostId,
+        liveId,
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+
+      // 🎁 histórico opcional de gifts (detalhado)
       const giftHistoryRef = db
-        .collection("users")
+        .collection('users')
         .doc(liveData.hostId)
-        .collection("gift_history")
+        .collection('gift_history')
         .doc()
 
       tx.set(giftHistoryRef, {
         liveId,
         senderId: currentUser.uid,
-        senderName: userData.name || "Usuário",
+        senderName: userData.name || 'Usuário',
         giftId: gift.id,
         giftName: gift.name,
         value: gift.value,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       })
 
-      // 💰 transação global (dashboard financeiro)
-      const txRef = db.collection('transactions').doc()
-
-  tx.set(txRef, {
-    type: 'gift',
-    amount: gift.value,
-    from: currentUser.uid,
-    to: liveData.hostId,
-    liveId,
-    status: 'pending',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  })
-
-
       // 💬 mensagem no chat
-      tx.set(liveRef.collection("chat").doc(), {
+      tx.set(liveRef.collection('chat').doc(), {
         system: true,
-        name: "🎁 Sistema",
+        name: '🎁 Sistema',
         text: `${userData.name} enviou ${gift.emoji} ${gift.name} (${gift.value} coins)`,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       })

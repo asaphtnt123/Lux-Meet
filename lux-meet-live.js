@@ -394,6 +394,7 @@ async function renderLiveList(docs) {
         }
     }
 }
+
 async function enterLive(liveId) {
   try {
     if (!currentUser || !userData) {
@@ -454,7 +455,7 @@ async function enterLive(liveId) {
         balance: balance - price
       })
 
-      // 🔺 ganhos do host
+      // 🔺 ganhos do host (PENDING)
       tx.update(hostRef, {
         earnings_pending:
           (hostSnap.data().earnings_pending || 0) + price,
@@ -462,7 +463,7 @@ async function enterLive(liveId) {
           (hostSnap.data().total_earnings || 0) + price
       })
 
-      // 👁 libera acesso à live
+      // 👁 libera acesso
       tx.set(viewerRef, {
         joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
         paid: true
@@ -476,7 +477,7 @@ async function enterLive(liveId) {
           firebase.firestore.FieldValue.increment(price)
       })
 
-      // 📄 HISTÓRICO GLOBAL (host-finance)
+      // 💰 histórico financeiro GLOBAL
       tx.set(globalTxRef, {
         type: 'private_entry',
         amount: price,

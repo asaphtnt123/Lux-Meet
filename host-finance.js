@@ -40,8 +40,6 @@ auth.onAuthStateChanged(async user => {
 
   // ✅ AGORA SIM
   loadTransactions(user.uid)
-  loadGiftHistory(user.uid)
-  loadInviteEarnings(user.uid)
 })
 
 
