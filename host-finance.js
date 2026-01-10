@@ -233,7 +233,11 @@ function drawEarningsByType(data) {
 // =====================================================
 // EFICIÊNCIA (TEMPO × FATURAMENTO)
 // =====================================================
+
 function drawEfficiency(lives) {
+  const canvas = document.getElementById('efficiencyChart')
+  if (!canvas) return
+
   const data = []
 
   lives.forEach(l => {
@@ -253,19 +257,17 @@ function drawEfficiency(lives) {
 
   if (efficiencyChart) efficiencyChart.destroy()
 
-  efficiencyChart = new Chart(
-    document.getElementById('efficiencyChart'),
-    {
-      type: 'scatter',
-      data: {
-        datasets: [{
-          label: 'Tempo × Faturamento',
-          data
-        }]
-      }
+  efficiencyChart = new Chart(canvas, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Tempo × Faturamento',
+        data
+      }]
     }
-  )
+  })
 }
+
 
 // =====================================================
 // RANKING DAS LIVES
