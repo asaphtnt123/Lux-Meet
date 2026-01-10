@@ -9,11 +9,11 @@
 </head>
 <body>
 
-<div class="finance-container">
+<div class="finance-container" id="app">
 
   <h1 class="finance-title">💰 Financeiro</h1>
 
-  <!-- CARDS -->
+  <!-- ================= CARDS ================= -->
   <div class="finance-cards">
 
     <div class="finance-card available">
@@ -37,42 +37,34 @@
 
   </div>
 
-  <!-- HISTÓRICO -->
+  <!-- ================= HISTÓRICO ================= -->
   <div class="finance-history">
     <h2>📄 Histórico de ganhos</h2>
+
     <div id="transactionsList" class="transactions-list">
       <p class="empty">Nenhuma transação encontrada</p>
     </div>
   </div>
 
+  <!-- ================= BOTÃO MODAL ================= -->
   <button id="openChartsBtn" class="charts-btn">
-  📊 Exibir gráficos detalhados
-</button>
+    📊 Exibir gráficos detalhados
+  </button>
 
+</div>
 
+<!-- ================= MODAL GRÁFICOS ================= -->
 <div id="chartsModal" class="charts-modal hidden">
+
   <div class="charts-box">
 
+    <!-- HEADER -->
     <div class="charts-header">
       <h2>📊 Análise detalhada de ganhos</h2>
-      <button id="closeChartsBtn">✕</button>
+      <button id="closeChartsBtn" aria-label="Fechar">✕</button>
     </div>
 
-    <div class="ranking-section">
-  <h3>🏆 Lives mais lucrativas</h3>
-  <ul id="rankingList"></ul>
-</div>
-
-
-    <!-- GRÁFICOS -->
-   <div class="charts-grid">
-  <canvas id="earningsByLiveChart"></canvas>
-  <canvas id="earningsOverTimeChart"></canvas>
-  <canvas id="earningsByTypeChart"></canvas>
-  <canvas id="efficiencyChart"></canvas>
-</div>
-
-    <!-- FILTROS -->
+    <!-- FILTROS (JS ready, mesmo se não usados agora) -->
     <div class="charts-filters">
       <select id="filterPeriod">
         <option value="7">Últimos 7 dias</option>
@@ -87,21 +79,53 @@
       </select>
     </div>
 
+    <!-- ================= GRÁFICOS ================= -->
+    <div class="charts-grid">
+
+      <div class="chart-box">
+        <h4>💰 Ganhos por live</h4>
+        <canvas id="earningsByLiveChart"></canvas>
+      </div>
+
+      <div class="chart-box">
+        <h4>⏱️ Ganhos ao longo do tempo</h4>
+        <canvas id="earningsOverTimeChart"></canvas>
+      </div>
+
+      <div class="chart-box">
+        <h4>🎁 Origem dos ganhos</h4>
+        <canvas id="earningsByTypeChart"></canvas>
+      </div>
+
+      <div class="chart-box">
+        <h4>⚡ Eficiência do host (tempo × faturamento)</h4>
+        <canvas id="efficiencyChart"></canvas>
+      </div>
+
+    </div>
+
+    <!-- ================= RANKING ================= -->
+    <div class="ranking-section">
+      <h3>🏆 Lives mais lucrativas</h3>
+      <ul id="rankingList" class="ranking-list">
+        <li class="empty">Nenhuma live encontrada</li>
+      </ul>
+    </div>
 
   </div>
 </div>
 
-</div>
-
-<!-- FIREBASE -->
+<!-- ================= FIREBASE ================= -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<!-- ================= LIBS ================= -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable"></script>
 
-
+<!-- ================= APP ================= -->
 <script src="firebase-init.js"></script>
 <script src="host-finance.js"></script>
 
