@@ -1,3 +1,18 @@
+
+// =======================================
+// FIREBASE INIT
+// =======================================
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: "AIzaSyA-7HOp-Ycvyf3b_03ev__8aJEwAbWSQZY",
+    authDomain: "connectfamilia-312dc.firebaseapp.com",
+    projectId: "connectfamilia-312dc"
+  })
+}
+
+const auth = firebase.auth()
+const db = firebase.firestore()
+
 firebase.auth().onAuthStateChanged(async user => {
   if (!user) return
 
