@@ -383,6 +383,18 @@ transaction.set(giftHistoryRef, {
   createdAt: firebase.firestore.FieldValue.serverTimestamp()
 })
 
+const txRef = db.collection('transactions').doc()
+
+transaction.set(txRef, {
+  type: 'gift',
+  amount: gift.value,
+  from: currentUser.uid,
+  to: liveData.hostId,
+  liveId,
+  status: 'available', // gifts normalmente liberam na hora
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+})
+
 
       // 🔺 credita no host
       tx.update(hostRef, {
