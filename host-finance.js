@@ -21,6 +21,7 @@ if (!firebase.apps.length) {
 
 const auth = firebase.auth()
 const db = firebase.firestore()
+const withdrawBtn = document.getElementById('withdrawBtn')
 
 // =====================================================
 // AUTH ÚNICA
@@ -358,3 +359,30 @@ confirmWithdrawBtn.onclick = async () => {
   alert('✅ Solicitação de saque enviada com sucesso')
   withdrawModal.classList.add('hidden')
 }
+
+
+// 🔘 ABRIR MODAL DE SAQUE
+if (withdrawBtn) {
+  withdrawBtn.addEventListener('click', () => {
+    const available =
+      Number(document.getElementById('availableAmount').textContent) || 0
+
+    document.getElementById('withdrawAvailable').textContent = available
+    document.getElementById('withdrawInput').value = ''
+    document.getElementById('feeValue').textContent = '0'
+    document.getElementById('netValue').textContent = '0'
+
+    document
+      .getElementById('withdrawModal')
+      .classList.remove('hidden')
+  })
+}
+
+//FECHAR MODAL SAQUE
+document
+  .getElementById('closeWithdrawBtn')
+  ?.addEventListener('click', () => {
+    document
+      .getElementById('withdrawModal')
+      .classList.add('hidden')
+  })
