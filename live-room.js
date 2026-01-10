@@ -395,17 +395,18 @@ async function sendGift(gift) {
       })
 
       // 💰 transação global (dashboard financeiro)
-      const txRef = db.collection("transactions").doc()
+      const txRef = db.collection('transactions').doc()
 
-      tx.set(txRef, {
-        type: "gift",
-        amount: gift.value,
-        from: currentUser.uid,
-        to: liveData.hostId,
-        liveId,
-        status: "available", // gifts liberam direto
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      })
+  tx.set(txRef, {
+    type: 'gift',
+    amount: gift.value,
+    from: currentUser.uid,
+    to: liveData.hostId,
+    liveId,
+    status: 'pending',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+
 
       // 💬 mensagem no chat
       tx.set(liveRef.collection("chat").doc(), {
@@ -572,6 +573,7 @@ async function showLiveSummary() {
     })
   })
 
+  
   // 🔹 UI
   document.body.insertAdjacentHTML(
     "beforeend",

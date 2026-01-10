@@ -478,16 +478,17 @@ async function enterLive(liveId) {
       })
 
       // 📄 histórico financeiro
-      transaction.set(txRef, {
-        type: 'private_entry',
-        amount: price,
-        from: currentUser.uid,
-        to: live.hostId,
-        status: 'pending',
-        liveId,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      })
-    })
+
+  tx.set(txRef, {
+    type: 'private_entry',
+    amount: price,
+    from: currentUser.uid,
+    to: live.hostId,
+    liveId,
+    status: 'pending',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+})
 
     // ✅ Atualiza UI local
     userData.balance -= price
