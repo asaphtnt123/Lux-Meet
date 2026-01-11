@@ -413,6 +413,8 @@ async function renderLiveList(docs) {
     list.appendChild(card)
   }
 }
+
+
 async function enterLive(liveId) {
   try {
     if (!currentUser) {
@@ -442,7 +444,7 @@ async function enterLive(liveId) {
 
       const updates = {}
 
-      // ⏱️ inicia a live na primeira entrada
+      // ⏱️ inicia live
       if (!live.startedAt) {
         updates.startedAt =
           firebase.firestore.FieldValue.serverTimestamp()
@@ -455,10 +457,8 @@ async function enterLive(liveId) {
 
         // ❌ BLOQUEIO REAL
         if (balance < priceCoins) {
-  showCoinsAlert()
-  return
-}
-
+          throw new Error('INSUFFICIENT_BALANCE')
+        }
 
         // 🔻 desconta moedas
         tx.update(userRef, {
@@ -480,7 +480,6 @@ async function enterLive(liveId) {
             firebase.firestore.FieldValue.increment(hostAmount)
         })
 
-        // 💰 histórico financeiro
         tx.set(db.collection('transactions').doc(), {
           type: 'private_entry',
           coins: priceCoins,
@@ -494,7 +493,7 @@ async function enterLive(liveId) {
         })
       }
 
-      // 👁️ PRIMEIRA VEZ DO USUÁRIO NA LIVE
+      // 👁️ PRIMEIRA ENTRADA
       if (!viewerSnap.exists) {
         tx.set(viewerRef, {
           uid: currentUser.uid,
@@ -506,20 +505,20 @@ async function enterLive(liveId) {
           firebase.firestore.FieldValue.increment(1)
       }
 
-      // aplica updates
       if (Object.keys(updates).length > 0) {
         tx.update(liveRef, updates)
       }
     })
 
-    // ✅ sucesso → entra na live
+    // ✅ SÓ CHEGA AQUI SE DEU TUDO CERTO
     window.location.href =
       `live-room.html?liveId=${liveId}`
 
   } catch (err) {
     console.error(err)
 
-    if (err.message === 'Saldo insuficiente') {
+    // 💎 saldo insuficiente → modal premium
+    if (err.message === 'INSUFFICIENT_BALANCE') {
       showCoinsAlert()
       return
     }
