@@ -378,6 +378,7 @@ function renderGifts() {
 }
 
 async function sendGift(gift) {
+  if (!currentUser || !liveData) return
   if (currentUser.uid === liveData.hostId) return
 
   const userRef = db.collection('users').doc(currentUser.uid)
@@ -388,56 +389,57 @@ async function sendGift(gift) {
     await db.runTransaction(async (tx) => {
       const userSnap = await tx.get(userRef)
       const hostSnap = await tx.get(hostRef)
+      const liveSnap = await tx.get(liveRef)
 
+      if (!userSnap.exists) throw new Error('Usuário não encontrado')
       if (!hostSnap.exists) throw new Error('Host não encontrado')
+      if (!liveSnap.exists) throw new Error('Live não encontrada')
 
       const balance = userSnap.data().balance || 0
       if (balance < gift.value) {
-        showCoinsAlert()
-return
-
+        throw new Error('Saldo insuficiente')
       }
 
-      // 🎁 salvar gift na live (para realtime)
-tx.set(
-  liveRef.collection('gifts').doc(),
-  {
-    giftId: gift.id,
-    giftName: gift.name,
-    emoji: gift.emoji,
-    value: gift.value,
-    senderId: currentUser.uid,
-    senderName: userData.name || 'Usuário',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  }
-)
-
-
-      // 💰 cálculo financeiro
+      // 💰 MODELO HÍBRIDO
       const gross = gift.value * COIN_INTERNAL_VALUE
       const platformCut = gross * PLATFORM_USE_FEE
       const hostNet = gross - platformCut
 
-      // 🔻 desconta moedas
+      // 🔻 desconta moedas do espectador
       tx.update(userRef, {
         balance: firebase.firestore.FieldValue.increment(-gift.value)
       })
 
-      // 🔺 host recebe líquido
+      // 🔺 host recebe (PENDENTE)
       tx.update(hostRef, {
         earnings_pending:
-          (hostSnap.data().earnings_pending || 0) + hostNet,
+          firebase.firestore.FieldValue.increment(hostNet),
         total_earnings:
-          (hostSnap.data().total_earnings || 0) + hostNet
-      })
-
-      // 📊 live
-      tx.update(liveRef, {
-        totalGiftsValue:
           firebase.firestore.FieldValue.increment(hostNet)
       })
 
-      // 💰 histórico host
+      // 📊 ATUALIZA LIVE (ESSENCIAL PARA O SUMMARY)
+      tx.update(liveRef, {
+        totalCoins:
+          firebase.firestore.FieldValue.increment(gift.value)
+      })
+
+      // 🎁 salva gift na live (realtime + histórico)
+      tx.set(
+        liveRef.collection('gifts').doc(),
+        {
+          giftId: gift.id,
+          giftName: gift.name,
+          emoji: gift.emoji,
+          value: gift.value,
+          senderId: currentUser.uid,
+          senderName: userData.name || 'Usuário',
+          createdAt:
+            firebase.firestore.FieldValue.serverTimestamp()
+        }
+      )
+
+      // 💰 histórico global
       tx.set(db.collection('transactions').doc(), {
         type: 'gift',
         coins: gift.value,
@@ -447,24 +449,22 @@ tx.set(
         from: currentUser.uid,
         to: liveData.hostId,
         liveId,
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt:
+          firebase.firestore.FieldValue.serverTimestamp()
       })
 
-      // 💎 plataforma
+      // 💎 lucro da plataforma
       tx.set(db.collection('platform_earnings').doc(), {
         type: 'gift',
         amount: platformCut,
         liveId,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt:
+          firebase.firestore.FieldValue.serverTimestamp()
       })
 
-      // 🎁 histórico detalhado
+      // 🎁 histórico do host
       tx.set(
-        db.collection('users')
-          .doc(liveData.hostId)
-          .collection('gift_history')
-          .doc(),
+        hostRef.collection('gift_history').doc(),
         {
           liveId,
           senderId: currentUser.uid,
@@ -473,16 +473,18 @@ tx.set(
           giftName: gift.name,
           coins: gift.value,
           netAmount: hostNet,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt:
+            firebase.firestore.FieldValue.serverTimestamp()
         }
       )
 
-      // 💬 chat
+      // 💬 mensagem no chat
       tx.set(liveRef.collection('chat').doc(), {
         system: true,
         name: '🎁 Sistema',
         text: `${userData.name} enviou ${gift.emoji} ${gift.name} (${gift.value} coins)`,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt:
+          firebase.firestore.FieldValue.serverTimestamp()
       })
     })
 
@@ -490,7 +492,7 @@ tx.set(
 
   } catch (err) {
     console.error(err)
-    alert(err.message)
+    showAppAlert('error', 'Erro ao enviar presente', err.message)
   }
 }
 
@@ -594,37 +596,46 @@ async function endLiveAsHost() {
 // =======================================
 // SCREENS
 // =======================================
-async function showLiveSummary() {
-  liveEnded = true
 
-  const liveRef = db.collection("lives").doc(liveId)
+async function showLiveSummary() {
+  const liveRef = db.collection('lives').doc(liveId)
+
   const liveSnap = await liveRef.get()
+  if (!liveSnap.exists) return
+
   const live = liveSnap.data()
 
-  const totalViewers = live.unique_viewers_count || 0
-  const totalCoins = live.totalCoins || 0
+  const totalViewers =
+    live.unique_viewers_count || 0
 
-  // ⏱️ duração
+  const totalCoins =
+    live.totalCoins || 0
+
+  // ⏱️ duração REAL
   let durationMinutes = 0
-  if (live.startedAt && live.endedAt) {
+  if (live.startedAt) {
+    const end = new Date()
+    const start = live.startedAt.toDate()
     durationMinutes = Math.max(
       1,
-      Math.floor(
-        (live.endedAt.toDate() - live.startedAt.toDate()) / 60000
-      )
+      Math.floor((end - start) / 60000)
     )
   }
 
-  // 🎁 gifts
-  const giftsSnap = await liveRef.collection("gifts").get()
-  const giftCount = {}
-  const ranking = {}
+  // 🔚 fecha live
+  await liveRef.update({
+    status: 'finished',
+    endedAt:
+      firebase.firestore.FieldValue.serverTimestamp()
+  })
 
+  // 🎁 ranking
+  const giftsSnap =
+    await liveRef.collection('gifts').get()
+
+  const ranking = {}
   giftsSnap.forEach(doc => {
     const g = doc.data()
-    giftCount[g.giftName] =
-      (giftCount[g.giftName] || 0) + 1
-
     ranking[g.senderName] =
       (ranking[g.senderName] || 0) + g.value
   })
@@ -635,7 +646,7 @@ async function showLiveSummary() {
 
   // 🖥️ UI
   document.body.insertAdjacentHTML(
-    "beforeend",
+    'beforeend',
     `
     <div class="host-summary-overlay">
       <div class="host-summary-box">
@@ -666,13 +677,16 @@ async function showLiveSummary() {
           <h3>🏆 Top apoiadores</h3>
           ${
             topGifters.length === 0
-              ? "<p>Nenhum apoiador</p>"
+              ? '<p>Nenhum apoiador</p>'
               : topGifters
                   .map(
                     g =>
-                      `<div class="summary-row">${g[0]} <span>${g[1]} coins</span></div>`
+                      `<div class="summary-row">
+                        ${g[0]}
+                        <span>${g[1]} coins</span>
+                      </div>`
                   )
-                  .join("")
+                  .join('')
           }
         </div>
 
@@ -686,6 +700,7 @@ async function showLiveSummary() {
     `
   )
 }
+
 
 
 function showViewerEndedScreen() {

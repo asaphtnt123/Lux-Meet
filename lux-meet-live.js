@@ -398,152 +398,67 @@ async function renderLiveList(docs) {
         }
     }
 }
+
+
 async function enterLive(liveId) {
   try {
-    if (!currentUser || !userData) {
+    if (!currentUser) {
       throw new Error('Usuário não autenticado')
     }
 
-    if (!liveId) {
-      throw new Error('ID da live inválido')
-    }
-
     const liveRef = db.collection('lives').doc(liveId)
-    const liveSnap = await liveRef.get()
-
-    if (!liveSnap.exists) {
-      throw new Error('Live inválida ou removida')
-    }
-
-    const live = liveSnap.data()
-
-    if (!live.hostId || !live.type) {
-      throw new Error('Live inválida (dados incompletos)')
-    }
-
     const viewerRef = liveRef
       .collection('viewers')
       .doc(currentUser.uid)
 
-    // ✅ REGISTRA PRESENÇA SEMPRE (regra de ouro)
-    await viewerRef.set(
-      {
-        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        paid: false
-      },
-      { merge: true }
-    )
-
-    // 🔓 LIVE PÚBLICA
-    if (live.type === 'public') {
-      window.location.href = `live-room.html?liveId=${liveId}`
-      return
-    }
-
-    // 🔒 LIVE PRIVADA
-    const priceCoins = Number(live.price || 0)
-
-    const viewerSnap = await viewerRef.get()
-    if (viewerSnap.exists && viewerSnap.data().paid === true) {
-      window.location.href = `live-room.html?liveId=${liveId}`
-      return
-    }
-
-    // ❌ saldo insuficiente
-    if ((userData.balance || 0) < priceCoins) {
-      showCoinsAlert()
-      return
-    }
-
-    // 🔥 TRANSAÇÃO ATÔMICA
     await db.runTransaction(async (tx) => {
-      const userRef = db.collection('users').doc(currentUser.uid)
-      const hostRef = db.collection('users').doc(live.hostId)
-
-      const userSnap = await tx.get(userRef)
-      const hostSnap = await tx.get(hostRef)
-
-      if (!hostSnap.exists) {
-        throw new Error('Host não encontrado')
+      const liveSnap = await tx.get(liveRef)
+      if (!liveSnap.exists) {
+        throw new Error('Live inválida')
       }
 
-      const balance = userSnap.data().balance || 0
-      if (balance < priceCoins) {
-        throw new Error('Saldo insuficiente')
+      const live = liveSnap.data()
+      const viewerSnap = await tx.get(viewerRef)
+
+      const updates = {}
+
+      // ⏱️ inicia live se ainda não iniciou
+      if (!live.startedAt) {
+        updates.startedAt =
+          firebase.firestore.FieldValue.serverTimestamp()
       }
 
-      // 🔻 desconta moedas do espectador
-      tx.update(userRef, {
-        balance: firebase.firestore.FieldValue.increment(-priceCoins)
-      })
+      // 👁️ PRIMEIRA VEZ DO USUÁRIO
+      if (!viewerSnap.exists) {
+        tx.set(viewerRef, {
+          uid: currentUser.uid,
+          joinedAt:
+            firebase.firestore.FieldValue.serverTimestamp()
+        })
 
-      
-      // 💎 MODELO HÍBRIDO
-      const hostAmount = priceCoins * 0.7
-      const platformAmount = priceCoins * 0.3
+        updates.unique_viewers_count =
+          firebase.firestore.FieldValue.increment(1)
+      }
 
-      // 🔺 host recebe líquido (pending)
-      tx.update(hostRef, {
-        earnings_pending:
-          (hostSnap.data().earnings_pending || 0) + hostAmount,
-        total_earnings:
-          (hostSnap.data().total_earnings || 0) + hostAmount
-      })
-
-      // 👁 marca como pagante
-      tx.set(
-        viewerRef,
-        { paid: true },
-        { merge: true }
-      )
-
-      // 📊 métricas da live
-      tx.update(liveRef, {
-        paid_viewers:
-          firebase.firestore.FieldValue.increment(1),
-        total_invite_earnings:
-          firebase.firestore.FieldValue.increment(hostAmount)
-      })
-
-      // 💰 histórico global
-      tx.set(db.collection('transactions').doc(), {
-        type: 'private_entry',
-        coins: priceCoins,
-        grossAmount: priceCoins,
-        netAmount: hostAmount,
-        platformFee: platformAmount,
-        from: currentUser.uid,
-        to: live.hostId,
-        liveId,
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      })
-
-      // 💎 lucro da plataforma
-      tx.set(db.collection('platform_earnings').doc(), {
-        type: 'private_entry',
-        amount: platformAmount,
-        liveId,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      })
+      // aplica updates da live
+      if (Object.keys(updates).length > 0) {
+        tx.update(liveRef, updates)
+      }
     })
 
-    // UI local
-    userData.balance -= priceCoins
-    updateUserUI()
+    // redireciona
+    window.location.href =
+      `live-room.html?liveId=${liveId}`
 
-    window.location.href = `live-room.html?liveId=${liveId}`
-
-  } catch (error) {
-    console.error('Erro ao entrar na live:', error)
+  } catch (err) {
+    console.error(err)
     showAppAlert(
       'error',
-      '❌ Live indisponível',
-      error.message || 'Erro ao entrar na live'
+      'Erro ao entrar na live',
+      err.message
     )
   }
 }
-
 
 
 // =======================================
