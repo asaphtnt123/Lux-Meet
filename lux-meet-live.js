@@ -455,8 +455,10 @@ async function enterLive(liveId) {
 
         // ❌ BLOQUEIO REAL
         if (balance < priceCoins) {
-          throw new Error('Saldo insuficiente')
-        }
+  showCoinsAlert()
+  return
+}
+
 
         // 🔻 desconta moedas
         tx.update(userRef, {
@@ -624,21 +626,42 @@ document
     document.getElementById('coinsAlert').classList.add('hidden')
   })
 
-let selectedPack = null
+  let selectedPack = null
 
-document.querySelectorAll('.coin-pack').forEach(pack => {
-  pack.addEventListener('click', () => {
-    document.querySelectorAll('.coin-pack')
-      .forEach(p => p.classList.remove('selected'))
+document.querySelectorAll('.coin-pack')
+  .forEach(pack => {
+    pack.addEventListener('click', () => {
+      document
+        .querySelectorAll('.coin-pack')
+        .forEach(p => p.classList.remove('selected'))
 
-    pack.classList.add('selected')
+      pack.classList.add('selected')
 
-    selectedPack = {
-      coins: Number(pack.dataset.coins),
-      price: Number(pack.dataset.price)
-    }
+      selectedPack = {
+        coins: Number(pack.dataset.coins),
+        price: Number(pack.dataset.price)
+      }
+    })
   })
-})
+
+document
+  .getElementById('buyCoinsBtn')
+  .addEventListener('click', () => {
+    if (!selectedPack) {
+      showAppAlert(
+        'warning',
+        'Selecione um pacote',
+        'Escolha a quantidade de moedas.'
+      )
+      return
+    }
+
+    startStripeCheckout(
+      selectedPack.coins,
+      selectedPack.price
+    )
+  })
+
 
 document
   .getElementById('closeCoinsAlert')
@@ -657,3 +680,45 @@ document
 
     await startStripeCheckout(selectedPack)
   }
+
+
+  async function startStripeCheckout(coins, price) {
+  try {
+    if (!currentUser) {
+      throw new Error('Usuário não autenticado')
+    }
+
+    // 🔥 chama backend
+    const res = await fetch(
+      'https://SEU_ENDPOINT_STRIPE/createCheckout',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          uid: currentUser.uid,
+          coins,
+          price
+        })
+      }
+    )
+
+    const data = await res.json()
+
+    if (!data.url) {
+      throw new Error('Falha ao iniciar pagamento')
+    }
+
+    // 🚀 redireciona para Stripe
+    window.location.href = data.url
+
+  } catch (err) {
+    console.error(err)
+    showAppAlert(
+      'error',
+      'Erro no pagamento',
+      err.message
+    )
+  }
+}
