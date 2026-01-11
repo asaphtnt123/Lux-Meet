@@ -569,31 +569,36 @@ document
     document.getElementById('coinsAlert').classList.add('hidden')
   })
 
-// selecionar pacote
-let selectedPackage = null
+let selectedPack = null
 
-document.querySelectorAll('.coin-pack').forEach((pack) => {
+document.querySelectorAll('.coin-pack').forEach(pack => {
   pack.addEventListener('click', () => {
-    document.querySelectorAll('.coin-pack').forEach(p =>
-      p.classList.remove('highlight')
-    )
-    pack.classList.add('highlight')
-    selectedPackage = {
+    document.querySelectorAll('.coin-pack')
+      .forEach(p => p.classList.remove('selected'))
+
+    pack.classList.add('selected')
+
+    selectedPack = {
       coins: Number(pack.dataset.coins),
       price: Number(pack.dataset.price)
     }
   })
 })
 
-// comprar moedas
-document.getElementById('buyCoinsBtn')?.addEventListener('click', () => {
-  if (!selectedPackage) {
-    alert('Selecione um pacote')
-    return
+document
+  .getElementById('closeCoinsAlert')
+  .onclick = () => {
+    document.getElementById('coinsAlert')
+      .classList.add('hidden')
   }
 
-  console.log('Comprar pacote:', selectedPackage)
+document
+  .getElementById('buyCoinsBtn')
+  .onclick = async () => {
+    if (!selectedPack) {
+      alert('Selecione um pacote')
+      return
+    }
 
-  // 👉 aqui você conecta com Stripe / Mercado Pago
-  // createCheckout(selectedPackage)
-})
+    await startStripeCheckout(selectedPack)
+  }
