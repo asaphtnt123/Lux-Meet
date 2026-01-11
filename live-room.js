@@ -30,11 +30,32 @@ let localTracks = []
 // GIFTS
 // =======================================
 const GIFTS = [
-  { id: "rose", name: "🌹 Rosa", value: 5 },
-  { id: "fire", name: "🔥 Fogo", value: 20 },
-  { id: "crown", name: "👑 Coroa", value: 100 },
-  { id: "diamond", name: "💎 Diamante", value: 300 }
+  {
+    id: 'rose',
+    name: 'Rosa',
+    emoji: '🌹',
+    value: 10
+  },
+  {
+    id: 'fire',
+    name: 'Fogo',
+    emoji: '🔥',
+    value: 50
+  },
+  {
+    id: 'diamond',
+    name: 'Diamante',
+    emoji: '💎',
+    value: 100
+  },
+  {
+    id: 'crown',
+    name: 'Coroa',
+    emoji: '👑',
+    value: 300
+  }
 ]
+
 
 
 const COIN_INTERNAL_VALUE = 0.035 // valor real por moeda (host)
@@ -324,19 +345,21 @@ function renderMessage(msg) {
 // =======================================
 // GIFTS UI
 // =======================================
-
 function renderGifts() {
   const container = document.getElementById("giftsList")
-  if (!container) return
+  if (!container || !Array.isArray(GIFTS)) return
 
   container.innerHTML = ""
 
   GIFTS.forEach(gift => {
+    if (!gift || !gift.id) return
+
     const btn = document.createElement("button")
     btn.className = "gift-btn"
     btn.innerHTML = `
-      ${gift.emoji}
-      <span>${gift.value}</span>
+      <span class="gift-emoji">${gift.emoji}</span>
+      <span class="gift-name">${gift.name}</span>
+      <span class="gift-price">${gift.value} coins</span>
     `
     btn.onclick = () => sendGift(gift)
     container.appendChild(btn)
@@ -363,6 +386,21 @@ async function sendGift(gift) {
 return
 
       }
+
+      // 🎁 salvar gift na live (para realtime)
+tx.set(
+  liveRef.collection('gifts').doc(),
+  {
+    giftId: gift.id,
+    giftName: gift.name,
+    emoji: gift.emoji,
+    value: gift.value,
+    senderId: currentUser.uid,
+    senderName: userData.name || 'Usuário',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }
+)
+
 
       // 💰 cálculo financeiro
       const gross = gift.value * COIN_INTERNAL_VALUE
@@ -456,17 +494,21 @@ function listenToGifts() {
   .onSnapshot(snapshot => {
     snapshot.docChanges().forEach(change => {
       if (change.type === "added") {
-        const g = change.doc.data()
+        const g = change.doc.data() || {}
+
 
         // mensagem no chat
        renderMessage({
   name: "🎁 Presente",
-  text: `<span class="gift-msg">
-    ${g.senderName || "Alguém"} enviou 
-    <strong>${getGiftEmoji(g.giftId)} ${g.giftName}</strong> 
-    (${g.value} coins)
-  </span>`
+  text: `
+    <span class="gift-msg">
+      ${g.senderName || 'Alguém'} enviou 
+      <strong>${g.emoji || '🎁'} ${g.giftName || 'Presente'}</strong>
+      (${g.value || 0} coins)
+    </span>
+  `
 })
+
 
 
 
