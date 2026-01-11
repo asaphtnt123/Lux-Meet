@@ -413,8 +413,6 @@ async function renderLiveList(docs) {
     list.appendChild(card)
   }
 }
-
-
 async function enterLive(liveId) {
   try {
     if (!currentUser) {
@@ -422,6 +420,7 @@ async function enterLive(liveId) {
     }
 
     const liveRef = db.collection('lives').doc(liveId)
+    const userRef = db.collection('users').doc(currentUser.uid)
     const viewerRef = liveRef
       .collection('viewers')
       .doc(currentUser.uid)
@@ -433,17 +432,67 @@ async function enterLive(liveId) {
       }
 
       const live = liveSnap.data()
+
+      const userSnap = await tx.get(userRef)
+      if (!userSnap.exists) {
+        throw new Error('Usuário inválido')
+      }
+
       const viewerSnap = await tx.get(viewerRef)
 
       const updates = {}
 
-      // ⏱️ inicia live se ainda não iniciou
+      // ⏱️ inicia a live na primeira entrada
       if (!live.startedAt) {
         updates.startedAt =
           firebase.firestore.FieldValue.serverTimestamp()
       }
 
-      // 👁️ PRIMEIRA VEZ DO USUÁRIO
+      // 🔒 LIVE PRIVADA
+      if (live.type === 'private') {
+        const priceCoins = Number(live.price || 0)
+        const balance = userSnap.data().balance || 0
+
+        // ❌ BLOQUEIO REAL
+        if (balance < priceCoins) {
+          throw new Error('Saldo insuficiente')
+        }
+
+        // 🔻 desconta moedas
+        tx.update(userRef, {
+          balance:
+            firebase.firestore.FieldValue.increment(-priceCoins)
+        })
+
+        // 💎 MODELO HÍBRIDO
+        const hostAmount = priceCoins * 0.7
+        const platformAmount = priceCoins * 0.3
+
+        const hostRef =
+          db.collection('users').doc(live.hostId)
+
+        tx.update(hostRef, {
+          earnings_pending:
+            firebase.firestore.FieldValue.increment(hostAmount),
+          total_earnings:
+            firebase.firestore.FieldValue.increment(hostAmount)
+        })
+
+        // 💰 histórico financeiro
+        tx.set(db.collection('transactions').doc(), {
+          type: 'private_entry',
+          coins: priceCoins,
+          hostAmount,
+          platformAmount,
+          from: currentUser.uid,
+          to: live.hostId,
+          liveId,
+          createdAt:
+            firebase.firestore.FieldValue.serverTimestamp()
+        })
+      }
+
+      // 👁️ PRIMEIRA VEZ DO USUÁRIO NA LIVE
       if (!viewerSnap.exists) {
         tx.set(viewerRef, {
           uid: currentUser.uid,
@@ -451,22 +500,28 @@ async function enterLive(liveId) {
             firebase.firestore.FieldValue.serverTimestamp()
         })
 
-        updates.unique_viewers_count =
+        updates.total_entries =
           firebase.firestore.FieldValue.increment(1)
       }
 
-      // aplica updates da live
+      // aplica updates
       if (Object.keys(updates).length > 0) {
         tx.update(liveRef, updates)
       }
     })
 
-    // redireciona
+    // ✅ sucesso → entra na live
     window.location.href =
       `live-room.html?liveId=${liveId}`
 
   } catch (err) {
     console.error(err)
+
+    if (err.message === 'Saldo insuficiente') {
+      showCoinsAlert()
+      return
+    }
+
     showAppAlert(
       'error',
       'Erro ao entrar na live',
