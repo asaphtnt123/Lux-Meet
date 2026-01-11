@@ -276,7 +276,6 @@ function handleLiveTypeChange(e) {
     }
 }
 
-
 // =======================================
 // LOAD LIVES
 // =======================================
@@ -293,7 +292,6 @@ async function loadLives(country) {
     .collection('lives')
     .where('status', '==', 'active')
 
-  // ✅ só filtra se NÃO for "all"
   if (country !== 'all') {
     query = query.where('country', '==', country)
   }
@@ -313,9 +311,11 @@ async function loadLives(country) {
 
   snap.forEach(doc => {
     const live = doc.data()
+    const isPrivate = live.type === 'private'
 
     liveList.innerHTML += `
-      <div class="live-card">
+      <div class="live-card ${isPrivate ? 'private-live' : ''}">
+
         <img class="live-avatar"
           src="${live.hostAvatar || 'https://via.placeholder.com/80'}">
 
@@ -323,7 +323,24 @@ async function loadLives(country) {
           <span class="live-host-name">
             ${live.hostName || 'Host'}
           </span>
-          <span class="live-status">🔴 Ao vivo</span>
+
+          <span class="live-title">
+            ${live.title || 'Live'}
+          </span>
+
+          ${
+            live.description
+              ? `<span class="live-description">${live.description}</span>`
+              : ''
+          }
+
+          ${
+            isPrivate
+              ? `<span class="live-private">
+                   🔒 Live privada • ${live.price} coins
+                 </span>`
+              : `<span class="live-status">🔴 Ao vivo</span>`
+          }
         </div>
 
         <button class="btn-secondary"
@@ -334,69 +351,67 @@ async function loadLives(country) {
     `
   })
 }
-
 // =======================================
 // RENDER LIVE LIST
 // =======================================
 async function renderLiveList(docs) {
-    const list = document.getElementById('liveList')
-    list.innerHTML = ''
+  const list = document.getElementById('liveList')
+  list.innerHTML = ''
 
-    if (docs.length === 0) {
-        list.innerHTML =
-            '<p style="color:#888">Nenhuma live ao vivo</p>'
-        return
-    }
+  if (docs.length === 0) {
+    list.innerHTML =
+      '<p style="color:#888">Nenhuma live ao vivo</p>'
+    return
+  }
 
-    for (const doc of docs) {
-        const live = doc.data()
-        if (!live.hostId) continue
+  for (const doc of docs) {
+    const live = doc.data()
+    if (!live.hostId) continue
 
-        try {
-            const userSnap = await db
-                .collection('users')
-                .doc(live.hostId)
-                .get()
+    const isPrivate = live.type === 'private'
 
-            if (!userSnap.exists) continue
+    const card = document.createElement('div')
+    card.className = `live-card ${isPrivate ? 'private-live' : ''}`
 
-            const user = userSnap.data()
+    card.innerHTML = `
+      <img class="live-avatar"
+        src="${live.hostAvatar || 'https://via.placeholder.com/80'}">
 
-            const card = document.createElement('div')
-            card.className = 'live-card'
-
-            card.innerHTML = `
-    <img class="live-avatar"
-         src="${user.profilePhotoURL || 'https://via.placeholder.com/80'}">
-
-    <div class="live-info">
+      <div class="live-info">
         <span class="live-host-name">
-            ${user.name || 'Usuário'}
+          ${live.hostName || 'Usuário'}
         </span>
 
-        <span class="live-balance">
-            💰 ${(user.balance || 0).toFixed(2)}
+        <span class="live-title">
+          ${live.title || 'Live'}
         </span>
 
-        <span class="live-status">🔴 Ao vivo</span>
-    </div>
-
-    <button type="button" class="btn-secondary">
-        Entrar
-    </button>
-`
-
-
-            card.querySelector('button').onclick = () => {
-                enterLive(doc.id)
-            }
-
-            list.appendChild(card)
-
-        } catch (error) {
-            console.error('Erro ao renderizar live:', error)
+        ${
+          live.description
+            ? `<span class="live-description">${live.description}</span>`
+            : ''
         }
+
+        ${
+          isPrivate
+            ? `<span class="live-private">
+                 🔒 Live privada • ${live.price} coins
+               </span>`
+            : `<span class="live-status">🔴 Ao vivo</span>`
+        }
+      </div>
+
+      <button type="button" class="btn-secondary">
+        Entrar
+      </button>
+    `
+
+    card.querySelector('button').onclick = () => {
+      enterLive(doc.id)
     }
+
+    list.appendChild(card)
+  }
 }
 
 
