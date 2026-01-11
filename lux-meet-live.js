@@ -477,6 +477,18 @@ async function enterLive(liveId) {
         balance: firebase.firestore.FieldValue.increment(-priceCoins)
       })
 
+        // 👁 PRIMEIRA VEZ NA LIVE
+  if (!viewerSnap.exists) {
+    tx.set(viewerRef, {
+      joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      paid: false
+    })
+
+    // 🔥 CONTA APENAS UMA VEZ
+    tx.update(liveRef, {
+      unique_viewers_count:
+        firebase.firestore.FieldValue.increment(1)
+    }) }
       // 💎 MODELO HÍBRIDO
       const hostAmount = priceCoins * 0.7
       const platformAmount = priceCoins * 0.3

@@ -594,31 +594,34 @@ async function endLiveAsHost() {
 // =======================================
 // SCREENS
 // =======================================
-
 async function showLiveSummary() {
   liveEnded = true
 
   const liveRef = db.collection("lives").doc(liveId)
-  const hostRef = db.collection("users").doc(liveData.hostId)
-
   const liveSnap = await liveRef.get()
   const live = liveSnap.data()
 
-  // 👁 espectadores
-  const viewersSnap = await liveRef.collection("viewers").get()
-  const totalViewers = viewersSnap.size
+  const totalViewers = live.unique_viewers_count || 0
+  const totalCoins = live.totalCoins || 0
+
+  // ⏱️ duração
+  let durationMinutes = 0
+  if (live.startedAt && live.endedAt) {
+    durationMinutes = Math.max(
+      1,
+      Math.floor(
+        (live.endedAt.toDate() - live.startedAt.toDate()) / 60000
+      )
+    )
+  }
 
   // 🎁 gifts
   const giftsSnap = await liveRef.collection("gifts").get()
-
-  let totalCoins = 0
   const giftCount = {}
   const ranking = {}
 
   giftsSnap.forEach(doc => {
     const g = doc.data()
-    totalCoins += g.value || 0
-
     giftCount[g.giftName] =
       (giftCount[g.giftName] || 0) + 1
 
@@ -629,28 +632,6 @@ async function showLiveSummary() {
   const topGifters = Object.entries(ranking)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-
-  // ⏱️ duração da live
-  let durationMinutes = 0
-  if (live.startedAt) {
-    const start = live.startedAt.toDate()
-    const end = new Date()
-    durationMinutes = Math.max(
-      1,
-      Math.floor((end - start) / 60000)
-    )
-  }
-
-  // 🔥 FECHAMENTO
-  await db.runTransaction(async (tx) => {
-    tx.update(liveRef, {
-      totalCoins,
-      totalViewers,
-      durationMinutes,
-      status: "finished",
-      endedAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-  })
 
   // 🖥️ UI
   document.body.insertAdjacentHTML(
@@ -665,7 +646,7 @@ async function showLiveSummary() {
           <div class="summary-card">
             <span>👁</span>
             <strong>${totalViewers}</strong>
-            <small>Espectadores</small>
+            <small>Pessoas que entraram</small>
           </div>
 
           <div class="summary-card">
@@ -679,20 +660,6 @@ async function showLiveSummary() {
             <strong>${durationMinutes} min</strong>
             <small>Duração</small>
           </div>
-        </div>
-
-        <div class="summary-section">
-          <h3>🎁 Presentes recebidos</h3>
-          ${
-            Object.keys(giftCount).length === 0
-              ? "<p>Nenhum presente recebido</p>"
-              : Object.entries(giftCount)
-                  .map(
-                    g =>
-                      `<div class="summary-row">${g[0]} <span>${g[1]}x</span></div>`
-                  )
-                  .join("")
-          }
         </div>
 
         <div class="summary-section">
