@@ -417,10 +417,22 @@ async function enterLive(liveId) {
 
     const live = liveSnap.data()
 
-    // 🔒 VALIDAÇÕES ESSENCIAIS
     if (!live.hostId || !live.type) {
       throw new Error('Live inválida (dados incompletos)')
     }
+
+    const viewerRef = liveRef
+      .collection('viewers')
+      .doc(currentUser.uid)
+
+    // ✅ REGISTRA PRESENÇA SEMPRE (regra de ouro)
+    await viewerRef.set(
+      {
+        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        paid: false
+      },
+      { merge: true }
+    )
 
     // 🔓 LIVE PÚBLICA
     if (live.type === 'public') {
@@ -431,23 +443,19 @@ async function enterLive(liveId) {
     // 🔒 LIVE PRIVADA
     const priceCoins = Number(live.price || 0)
 
-    const viewerRef = liveRef
-      .collection('viewers')
-      .doc(currentUser.uid)
-
     const viewerSnap = await viewerRef.get()
-    if (viewerSnap.exists) {
+    if (viewerSnap.exists && viewerSnap.data().paid === true) {
       window.location.href = `live-room.html?liveId=${liveId}`
       return
     }
 
-    // ❌ saldo insuficiente → ALERT PREMIUM
+    // ❌ saldo insuficiente
     if ((userData.balance || 0) < priceCoins) {
       showCoinsAlert()
       return
     }
 
-    // 🔥 TRANSAÇÃO
+    // 🔥 TRANSAÇÃO ATÔMICA
     await db.runTransaction(async (tx) => {
       const userRef = db.collection('users').doc(currentUser.uid)
       const hostRef = db.collection('users').doc(live.hostId)
@@ -464,16 +472,16 @@ async function enterLive(liveId) {
         throw new Error('Saldo insuficiente')
       }
 
-      // 🔻 desconta do espectador
+      // 🔻 desconta moedas do espectador
       tx.update(userRef, {
-        balance: balance - priceCoins
+        balance: firebase.firestore.FieldValue.increment(-priceCoins)
       })
 
       // 💎 MODELO HÍBRIDO
-      // Host recebe 70%
       const hostAmount = priceCoins * 0.7
-      // Plataforma ganha 30% invisível
+      const platformAmount = priceCoins * 0.3
 
+      // 🔺 host recebe líquido (pending)
       tx.update(hostRef, {
         earnings_pending:
           (hostSnap.data().earnings_pending || 0) + hostAmount,
@@ -481,15 +489,17 @@ async function enterLive(liveId) {
           (hostSnap.data().total_earnings || 0) + hostAmount
       })
 
-      // 👁 libera acesso
-      tx.set(viewerRef, {
-        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        paid: true
-      })
+      // 👁 marca como pagante
+      tx.set(
+        viewerRef,
+        { paid: true },
+        { merge: true }
+      )
 
-      // 📊 métricas
+      // 📊 métricas da live
       tx.update(liveRef, {
-        paid_viewers: firebase.firestore.FieldValue.increment(1),
+        paid_viewers:
+          firebase.firestore.FieldValue.increment(1),
         total_invite_earnings:
           firebase.firestore.FieldValue.increment(hostAmount)
       })
@@ -498,30 +508,41 @@ async function enterLive(liveId) {
       tx.set(db.collection('transactions').doc(), {
         type: 'private_entry',
         coins: priceCoins,
-        hostAmount,
-        platformAmount: priceCoins - hostAmount,
+        grossAmount: priceCoins,
+        netAmount: hostAmount,
+        platformFee: platformAmount,
         from: currentUser.uid,
         to: live.hostId,
+        liveId,
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+
+      // 💎 lucro da plataforma
+      tx.set(db.collection('platform_earnings').doc(), {
+        type: 'private_entry',
+        amount: platformAmount,
         liveId,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       })
     })
 
-    // UI
+    // UI local
     userData.balance -= priceCoins
     updateUserUI()
 
     window.location.href = `live-room.html?liveId=${liveId}`
 
   } catch (error) {
-    console.error('Erro ao entrar na live:', error.message)
+    console.error('Erro ao entrar na live:', error)
     showAppAlert(
       'error',
       '❌ Live indisponível',
-      error.message
+      error.message || 'Erro ao entrar na live'
     )
   }
 }
+
 
 
 // =======================================

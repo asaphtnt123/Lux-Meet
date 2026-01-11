@@ -595,18 +595,20 @@ async function endLiveAsHost() {
 // SCREENS
 // =======================================
 
-
 async function showLiveSummary() {
   liveEnded = true
 
   const liveRef = db.collection("lives").doc(liveId)
   const hostRef = db.collection("users").doc(liveData.hostId)
 
-  // 🔹 Busca espectadores
+  const liveSnap = await liveRef.get()
+  const live = liveSnap.data()
+
+  // 👁 espectadores
   const viewersSnap = await liveRef.collection("viewers").get()
   const totalViewers = viewersSnap.size
 
-  // 🔹 Busca gifts
+  // 🎁 gifts
   const giftsSnap = await liveRef.collection("gifts").get()
 
   let totalCoins = 0
@@ -615,7 +617,7 @@ async function showLiveSummary() {
 
   giftsSnap.forEach(doc => {
     const g = doc.data()
-    totalCoins += g.value
+    totalCoins += g.value || 0
 
     giftCount[g.giftName] =
       (giftCount[g.giftName] || 0) + 1
@@ -628,21 +630,29 @@ async function showLiveSummary() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
 
-  // 🔥 FECHAMENTO FINANCEIRO
-  await db.runTransaction(async (tx) => {
-    const hostSnap = await tx.get(hostRef)
+  // ⏱️ duração da live
+  let durationMinutes = 0
+  if (live.startedAt) {
+    const start = live.startedAt.toDate()
+    const end = new Date()
+    durationMinutes = Math.max(
+      1,
+      Math.floor((end - start) / 60000)
+    )
+  }
 
-    
+  // 🔥 FECHAMENTO
+  await db.runTransaction(async (tx) => {
     tx.update(liveRef, {
       totalCoins,
       totalViewers,
+      durationMinutes,
       status: "finished",
       endedAt: firebase.firestore.FieldValue.serverTimestamp()
     })
   })
 
-  
-  // 🔹 UI
+  // 🖥️ UI
   document.body.insertAdjacentHTML(
     "beforeend",
     `
@@ -662,6 +672,12 @@ async function showLiveSummary() {
             <span>💰</span>
             <strong>${totalCoins}</strong>
             <small>Coins ganhos</small>
+          </div>
+
+          <div class="summary-card">
+            <span>⏱</span>
+            <strong>${durationMinutes} min</strong>
+            <small>Duração</small>
           </div>
         </div>
 
@@ -703,6 +719,7 @@ async function showLiveSummary() {
     `
   )
 }
+
 
 function showViewerEndedScreen() {
   liveEnded = true
@@ -848,3 +865,22 @@ document.getElementById('buyCoinsBtn')?.addEventListener('click', () => {
   // 👉 aqui você conecta com Stripe / Mercado Pago
   // createCheckout(selectedPackage)
 })
+
+
+async function registerViewerPresence() {
+  if (!currentUser || !liveId) return
+
+  const viewerRef = db
+    .collection("lives")
+    .doc(liveId)
+    .collection("viewers")
+    .doc(currentUser.uid)
+
+  await viewerRef.set(
+    {
+      joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      paid: false
+    },
+    { merge: true }
+  )
+}
