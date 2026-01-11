@@ -262,12 +262,23 @@ async function startAgora(role) {
 // VIEWERS
 // =======================================
 async function registerViewer() {
-  await db.collection("lives").doc(liveId)
-    .collection("viewers").doc(currentUser.uid).set({
-      uid: currentUser.uid,
-      joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
+  if (!currentUser) return
+
+  const viewerRef = db
+    .collection("lives")
+    .doc(liveId)
+    .collection("viewers")
+    .doc(currentUser.uid)
+
+  await viewerRef.set(
+    {
+      joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      paid: false
+    },
+    { merge: true }
+  )
 }
+
 
 function listenViewerCount() {
   viewerUnsub = db.collection("lives").doc(liveId)
@@ -583,6 +594,8 @@ async function endLiveAsHost() {
 // =======================================
 // SCREENS
 // =======================================
+
+
 async function showLiveSummary() {
   liveEnded = true
 
@@ -619,14 +632,7 @@ async function showLiveSummary() {
   await db.runTransaction(async (tx) => {
     const hostSnap = await tx.get(hostRef)
 
-    tx.update(hostRef, {
-      earnings_pending:
-        (hostSnap.data().earnings_pending || 0) + totalCoins,
-      total_earnings:
-        (hostSnap.data().total_earnings || 0) + totalCoins,
-      last_live_earnings: totalCoins
-    })
-
+    
     tx.update(liveRef, {
       totalCoins,
       totalViewers,
