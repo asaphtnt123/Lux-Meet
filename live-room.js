@@ -37,6 +37,9 @@ const GIFTS = [
 ]
 
 
+const COIN_INTERNAL_VALUE = 0.035 // valor real por moeda (host)
+const PLATFORM_USE_FEE = 0.10     // 10% na entrada/gift
+
 // =======================================
 // INIT
 // =======================================
