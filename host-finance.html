@@ -48,6 +48,15 @@
     </div>
   </div>
 
+  <!-- HISTÓRICO DE SAQUES -->
+<div class="finance-history">
+  <h2>💸 Histórico de saques</h2>
+
+  <div id="withdrawHistoryList" class="withdraw-history-list">
+    <p class="empty">Nenhum saque realizado</p>
+  </div>
+</div>
+
   <!-- ================= BOTÃO MODAL ================= -->
   <button id="openChartsBtn" class="charts-btn">
     📊 Exibir gráficos detalhados
@@ -120,7 +129,7 @@
 
   </div>
 </div>
-
+ 
   <!-- MODAL SAQUE -->
 <div id="withdrawModal" class="charts-modal hidden">
   <div class="charts-box">
@@ -179,9 +188,23 @@
 
 </div>
 
+<button id="confirmWithdrawBtn" class="withdraw-confirm-btn">
+  💸 Solicitar saque
+</button>
 
   </div>
 </div>
+
+<div id="appAlert" class="app-alert hidden">
+  <div id="appAlertIcon">⚠️</div>
+  <h4 id="appAlertTitle"></h4>
+  <p id="appAlertMessage"></p>
+  <button id="appAlertBtn">OK</button>
+</div>
+
+
+
+
 <!-- ================= FIREBASE ================= -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>

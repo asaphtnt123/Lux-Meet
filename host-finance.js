@@ -2,16 +2,20 @@
 // VARIÁVEIS GLOBAIS
 // =====================================================
 let currentUser = null
+// ===============================
+// CONFIGURAÇÃO FINANCEIRA GLOBAL
+// ===============================
+const COIN_VALUE_BRL = 0.05        // R$ 0,05 por moeda
+const PLATFORM_FEE = 0.10          // 10% de taxa
+const MIN_WITHDRAW_COINS = 100     // mínimo para saque
 
 let earningsByLiveChart = null
 let earningsOverTimeChart = null
 let earningsByTypeChart = null
 let efficiencyChart = null
 
-// 💰 CONFIGURAÇÃO OFICIAL
-const COIN_VALUE_BRL = 0.05
-const PLATFORM_FEE_PERCENT = 20
-const MIN_WITHDRAW_COINS = 100
+
+
 
 
 // =====================================================
@@ -54,6 +58,7 @@ auth.onAuthStateChanged(async user => {
   currentUser = user
   await loadFinanceCards()
   await loadTransactions(user.uid)
+  loadWithdrawHistory()
 })
 
 // =====================================================
@@ -315,10 +320,17 @@ function drawRanking(lives) {
     `
   })
 }
+// ==========================
+// 💸 SAQUE
+// ==========================
 
+
+// --------------------------
+// Abrir modal de saque
+// --------------------------
 withdrawBtn?.addEventListener('click', () => {
   withdrawAvailable.textContent =
-    document.getElementById('availableAmount').textContent
+    document.getElementById('availableAmount')?.textContent || 0
 
   coinsInput.value = ''
   grossValueEl.textContent = 'R$ 0,00'
@@ -328,87 +340,336 @@ withdrawBtn?.addEventListener('click', () => {
   withdrawModal.classList.remove('hidden')
 })
 
+// --------------------------
+// Fechar modal
+// --------------------------
 closeWithdrawBtn?.addEventListener('click', () => {
   withdrawModal.classList.add('hidden')
 })
-withdrawBtn?.addEventListener('click', () => {
-  const withdrawModal = document.getElementById('withdrawModal')
-  withdrawModal.classList.remove('hidden')
 
-  const coinsInput = document.getElementById('coinsInput')
-  const grossValueEl = document.getElementById('grossValue')
-  const feeValueEl = document.getElementById('feeValue')
-  const netValueEl = document.getElementById('netValue')
+// --------------------------
+// Utils
+// --------------------------
+function formatBRL(value) {
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  })
+}
 
-  function formatBRL(value) {
-    return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    })
-  }
+function getAvailableCoins() {
+  return Number(withdrawAvailable.textContent) || 0
+}
 
-  function calculate() {
-    const coins = Number(coinsInput.value) || 0
-    const gross = coins * COIN_VALUE_BRL
-    const fee = gross * (PLATFORM_FEE_PERCENT / 100)
-    const net = gross - fee
-
-    grossValueEl.textContent = formatBRL(gross)
-    feeValueEl.textContent = formatBRL(fee)
-    netValueEl.textContent = formatBRL(net)
-  }
-
-  // 🔥 AGORA FUNCIONA
-  coinsInput.addEventListener('input', calculate)
-
-  // Botão calcular (fallback)
-  document
-    .getElementById('calculateWithdrawBtn')
-    ?.addEventListener('click', calculate)
-})
-closeWithdrawBtn?.addEventListener('click', () => {
-  document.getElementById('withdrawModal').classList.add('hidden')
-})
-
-
-
-confirmWithdrawBtn?.addEventListener('click', async () => {
-  const coins = Number(coinsInput.value)
-
-  if (!coins || coins < MIN_WITHDRAW_COINS) {
-    alert(`⚠️ Saque mínimo: ${MIN_WITHDRAW_COINS} moedas`)
-    return
-  }
-
-  const availableCoins =
-    Number(withdrawAvailable.textContent) || 0
-
-  if (coins > availableCoins) {
-    alert('❌ Saldo insuficiente')
-    return
-  }
+// --------------------------
+// Calculadora de saque
+// --------------------------
+function calculateWithdraw() {
+  const coins = Number(coinsInput.value) || 0
 
   const gross = coins * COIN_VALUE_BRL
-  const fee = gross * (PLATFORM_FEE_PERCENT / 100)
+  const fee = gross * PLATFORM_FEE
   const net = gross - fee
 
+  grossValueEl.textContent = formatBRL(gross)
+  feeValueEl.textContent = formatBRL(fee)
+  netValueEl.textContent = formatBRL(net)
+}
+
+coinsInput?.addEventListener('input', calculateWithdraw)
+calculateWithdrawBtn?.addEventListener('click', calculateWithdraw)
+
+// --------------------------
+// Confirmar saque
+// --------------------------
+// =======================
+// 💸 SAQUE (VERSÃO FINAL)
+// =======================
+
+confirmWithdrawBtn?.addEventListener('click', async () => {
+  const coins = Number(coinsInput.value) || 0
+  const available = Number(withdrawAvailable.textContent) || 0
+
+  // ❌ validações
+  if (!coins || coins <= 0) {
+    showAppAlert(
+      'warning',
+      '⚠️ Valor inválido',
+      'Informe a quantidade de moedas.'
+    )
+    return
+  }
+
+  if (available <= 0 || coins > available) {
+    showAppAlert(
+      'error',
+      '❌ Saldo insuficiente',
+      getRandomMotivationalMessage()
+    )
+    return
+  }
+
+  if (coins < MIN_WITHDRAW_COINS) {
+    showAppAlert(
+      'warning',
+      '⚠️ Saque mínimo',
+      `O mínimo para saque é ${MIN_WITHDRAW_COINS} moedas.`
+    )
+    return
+  }
+
+  // 💰 cálculos
+  const gross = coins * COIN_VALUE_BRL
+  const fee = gross * PLATFORM_FEE
+  const net = gross - fee
+
+  // 🔗 referências CORRETAS
+  const userRef = db.collection('users').doc(currentUser.uid)
+  const withdrawRef = db.collection('withdraw_requests').doc()
+
   try {
-    await db.collection('withdraw_requests').add({
-      hostId: currentUser.uid,
-      coins,
-      grossAmount: gross,
-      platformFee: fee,
-      netAmount: net,
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef)
+
+      if (!userDoc.exists) {
+        throw new Error('Usuário não encontrado')
+      }
+
+      const currentAvailable =
+        Number(userDoc.data().earnings_available) || 0
+
+      if (coins > currentAvailable) {
+        throw new Error('Saldo insuficiente')
+      }
+
+      // 🔻 desconta saldo
+      transaction.update(userRef, {
+        earnings_available: currentAvailable - coins
+      })
+
+      // 💾 registra saque
+      transaction.set(withdrawRef, {
+        userId: currentUser.uid,
+        coins,
+        grossAmount: gross,
+        platformFee: fee,
+        netAmount: net,
+        status: 'pending_review',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
     })
 
-    alert('✅ Saque solicitado com sucesso!')
+    // ✅ UI
     withdrawModal.classList.add('hidden')
-  } catch (err) {
-    console.error(err)
-    alert('Erro ao solicitar saque')
+
+    showAppAlert(
+      'success',
+      '✅ Saque solicitado!',
+      'O valor foi descontado do seu saldo e está em análise.'
+    )
+
+    // 🔄 Atualiza valores na tela
+    withdrawAvailable.textContent = available - coins
+    document.getElementById('availableAmount').textContent =
+      available - coins
+
+  } catch (error) {
+    console.error(error)
+
+    showAppAlert(
+      'error',
+      '❌ Erro ao solicitar saque',
+      error.message || 'Tente novamente.'
+    )
   }
 })
 
+// --------------------------
+// 🎯 Gatilhos motivacionais
+// --------------------------
+function getRandomMotivationalMessage() {
+  const messages = [
+    '🚀 Cada live é uma nova chance de faturar alto. Continue ao vivo!',
+    '🔥 Hosts consistentes são os que mais lucram. A próxima live pode surpreender!',
+    '💎 Quanto mais tempo ao vivo, maior a confiança do público — e os ganhos.',
+    '📈 Seus números crescem live após live. Continue transmitindo!',
+    '🎯 Grandes resultados vêm de quem insiste. Faça mais uma live hoje!',
+    '💰 O público certo aparece para quem continua. Sua próxima live pode explodir!',
+    '🌟 Hosts de sucesso não desistem. Continue transmitindo!',
+    '⏱️ Mais tempo ao vivo = mais moedas.',
+    '📊 Seu potencial é maior que este saldo. Continue!',
+    '🏆 Os hosts que mais ganham são os que mais aparecem.'
+  ]
 
+  return messages[Math.floor(Math.random() * messages.length)]
+}
+
+
+  function showAppAlert(type, title, message) {
+  const alertBox = document.getElementById('appAlert')
+  const icon = document.getElementById('appAlertIcon')
+  const titleEl = document.getElementById('appAlertTitle')
+  const messageEl = document.getElementById('appAlertMessage')
+  const btn = document.getElementById('appAlertBtn')
+
+  alertBox.className = `app-alert ${type}`
+  titleEl.textContent = title
+  messageEl.textContent = message
+
+  icon.textContent =
+    type === 'success' ? '✅' :
+    type === 'error' ? '❌' :
+    '⚠️'
+
+  alertBox.classList.remove('hidden')
+
+  btn.onclick = () => {
+    alertBox.classList.add('hidden')
+  }
+}
+
+
+
+
+async function loadWithdrawHistory() {
+  if (!currentUser) return
+
+  const list = document.getElementById('withdrawHistoryList')
+  if (!list) return
+
+  list.innerHTML = ''
+
+  let snap
+
+  try {
+    snap = await db
+      .collection('withdraw_requests')
+      .where('userId', '==', currentUser.uid)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get()
+  } catch (err) {
+    console.error('Erro ao buscar saques:', err)
+
+    list.innerHTML =
+      '<p class="empty">Erro ao carregar histórico</p>'
+    return
+  }
+
+  if (snap.empty) {
+    list.innerHTML =
+      '<p class="empty">Nenhum saque realizado</p>'
+    return
+  }
+
+  snap.forEach(doc => {
+    const d = doc.data()
+
+    const item = document.createElement('div')
+    item.className = 'withdraw-item'
+
+    item.innerHTML = `
+      <div class="withdraw-left">
+        <strong>🪙 ${d.coins || 0} moedas</strong>
+        <small>Solicitado em ${formatDate(d.createdAt)}</small>
+        ${
+          d.reviewedAt
+            ? `<small>Aprovado em ${formatDate(d.reviewedAt)}</small>`
+            : ''
+        }
+      </div>
+
+      <div class="withdraw-right">
+        <strong>${formatBRL(d.netAmount)}</strong>
+        <div class="withdraw-status ${d.status}">
+          ${formatWithdrawStatus(d.status)}
+        </div>
+      </div>
+    `
+
+    list.appendChild(item)
+  })
+}
+
+async function loadWithdrawHistory() {
+  if (!currentUser) return
+
+  const list = document.getElementById('withdrawHistoryList')
+  if (!list) return
+
+  list.innerHTML = ''
+
+  let snap
+
+  try {
+    snap = await db
+      .collection('withdraw_requests')
+      .where('userId', '==', currentUser.uid)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get()
+  } catch (err) {
+    console.error('Erro ao buscar saques:', err)
+
+    list.innerHTML =
+      '<p class="empty">Erro ao carregar histórico</p>'
+    return
+  }
+
+  if (snap.empty) {
+    list.innerHTML =
+      '<p class="empty">Nenhum saque realizado</p>'
+    return
+  }
+
+  snap.forEach(doc => {
+    const d = doc.data()
+
+    const item = document.createElement('div')
+    item.className = 'withdraw-item'
+
+    item.innerHTML = `
+      <div class="withdraw-left">
+        <strong>🪙 ${d.coins || 0} moedas</strong>
+        <small>Solicitado em ${formatDate(d.createdAt)}</small>
+        ${
+          d.reviewedAt
+            ? `<small>Aprovado em ${formatDate(d.reviewedAt)}</small>`
+            : ''
+        }
+      </div>
+
+      <div class="withdraw-right">
+        <strong>${formatBRL(d.netAmount)}</strong>
+        <div class="withdraw-status ${d.status}">
+          ${formatWithdrawStatus(d.status)}
+        </div>
+      </div>
+    `
+
+    list.appendChild(item)
+  })
+}
+
+
+function formatWithdrawStatus(status) {
+  if (status === 'pending_review') return '⏳ Em análise'
+  if (status === 'approved') return '✅ Aprovado'
+  if (status === 'rejected') return '❌ Rejeitado'
+  return status
+}
+
+function formatDate(ts) {
+  if (!ts) return '-'
+  return ts.toDate().toLocaleDateString('pt-BR')
+}
+
+function formatBRL(value) {
+  const v = Number(value)
+  if (!v || isNaN(v)) return 'R$ 0,00'
+
+  return v.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  })
+}

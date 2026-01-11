@@ -7,6 +7,10 @@ let userData = null
 let livesUnsubscribe = null
 
 
+const COIN_INTERNAL_VALUE = 0.035 // valor real por moeda (host)
+const PLATFORM_USE_FEE = 0.10     // 10% na entrada/gift
+
+
 // ================= COUNTRIES =================
 const COUNTRIES = [
   { code: 'all', name: 'Todos', flag: '🌍' },
@@ -394,23 +398,29 @@ async function renderLiveList(docs) {
         }
     }
 }
-
 async function enterLive(liveId) {
   try {
     if (!currentUser || !userData) {
-      alert('Usuário não autenticado')
-      return
+      throw new Error('Usuário não autenticado')
+    }
+
+    if (!liveId) {
+      throw new Error('ID da live inválido')
     }
 
     const liveRef = db.collection('lives').doc(liveId)
     const liveSnap = await liveRef.get()
 
     if (!liveSnap.exists) {
-      alert('Live não encontrada')
-      return
+      throw new Error('Live inválida ou removida')
     }
 
     const live = liveSnap.data()
+
+    // 🔒 VALIDAÇÕES ESSENCIAIS
+    if (!live.hostId || !live.type) {
+      throw new Error('Live inválida (dados incompletos)')
+    }
 
     // 🔓 LIVE PÚBLICA
     if (live.type === 'public') {
@@ -419,7 +429,7 @@ async function enterLive(liveId) {
     }
 
     // 🔒 LIVE PRIVADA
-    const price = live.price || 0
+    const priceCoins = Number(live.price || 0)
 
     const viewerRef = liveRef
       .collection('viewers')
@@ -431,36 +441,44 @@ async function enterLive(liveId) {
       return
     }
 
-    if ((userData.balance || 0) < price) {
-      alert(`Saldo insuficiente. Valor: ${price}`)
+    // ❌ saldo insuficiente → ALERT PREMIUM
+    if ((userData.balance || 0) < priceCoins) {
+      showCoinsAlert()
       return
     }
 
-    // 🔥 TRANSAÇÃO ATÔMICA
+    // 🔥 TRANSAÇÃO
     await db.runTransaction(async (tx) => {
       const userRef = db.collection('users').doc(currentUser.uid)
       const hostRef = db.collection('users').doc(live.hostId)
-      const globalTxRef = db.collection('transactions').doc()
 
       const userSnap = await tx.get(userRef)
       const hostSnap = await tx.get(hostRef)
 
+      if (!hostSnap.exists) {
+        throw new Error('Host não encontrado')
+      }
+
       const balance = userSnap.data().balance || 0
-      if (balance < price) {
+      if (balance < priceCoins) {
         throw new Error('Saldo insuficiente')
       }
 
       // 🔻 desconta do espectador
       tx.update(userRef, {
-        balance: balance - price
+        balance: balance - priceCoins
       })
 
-      // 🔺 ganhos do host (PENDING)
+      // 💎 MODELO HÍBRIDO
+      // Host recebe 70%
+      const hostAmount = priceCoins * 0.7
+      // Plataforma ganha 30% invisível
+
       tx.update(hostRef, {
         earnings_pending:
-          (hostSnap.data().earnings_pending || 0) + price,
+          (hostSnap.data().earnings_pending || 0) + hostAmount,
         total_earnings:
-          (hostSnap.data().total_earnings || 0) + price
+          (hostSnap.data().total_earnings || 0) + hostAmount
       })
 
       // 👁 libera acesso
@@ -469,36 +487,39 @@ async function enterLive(liveId) {
         paid: true
       })
 
-      // 📊 métricas da live
+      // 📊 métricas
       tx.update(liveRef, {
-        paid_viewers:
-          firebase.firestore.FieldValue.increment(1),
+        paid_viewers: firebase.firestore.FieldValue.increment(1),
         total_invite_earnings:
-          firebase.firestore.FieldValue.increment(price)
+          firebase.firestore.FieldValue.increment(hostAmount)
       })
 
-      // 💰 histórico financeiro GLOBAL
-      tx.set(globalTxRef, {
+      // 💰 histórico global
+      tx.set(db.collection('transactions').doc(), {
         type: 'private_entry',
-        amount: price,
+        coins: priceCoins,
+        hostAmount,
+        platformAmount: priceCoins - hostAmount,
         from: currentUser.uid,
         to: live.hostId,
         liveId,
-        status: 'pending',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       })
     })
 
-    // ✅ Atualiza UI local
-    userData.balance -= price
+    // UI
+    userData.balance -= priceCoins
     updateUserUI()
 
-    // ✅ Redireciona
     window.location.href = `live-room.html?liveId=${liveId}`
 
   } catch (error) {
-    console.error('Erro ao entrar na live:', error)
-    alert(error.message || 'Erro ao entrar na live')
+    console.error('Erro ao entrar na live:', error.message)
+    showAppAlert(
+      'error',
+      '❌ Live indisponível',
+      error.message
+    )
   }
 }
 
@@ -582,3 +603,45 @@ async function releaseTransactionManually(transactionId) {
     })
   })
 }
+
+
+// buy coins 
+
+function showCoinsAlert() {
+  document.getElementById('coinsAlert').classList.remove('hidden')
+}
+
+document
+  .getElementById('closeCoinsAlert')
+  ?.addEventListener('click', () => {
+    document.getElementById('coinsAlert').classList.add('hidden')
+  })
+
+// selecionar pacote
+let selectedPackage = null
+
+document.querySelectorAll('.coin-pack').forEach((pack) => {
+  pack.addEventListener('click', () => {
+    document.querySelectorAll('.coin-pack').forEach(p =>
+      p.classList.remove('highlight')
+    )
+    pack.classList.add('highlight')
+    selectedPackage = {
+      coins: Number(pack.dataset.coins),
+      price: Number(pack.dataset.price)
+    }
+  })
+})
+
+// comprar moedas
+document.getElementById('buyCoinsBtn')?.addEventListener('click', () => {
+  if (!selectedPackage) {
+    alert('Selecione um pacote')
+    return
+  }
+
+  console.log('Comprar pacote:', selectedPackage)
+
+  // 👉 aqui você conecta com Stripe / Mercado Pago
+  // createCheckout(selectedPackage)
+})

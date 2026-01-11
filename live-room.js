@@ -339,8 +339,8 @@ function renderGifts() {
     container.appendChild(btn)
   })
 }
+
 async function sendGift(gift) {
-  // host não pode enviar presente
   if (currentUser.uid === liveData.hostId) return
 
   const userRef = db.collection('users').doc(currentUser.uid)
@@ -352,35 +352,46 @@ async function sendGift(gift) {
       const userSnap = await tx.get(userRef)
       const hostSnap = await tx.get(hostRef)
 
+      if (!hostSnap.exists) throw new Error('Host não encontrado')
+
       const balance = userSnap.data().balance || 0
       if (balance < gift.value) {
-        throw new Error('Saldo insuficiente')
+        showCoinsAlert()
+return
+
       }
 
-      // 🔻 desconta do espectador
+      // 💰 cálculo financeiro
+      const gross = gift.value * COIN_INTERNAL_VALUE
+      const platformCut = gross * PLATFORM_USE_FEE
+      const hostNet = gross - platformCut
+
+      // 🔻 desconta moedas
       tx.update(userRef, {
-        balance: balance - gift.value
+        balance: firebase.firestore.FieldValue.increment(-gift.value)
       })
 
-      // 🔺 ganhos do host (PENDING)
+      // 🔺 host recebe líquido
       tx.update(hostRef, {
         earnings_pending:
-          (hostSnap.data().earnings_pending || 0) + gift.value,
+          (hostSnap.data().earnings_pending || 0) + hostNet,
         total_earnings:
-          (hostSnap.data().total_earnings || 0) + gift.value
+          (hostSnap.data().total_earnings || 0) + hostNet
       })
 
-      // 📊 métricas da live
+      // 📊 live
       tx.update(liveRef, {
         totalGiftsValue:
-          firebase.firestore.FieldValue.increment(gift.value)
+          firebase.firestore.FieldValue.increment(hostNet)
       })
 
-      // 💰 histórico financeiro GLOBAL (host-finance)
-      const globalTxRef = db.collection('transactions').doc()
-      tx.set(globalTxRef, {
+      // 💰 histórico host
+      tx.set(db.collection('transactions').doc(), {
         type: 'gift',
-        amount: gift.value,
+        coins: gift.value,
+        grossAmount: gross,
+        netAmount: hostNet,
+        platformFee: platformCut,
         from: currentUser.uid,
         to: liveData.hostId,
         liveId,
@@ -388,24 +399,33 @@ async function sendGift(gift) {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       })
 
-      // 🎁 histórico opcional de gifts (detalhado)
-      const giftHistoryRef = db
-        .collection('users')
-        .doc(liveData.hostId)
-        .collection('gift_history')
-        .doc()
-
-      tx.set(giftHistoryRef, {
+      // 💎 plataforma
+      tx.set(db.collection('platform_earnings').doc(), {
+        type: 'gift',
+        amount: platformCut,
         liveId,
-        senderId: currentUser.uid,
-        senderName: userData.name || 'Usuário',
-        giftId: gift.id,
-        giftName: gift.name,
-        value: gift.value,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       })
 
-      // 💬 mensagem no chat
+      // 🎁 histórico detalhado
+      tx.set(
+        db.collection('users')
+          .doc(liveData.hostId)
+          .collection('gift_history')
+          .doc(),
+        {
+          liveId,
+          senderId: currentUser.uid,
+          senderName: userData.name || 'Usuário',
+          giftId: gift.id,
+          giftName: gift.name,
+          coins: gift.value,
+          netAmount: hostNet,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }
+      )
+
+      // 💬 chat
       tx.set(liveRef.collection('chat').doc(), {
         system: true,
         name: '🎁 Sistema',
@@ -414,7 +434,6 @@ async function sendGift(gift) {
       })
     })
 
-    // 🎉 animação local
     showGiftAnimation(gift)
 
   } catch (err) {
@@ -422,6 +441,7 @@ async function sendGift(gift) {
     alert(err.message)
   }
 }
+
 
 function listenToGifts() {
   giftsUnsub = db
@@ -734,4 +754,46 @@ document.getElementById('privateChatBtn').addEventListener('click', () => {
 
 document.getElementById('moreOptionsBtn').addEventListener('click', () => {
   alert('Opções: Reportar / Compartilhar')
+})
+
+
+// buy coins 
+
+function showCoinsAlert() {
+  document.getElementById('coinsAlert').classList.remove('hidden')
+}
+
+document
+  .getElementById('closeCoinsAlert')
+  ?.addEventListener('click', () => {
+    document.getElementById('coinsAlert').classList.add('hidden')
+  })
+
+// selecionar pacote
+let selectedPackage = null
+
+document.querySelectorAll('.coin-pack').forEach((pack) => {
+  pack.addEventListener('click', () => {
+    document.querySelectorAll('.coin-pack').forEach(p =>
+      p.classList.remove('highlight')
+    )
+    pack.classList.add('highlight')
+    selectedPackage = {
+      coins: Number(pack.dataset.coins),
+      price: Number(pack.dataset.price)
+    }
+  })
+})
+
+// comprar moedas
+document.getElementById('buyCoinsBtn')?.addEventListener('click', () => {
+  if (!selectedPackage) {
+    alert('Selecione um pacote')
+    return
+  }
+
+  console.log('Comprar pacote:', selectedPackage)
+
+  // 👉 aqui você conecta com Stripe / Mercado Pago
+  // createCheckout(selectedPackage)
 })

@@ -377,3 +377,243 @@ body {
   margin-top: 10px;
 }
 
+
+
+.withdraw-confirm-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.withdraw-confirm-btn:hover {
+  transform: scale(1.02);
+  opacity: 0.95;
+}
+
+.withdraw-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#withdrawBtn{
+    width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.balance-alert {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #fff;
+  width: 90%;
+  max-width: 420px;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  animation: slideUp 0.4s ease;
+}
+
+.balance-alert.hidden {
+  display: none;
+}
+
+.alert-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.balance-alert h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #f87171;
+}
+
+.balance-alert p {
+  margin: 12px 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d1d5db;
+}
+
+.balance-alert button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 14px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  cursor: pointer;
+}
+
+.balance-alert button:hover {
+  opacity: 0.9;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, 30px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+
+.app-alert {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 420px;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 25px 50px rgba(0,0,0,.45);
+  z-index: 9999;
+  animation: fadeUp .35s ease;
+}
+
+.app-alert.hidden {
+  display: none;
+}
+
+.app-alert-icon {
+  font-size: 28px;
+}
+
+.app-alert-content h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.app-alert-content p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #cbd5f5;
+}
+
+.app-alert button {
+  margin-left: auto;
+  background: #2563eb;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* VARIAÇÕES */
+.app-alert.error {
+  border-left: 5px solid #ef4444;
+}
+.app-alert.error .app-alert-icon {
+  color: #ef4444;
+}
+
+.app-alert.success {
+  border-left: 5px solid #22c55e;
+}
+.app-alert.success .app-alert-icon {
+  color: #22c55e;
+}
+
+.app-alert.warning {
+  border-left: 5px solid #facc15;
+}
+.app-alert.warning .app-alert-icon {
+  color: #facc15;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+
+
+.withdraw-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.withdraw-item {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.withdraw-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.withdraw-left strong {
+  font-size: 14px;
+}
+
+.withdraw-left small {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.withdraw-right {
+  text-align: right;
+}
+
+.withdraw-right strong {
+  font-size: 15px;
+}
+
+.withdraw-status {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.withdraw-status.pending_review {
+  color: #fbbf24;
+}
+
+.withdraw-status.approved {
+  color: #22c55e;
+}
+
+.withdraw-status.rejected {
+  color: #ef4444;
+}

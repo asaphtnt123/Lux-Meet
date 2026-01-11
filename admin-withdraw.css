@@ -1,0 +1,43 @@
+body {
+  font-family: Inter, sans-serif;
+  background: #0f0f0f;
+  color: #fff;
+  padding: 20px;
+}
+
+.withdraw-list {
+  display: grid;
+  gap: 16px;
+}
+
+.withdraw-card {
+  background: #1c1c1c;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.withdraw-card strong {
+  color: #00ff9d;
+}
+
+.actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.approve {
+  background: #00c853;
+}
+
+.reject {
+  background: #d50000;
+}

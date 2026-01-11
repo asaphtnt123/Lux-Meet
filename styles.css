@@ -186,7 +186,11 @@ h1, h2, h3, h4, h5, h6 {
   --lux-bg-gradient: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 100%);
   --lux-glass-bg: rgba(26, 26, 46, 0.85);
 }
-/* Container do header com posicionamento relativo */
+/* =========================================================
+   PROFILE HEADER — LUXMEET (VERSÃO PREMIUM FINAL)
+   ========================================================= */
+
+/* Container externo do header */
 .lux-profile-header-container {
   position: relative;
   margin-bottom: 2rem;
@@ -194,123 +198,81 @@ h1, h2, h3, h4, h5, h6 {
   overflow: hidden;
 }
 
-/* Camada de círculos animados (versão premium) */
-.lux-profile-header-bg-circles {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1; /* Agora fica ATRÁS de tudo */
-  overflow: hidden;
-  border-radius: 16px;
-  pointer-events: none; /* Permite clicar através dos círculos */
-}
+/* Wrapper para isolar camadas */
 .lux-profile-header-wrapper {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  isolation: isolate; /* Cria um novo contexto de empilhamento */
+  isolation: isolate;
+}
+
+/* Background animado (círculos) */
+.lux-profile-header-bg-circles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .lux-profile-header-bg-circles .circles li {
   position: absolute;
   display: block;
   list-style: none;
-  width: 20px;
-  height: 20px;
-  background: rgba(212, 175, 55, 0.08); /* Dourado mais suave */
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.15);
   animation: animate 25s linear infinite;
   bottom: -150px;
-  border-radius: 50%;
-  border: 1px solid rgba(212, 175, 55, 0.15);
 }
 
-/* Keyframes atualizada para movimento mais orgânico */
+/* Animação orgânica */
 @keyframes animate {
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1);
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(-1000px) rotate(720deg) scale(1.2);
-    opacity: 0;
-  }
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: .5; }
+  50% { opacity: .8; }
+  100% { transform: translateY(-1000px) rotate(720deg) scale(1.2); opacity: 0; }
 }
 
-/* Posicionamento dos círculos (ajustado para header) */
-.lux-profile-header-bg-circles .circles li:nth-child(1) { 
-  left: 15%; width: 60px; height: 60px; 
-  animation-delay: 0s; animation-duration: 18s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(2) { 
-  left: 5%; width: 25px; height: 25px; 
-  animation-delay: 2s; animation-duration: 15s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(3) { 
-  left: 75%; width: 30px; height: 30px; 
-  animation-delay: 4s; animation-duration: 20s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(4) { 
-  left: 35%; width: 50px; height: 50px; 
-  animation-delay: 0s; animation-duration: 22s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(5) { 
-  left: 60%; width: 20px; height: 20px; 
-  animation-delay: 0s; animation-duration: 16s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(6) { 
-  left: 80%; width: 90px; height: 90px; 
-  animation-delay: 3s; animation-duration: 25s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(7) { 
-  left: 30%; width: 120px; height: 120px; 
-  animation-delay: 7s; animation-duration: 30s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(8) { 
-  left: 50%; width: 30px; height: 30px; 
-  animation-delay: 15s; animation-duration: 35s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(9) { 
-  left: 15%; width: 20px; height: 20px; 
-  animation-delay: 2s; animation-duration: 28s; 
-}
-.lux-profile-header-bg-circles .circles li:nth-child(10) { 
-  left: 90%; width: 130px; height: 130px; 
-  animation-delay: 0s; animation-duration: 20s; 
-}
+/* Círculos */
+.lux-profile-header-bg-circles .circles li:nth-child(1) { left: 15%; width: 60px; height: 60px; animation-duration: 18s; }
+.lux-profile-header-bg-circles .circles li:nth-child(2) { left: 5%; width: 25px; height: 25px; animation-duration: 15s; }
+.lux-profile-header-bg-circles .circles li:nth-child(3) { left: 75%; width: 30px; height: 30px; animation-duration: 20s; }
+.lux-profile-header-bg-circles .circles li:nth-child(4) { left: 35%; width: 50px; height: 50px; animation-duration: 22s; }
+.lux-profile-header-bg-circles .circles li:nth-child(5) { left: 60%; width: 20px; height: 20px; animation-duration: 16s; }
+.lux-profile-header-bg-circles .circles li:nth-child(6) { left: 80%; width: 90px; height: 90px; animation-duration: 25s; }
+.lux-profile-header-bg-circles .circles li:nth-child(7) { left: 30%; width: 120px; height: 120px; animation-duration: 30s; }
+.lux-profile-header-bg-circles .circles li:nth-child(8) { left: 50%; width: 30px; height: 30px; animation-duration: 35s; }
+.lux-profile-header-bg-circles .circles li:nth-child(9) { left: 15%; width: 20px; height: 20px; animation-duration: 28s; }
+.lux-profile-header-bg-circles .circles li:nth-child(10){ left: 90%; width: 130px; height: 130px; animation-duration: 20s; }
 
-/* Ajuste no header para ficar sobre a animação */
+/* ================= HEADER ================= */
+
 .lux-profile-header {
-  position: relative; /* Mantém o z-index automático */
-  z-index: 0; /* Garante que o header fique sobre os círculos */
-  /* Restante do seu CSS permanece igual */
-  display: flex;
-  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2.5rem;
   align-items: center;
-  background: var(--lux-glass-bg);
-  backdrop-filter: blur(12px);
   padding: 2.5rem;
   border-radius: 16px;
-border: 3px solid var(--lux-primary);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.06);
-  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-  overflow: hidden;
+  background: var(--lux-glass-bg);
+  backdrop-filter: blur(12px);
+  border: 3px solid var(--lux-primary);
+  box-shadow: 0 8px 32px rgba(0,0,0,.3), inset 0 1px 1px rgba(255,255,255,.06);
+  transition: all .5s cubic-bezier(.25,.8,.25,1);
   max-height: 500px;
+  overflow: hidden;
 }
 
-/* Container de informações */
+/* ================= INFO ================= */
+
 .lux-profile-info {
   display: flex;
   align-items: center;
   gap: 2.5rem;
-  z-index: 2;
 }
 
-/* Avatar Premium */
+/* Avatar */
 .lux-avatar-container {
   position: relative;
   width: 120px;
@@ -323,56 +285,86 @@ border: 3px solid var(--lux-primary);
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--lux-primary);
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 20px rgba(212,175,55,.3);
+  transition: transform .3s ease, box-shadow .3s ease;
 }
 
 .lux-avatar-container:hover .lux-user-avatar {
-  transform: scale(1.03);
-  box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+  transform: scale(1.05);
+  box-shadow: 0 0 32px rgba(212,175,55,.5);
 }
 
-/* Status online */
-.lux-online-status {
+/* Ícones rápidos (gift / galeria / presentes) */
+.gift-icon {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: .5rem;
+}
+
+.gift-icon i {
+  font-size: 1.1rem;
+  color: var(--lux-primary);
+  cursor: pointer;
+  transition: transform .25s ease, color .25s ease;
+}
+
+.gift-icon i:hover {
+  transform: translateY(-2px) scale(1.05);
+  color: #f5d77a;
+}
+
+#gallery-link i {
+  font-size: 1.05rem;
+  opacity: .85;
+}
+
+/* Badge de presente */
+.gift-badge {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 18px;
-  height: 18px;
-  background-color: #4CAF50;
-  border-radius: 50%;
-  border: 2px solid var(--lux-dark);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.5);
-  z-index: 3;
+  top: -6px;
+  right: -6px;
+  background: var(--lux-primary);
+  color: #000;
+  font-size: .65rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 10px;
 }
 
-/* Detalhes do usuário */
+/* ================= USER DETAILS ================= */
+
+.lux-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
 .lux-user-details h1 {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: .6px;
   color: var(--lux-light);
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .lux-user-details p {
-  color: var(--lux-primary);
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
+  font-size: .75rem;
   letter-spacing: 1px;
+  color: var(--lux-primary);
   text-transform: uppercase;
+  margin-bottom: .8rem;
 }
 
-/* Estatísticas premium */
+/* ================= STATS ================= */
+
 .lux-user-stats {
   display: flex;
-  gap: 0.5rem;
+  gap: .5rem;
 }
 
 .lux-stat {
-  text-align: center;
   position: relative;
+  text-align: center;
   padding: 0 15px;
 }
 
@@ -382,9 +374,9 @@ border: 3px solid var(--lux-primary);
   right: -1.25rem;
   top: 50%;
   transform: translateY(-50%);
-  height: 30px;
   width: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  height: 30px;
+  background: rgba(255,255,255,.1);
 }
 
 .lux-stat-value {
@@ -392,22 +384,62 @@ border: 3px solid var(--lux-primary);
   font-weight: 700;
   color: var(--lux-light);
   display: block;
-  line-height: 1;
   margin-bottom: 5px;
-  transition: color 0.3s ease;
+  transition: color .3s ease;
 }
 
 .lux-stat-label {
-  font-size: 0.75rem;
-  color: var(--lux-gray);
-  text-transform: uppercase;
+  font-size: .75rem;
   letter-spacing: 1.5px;
-  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--lux-gray);
 }
 
 .lux-stat-interactive:hover .lux-stat-value {
   color: var(--lux-primary);
 }
+
+/* ================= ACTIONS ================= */
+
+.lux-profile-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.lux-profile-actions .lux-btn {
+  padding: .75rem 1.4rem;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+
+.lux-btn-shop {
+  background: linear-gradient(135deg, #d4af37, #f5d77a);
+  color: #000;
+  box-shadow: 0 4px 18px rgba(212,175,55,.35);
+}
+
+/* ================= COLLAPSE BUTTON ================= */
+
+.lux-collapse-btn {
+  position: absolute;
+  bottom: 14px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.1);
+  color: var(--lux-light);
+  cursor: pointer;
+  transition: all .3s ease;
+  z-index: 2;
+}
+
+.lux-collapse-btn:hover {
+  background: rgba(212,175,55,.25);
+  color: var(--lux-primary);
+}
+
 
 /* Pulsação para curtidas */
 .lux-pulse-animation {
@@ -4976,92 +5008,125 @@ body.modal-open {
     50% { opacity: 1; }
     100% { opacity: 0.5; }
 }
+/* =====================================================
+   GIFT MODAL — LUXMEET (PREMIUM)
+   ===================================================== */
 
-/* Estilos para o modal de presentes */
-.lux-gift-modal {
-  display: none;
+.lux-gift-modal,
+.lux-gift-actions-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.8);
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(6px);
+  display: none;
   z-index: 1000;
   overflow-y: auto;
 }
 
+/* ================= MAIN MODAL ================= */
+
 .lux-gift-modal-content {
-  background-color: #fff;
-  margin: 5% auto;
-  padding: 25px;
-  width: 90%;
-  max-width: 800px;
-  border-radius: 10px;
-  box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+  background: linear-gradient(180deg, #16161f, #0e0e14);
+  margin: 4% auto;
+  padding: 32px;
+  width: 92%;
+  max-width: 900px;
+  border-radius: 18px;
+  border: 1px solid rgba(212,175,55,.25);
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
   position: relative;
 }
 
-.lux-gift-close {
+/* Close */
+.lux-gift-close,
+.lux-actions-close {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  font-size: 28px;
+  top: 16px;
+  right: 18px;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 1.4rem;
   cursor: pointer;
-  color: #888;
+  transition: color .3s ease;
 }
 
+.lux-gift-close:hover,
+.lux-actions-close:hover {
+  color: var(--lux-primary);
+}
+
+/* Title */
 .lux-gift-title {
   text-align: center;
-  color: #d4af37;
-  margin-bottom: 25px;
+  margin-bottom: 30px;
+  font-size: 1.9rem;
+  color: var(--lux-primary);
+  letter-spacing: .8px;
 }
+
+/* ================= CATEGORIES ================= */
 
 .lux-gift-categories {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 25px;
 }
 
 .lux-gift-category {
-  padding: 8px 15px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  background: #f9f9f9;
+  padding: 8px 18px;
+  border-radius: 30px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.04);
+  color: #ccc;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all .3s ease;
 }
 
+.lux-gift-category:hover,
 .lux-gift-category.active {
-  background: #d4af37;
-  color: white;
-  border-color: #d4af37;
+  background: var(--lux-primary);
+  color: #000;
+  border-color: var(--lux-primary);
 }
+
+/* ================= GRID ================= */
 
 .lux-gifts-container {
-  min-height: 300px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 20px;
-  padding: 10px 0;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 22px;
+  min-height: 320px;
 }
 
+.lux-gifts-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #aaa;
+  padding: 80px 0;
+  font-size: .95rem;
+}
+
+/* ================= GIFT CARD ================= */
+
 .lux-gift-item {
-  border: 1px solid #eee;
-  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  border-radius: 14px;
   overflow: hidden;
-  transition: all 0.3s;
   cursor: pointer;
+  border: 1px solid rgba(255,255,255,.08);
+  transition: transform .35s ease, box-shadow .35s ease;
 }
 
 .lux-gift-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0,0,0,.5);
 }
 
 .lux-gift-image-container {
-  height: 160px;
+  height: 170px;
   position: relative;
 }
 
@@ -5075,98 +5140,125 @@ body.modal-open {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #d4af37;
-  color: white;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  background: var(--lux-primary);
+  color: #000;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: .65rem;
+  font-weight: 700;
 }
 
+/* Info */
 .lux-gift-info {
-  padding: 12px;
+  padding: 14px;
 }
 
 .lux-gift-name {
-  font-size: 16px;
-  margin: 0 0 5px 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: .95rem;
+  color: #fff;
+  margin-bottom: 6px;
 }
 
 .lux-gift-price {
-  color: #d4af37;
-  font-weight: bold;
-  margin: 5px 0;
+  color: var(--lux-primary);
+  font-weight: 700;
+  font-size: .9rem;
 }
 
-.lux-gift-category {
-  font-size: 12px;
-  color: #888;
-}
-
-/* Estilos para o modal de ações */
-.lux-gift-actions-modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.8);
-  z-index: 1001;
-}
+/* ================= ACTIONS MODAL ================= */
 
 .lux-gift-actions-content {
-  background-color: #fff;
-  margin: 10% auto;
-  padding: 25px;
-  width: 90%;
-  max-width: 500px;
-  border-radius: 10px;
+  background: linear-gradient(180deg, #16161f, #0e0e14);
+  margin: 8% auto;
+  padding: 28px;
+  width: 92%;
+  max-width: 520px;
+  border-radius: 18px;
+  border: 1px solid rgba(212,175,55,.25);
   text-align: center;
-  position: relative;
 }
 
 .lux-selected-gift-image {
   max-width: 200px;
-  max-height: 200px;
-  margin: 15px auto;
-  display: block;
-  border-radius: 8px;
+  margin: 20px auto;
+  border-radius: 12px;
 }
 
 .lux-gift-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
   margin-top: 20px;
 }
 
 .lux-action-btn {
-  padding: 10px 15px;
+  padding: 10px 18px;
+  border-radius: 8px;
   border: none;
-  border-radius: 5px;
-  background: #f0f0f0;
   cursor: pointer;
-  transition: all 0.3s;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.lux-action-btn:hover {
-  background: #e0e0e0;
+  transition: all .3s ease;
 }
 
 .lux-action-send {
-  background: #d4af37;
-  color: white;
+  background: linear-gradient(135deg, #d4af37, #f5d77a);
+  color: #000;
 }
 
-.lux-action-send:hover {
-  background: #c5a030;
+.lux-action-customize {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+}
+
+.lux-action-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* ================= CUSTOMIZE ================= */
+
+.hidden {
+  display: none;
+}
+
+.lux-gift-customize {
+  margin-top: 25px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  padding-top: 20px;
+}
+
+.lux-form-group {
+  margin-bottom: 15px;
+}
+
+.lux-form-group label {
+  font-size: .75rem;
+  color: #ccc;
+}
+
+.lux-form-group textarea,
+.lux-form-group select {
+  width: 100%;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+
+.lux-extra-preview {
+  max-width: 90px;
+  margin-top: 10px;
+  display: none;
+}
+
+.lux-gift-custom-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
 }
 
 /* Estilos para a seção de personalização */
