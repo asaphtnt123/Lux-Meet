@@ -56,6 +56,19 @@ const GIFTS = [
   }
 ]
 
+const params = new URLSearchParams(window.location.search)
+
+if (params.get('payment') === 'success') {
+  showAppAlert(
+    'success',
+    '🎉 Pagamento confirmado!',
+    'Suas moedas já estão disponíveis. Aproveite a live 💎🔥'
+  )
+
+  // limpa URL
+  window.history.replaceState({}, document.title, window.location.pathname + '?liveId=' + params.get('liveId'))
+}
+
 
 
 const COIN_INTERNAL_VALUE = 0.035 // valor real por moeda (host)
@@ -836,18 +849,67 @@ document.querySelectorAll('.coin-pack').forEach((pack) => {
 })
 
 // comprar moedas
-document.getElementById('buyCoinsBtn')?.addEventListener('click', () => {
+
+
+document.querySelectorAll('.coin-pack').forEach(pack => {
+  pack.addEventListener('click', () => {
+    document
+      .querySelectorAll('.coin-pack')
+      .forEach(p => p.classList.remove('selected'))
+
+    pack.classList.add('selected')
+    selectedPackage = pack.dataset.pack
+  })
+})
+
+document.getElementById('buyCoinsBtn')?.addEventListener('click', async () => {
   if (!selectedPackage) {
-    alert('Selecione um pacote')
+    showAppAlert(
+      'warning',
+      'Selecione um pacote',
+      'Escolha um pacote de moedas para continuar 💎'
+    )
     return
   }
 
-  console.log('Comprar pacote:', selectedPackage)
+  try {
+    const liveId = new URLSearchParams(window.location.search).get('liveId')
 
-  // 👉 aqui você conecta com Stripe / Mercado Pago
-  // createCheckout(selectedPackage)
+    const res = await fetch(
+      'https://us-central1-connectfamilia-312dc.cloudfunctions.net/createCheckout',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packId: selectedPackage,
+          uid: currentUser.uid,
+          liveId
+        })
+      }
+    )
+
+    const data = await res.json()
+
+    if (!data.url) {
+      throw new Error('Erro ao iniciar pagamento')
+    }
+
+    window.location.href = data.url
+
+  } catch (err) {
+    console.error(err)
+    showAppAlert(
+      'error',
+      'Erro no pagamento',
+      'Não foi possível iniciar a compra. Tente novamente.'
+    )
+  }
 })
 
+
+document.getElementById('closeCoinsAlert')?.addEventListener('click', () => {
+  document.getElementById('coinsAlert').classList.add('hidden')
+})
 
 async function registerViewerPresence() {
   if (!currentUser || !liveId) return
