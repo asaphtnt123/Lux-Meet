@@ -4,6 +4,7 @@ const notificationSounds = {
     error: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3'),
     info: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3')
 };
+
 // Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyA-7HOp-Ycvyf3b_03ev__8aJEwAbWSQZY",

@@ -78,17 +78,24 @@
   <script>
    
 
-  if (!firebase.apps.length) {
-    firebase.initializeApp({
-      apiKey: "AIzaSyA-7HOp-Ycvyf3b_03ev__8aJEwAbWSQZY",
-      authDomain: "connectfamilia-312dc.firebaseapp.com",
-      projectId: "connectfamilia-312dc"
-    })
-  }
+ 
+// Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyA-7HOp-Ycvyf3b_03ev__8aJEwAbWSQZY",
+  authDomain: "connectfamilia-312dc.firebaseapp.com",
+  projectId: "connectfamilia-312dc",
+  storageBucket: "connectfamilia-312dc.appspot.com",
+  messagingSenderId: "797817838649",
+  appId: "1:797817838649:web:1aa7c54abd97661f8d81e8",
+  measurementId: "G-QKN9NFXZZQ"
+};
 
+// Inicializa o Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
 
     // 🔐 SE JÁ ESTIVER LOGADO, NÃO MOSTRA LOGIN
     auth.onAuthStateChanged(user => {
