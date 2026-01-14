@@ -501,11 +501,13 @@ async function sendGift(gift) {
       })
     })
 
+    showAppAlert('🎁 Presente enviado com sucesso!', 'success')
+
     showGiftAnimation(gift)
 
   } catch (err) {
     console.error(err)
-    showAppAlert('error', 'Erro ao enviar presente', err.message)
+showAppAlert('Saldo insuficiente', 'error')
   }
 }
 
@@ -855,6 +857,9 @@ document.querySelectorAll('.coin-pack').forEach(pack => {
   })
 })
 
+
+
+
 // comprar moedas
 
 
@@ -934,4 +939,24 @@ async function registerViewerPresence() {
     },
     { merge: true }
   )
+}
+
+
+
+function showAppAlert(message, type = 'info') {
+  const alert = document.createElement('div')
+
+  alert.className = `lux-alert ${type}`
+  alert.innerText = message
+
+  document.body.appendChild(alert)
+
+  setTimeout(() => {
+    alert.classList.add('show')
+  }, 10)
+
+  setTimeout(() => {
+    alert.classList.remove('show')
+    setTimeout(() => alert.remove(), 300)
+  }, 3000)
 }
