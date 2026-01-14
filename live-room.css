@@ -870,3 +870,41 @@ body {
 .lux-alert.error {
   border-left: 4px solid #ff4d4d;
 }
+
+
+.coins-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.coins-modal.hidden {
+  display: none;
+}
+
+.coins-modal-box {
+  background: #0f0f0f;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  padding: 20px;
+  color: #fff;
+}
+
+.coin-pack {
+  border: 2px solid #333;
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: .2s;
+}
+
+.coin-pack.selected {
+  border-color: gold;
+  background: rgba(255,215,0,.08);
+}

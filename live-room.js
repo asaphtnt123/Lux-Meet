@@ -506,14 +506,15 @@ async function sendGift(gift) {
 
     // 💎 saldo insuficiente → abre compra
     if (err.message === 'INSUFFICIENT_BALANCE') {
-      showAppAlert(
-        'Saldo insuficiente 💎',
-        showCoinsAlert(),
-        'warning'
-      )
-      showCoinsAlert()
-      return
-    }
+  showAppAlert(
+    'Saldo insuficiente 💎',
+    'warning'
+  )
+
+  showCoinsModal() // 🔥 AQUI ABRE O MODAL
+  return
+}
+
 
     showAppAlert(
       'Erro ao enviar presente',
@@ -843,63 +844,78 @@ function closeCoinsAlert() {
 document
   .getElementById('closeCoinsAlert')
   ?.addEventListener('click', closeCoinsAlert)
-
 let selectedPackage = null
 
+function showCoinsModal() {
+  document.getElementById('coinsModal')?.classList.remove('hidden')
+}
+
+function closeCoinsModal() {
+  document.getElementById('coinsModal')?.classList.add('hidden')
+}
+
+document.getElementById('closeCoinsModal')
+  ?.addEventListener('click', closeCoinsModal)
+
+// selecionar pacote
 document.querySelectorAll('.coin-pack').forEach(pack => {
   pack.addEventListener('click', () => {
-    // remove seleção anterior
-    document.querySelectorAll('.coin-pack').forEach(p =>
-      p.classList.remove('selected')
-    )
+    document.querySelectorAll('.coin-pack')
+      .forEach(p => p.classList.remove('selected'))
 
-    // seleciona o atual
     pack.classList.add('selected')
 
     selectedPackage = {
-      coins: Number(pack.dataset.coins),
-      price: Number(pack.dataset.price)
+      packId: pack.dataset.pack,
+      coins: Number(pack.dataset.coins)
     }
-
-    console.log('Pacote selecionado:', selectedPackage)
   })
 })
-document.getElementById('buyCoinsBtn')?.addEventListener('click', async () => {
-  if (!selectedPackage) {
-    showAppAlert('Selecione um pacote de moedas 💎', 'warning')
-    return
-  }
 
-  try {
-    const liveId = new URLSearchParams(window.location.search).get('liveId')
+// comprar moedas
+document.getElementById('buyCoinsBtn')
+  ?.addEventListener('click', async () => {
 
-    const res = await fetch(
-      'https://us-central1-connectfamilia-312dc.cloudfunctions.net/createCheckout',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          coins: selectedPackage.coins,
-          price: selectedPackage.price,
-          uid: currentUser.uid,
-          liveId
-        })
-      }
-    )
+    if (!selectedPackage) {
+      showAppAlert(
+        'Selecione um pacote de moedas 💎',
+        'warning'
+      )
+      return
+    }
 
-    const data = await res.json()
+    try {
+      const liveId =
+        new URLSearchParams(window.location.search).get('liveId')
 
-    if (!data.url) throw new Error('Checkout inválido')
+      const res = await fetch(
+        'https://us-central1-connectfamilia-312dc.cloudfunctions.net/createCheckout',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            packId: selectedPackage.packId,
+            uid: currentUser.uid,
+            liveId
+          })
+        }
+      )
 
-    window.location.href = data.url
-  } catch (err) {
-    console.error(err)
-    showAppAlert(
-      'Não foi possível iniciar o pagamento. Tente novamente.',
-      'error'
-    )
-  }
-})
+      const data = await res.json()
+
+      if (!data.url) throw new Error('Checkout inválido')
+
+      window.location.href = data.url
+
+    } catch (err) {
+      console.error(err)
+      showAppAlert(
+        'Erro ao iniciar pagamento',
+        'error'
+      )
+    }
+  })
+
 
 function showAppAlert(message, type = 'info') {
   const alert = document.createElement('div')

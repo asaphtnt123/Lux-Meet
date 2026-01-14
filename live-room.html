@@ -102,22 +102,44 @@
 
 
 </div>
+<!-- MODAL COMPRA DE MOEDAS -->
+<div id="coinsModal" class="coins-modal hidden">
+  <div class="coins-modal-box">
 
+    <div class="coins-modal-header">
+      <h2>💎 Saldo insuficiente</h2>
+      <button id="closeCoinsModal">✕</button>
+    </div>
 
-<!-- ALERT PREMIUM - SALDO INSUFICIENTE -->
-<div class="coin-pack" data-pack="coins_500">
-  <strong>500 moedas</strong>
-  <span>R$ 25,00</span>
-</div>
+    <p class="coins-modal-subtitle">
+      Escolha um pacote de moedas para continuar enviando presentes
+    </p>
 
-<div class="coin-pack highlight" data-pack="coins_1000">
-  <strong>1000 moedas</strong>
-  <span>R$ 50,00</span>
-</div>
+    <div class="coins-packages">
 
-<div class="coin-pack" data-pack="coins_2500">
-  <strong>2500 moedas</strong>
-  <span>R$ 125,00</span>
+      <div class="coin-pack" data-pack="coins_500" data-coins="500">
+        <strong>500 moedas</strong>
+        <span>R$ 25,00</span>
+      </div>
+
+      <div class="coin-pack highlight" data-pack="coins_1000" data-coins="1000">
+        <strong>1000 moedas</strong>
+        <span>R$ 50,00</span>
+        <small>🔥 Mais vendido</small>
+      </div>
+
+      <div class="coin-pack" data-pack="coins_2500" data-coins="2500">
+        <strong>2500 moedas</strong>
+        <span>R$ 125,00</span>
+      </div>
+
+    </div>
+
+    <button id="buyCoinsBtn" class="coins-buy-btn">
+      💳 Comprar moedas
+    </button>
+
+  </div>
 </div>
 
 
