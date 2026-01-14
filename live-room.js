@@ -410,8 +410,7 @@ async function sendGift(gift) {
 
       const balance = userSnap.data().balance || 0
       if (balance < gift.value) {
-        throw new Error('Saldo insuficiente')
-      }
+showCoinsAlert()    }
 
       // 💰 MODELO HÍBRIDO
       const gross = gift.value * COIN_INTERNAL_VALUE
