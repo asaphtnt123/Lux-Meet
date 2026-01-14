@@ -508,6 +508,7 @@ async function sendGift(gift) {
     if (err.message === 'INSUFFICIENT_BALANCE') {
       showAppAlert(
         'Saldo insuficiente 💎',
+        showCoinsAlert(),
         'warning'
       )
       showCoinsAlert()
