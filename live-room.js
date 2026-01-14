@@ -835,16 +835,23 @@ document
 // selecionar pacote
 let selectedPackage = null
 
-document.querySelectorAll('.coin-pack').forEach((pack) => {
+document.querySelectorAll('.coin-pack').forEach(pack => {
   pack.addEventListener('click', () => {
+
+    // remove seleção de todos
     document.querySelectorAll('.coin-pack').forEach(p =>
-      p.classList.remove('highlight')
+      p.classList.remove('selected')
     )
-    pack.classList.add('highlight')
+
+    // adiciona no clicado
+    pack.classList.add('selected')
+
     selectedPackage = {
-      coins: Number(pack.dataset.coins),
-      price: Number(pack.dataset.price)
+      coins: pack.dataset.coins,
+      price: pack.dataset.price
     }
+
+    console.log('Pacote selecionado:', selectedPackage)
   })
 })
 
