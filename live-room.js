@@ -389,9 +389,8 @@ function renderGifts() {
     container.appendChild(btn)
   })
 }
-
 async function sendGift(gift) {
-  if (!currentUser || !liveData) return
+  if (!currentUser || !liveData || !liveId) return
   if (currentUser.uid === liveData.hostId) return
 
   const userRef = db.collection('users').doc(currentUser.uid)
@@ -399,7 +398,7 @@ async function sendGift(gift) {
   const liveRef = db.collection('lives').doc(liveId)
 
   try {
-    await db.runTransaction(async (tx) => {
+    await db.runTransaction(async tx => {
       const userSnap = await tx.get(userRef)
       const hostSnap = await tx.get(hostRef)
       const liveSnap = await tx.get(liveRef)
@@ -407,29 +406,26 @@ async function sendGift(gift) {
       if (!userSnap.exists) throw new Error('Usuário não encontrado')
       if (!hostSnap.exists) throw new Error('Host não encontrado')
       if (!liveSnap.exists) throw new Error('Live não encontrada')
-const balance = userSnap.data().balance || 0
-       // ❌ saldo insuficiente
-    if (balance < giftCost) {
-      showAppAlert(
-        'Saldo insuficiente 💎',
-        'warning'
-      )
 
-      showCoinsAlert()
-      return
-    }
+      const balance = userSnap.data().balance || 0
+      const giftCost = Number(gift.value)
 
-      // 💰 MODELO HÍBRIDO
-      const gross = gift.value * COIN_INTERNAL_VALUE
+      // ❌ SALDO INSUFICIENTE
+      if (balance < giftCost) {
+        throw new Error('INSUFFICIENT_BALANCE')
+      }
+
+      // 💰 MODELO FINANCEIRO
+      const gross = giftCost * COIN_INTERNAL_VALUE
       const platformCut = gross * PLATFORM_USE_FEE
       const hostNet = gross - platformCut
 
-      // 🔻 desconta moedas do espectador
+      // 🔻 desconta moedas do usuário
       tx.update(userRef, {
-        balance: firebase.firestore.FieldValue.increment(-gift.value)
+        balance: firebase.firestore.FieldValue.increment(-giftCost)
       })
 
-      // 🔺 host recebe (PENDENTE)
+      // 🔺 crédito do host
       tx.update(hostRef, {
         earnings_pending:
           firebase.firestore.FieldValue.increment(hostNet),
@@ -437,31 +433,28 @@ const balance = userSnap.data().balance || 0
           firebase.firestore.FieldValue.increment(hostNet)
       })
 
-      // 📊 ATUALIZA LIVE (ESSENCIAL PARA O SUMMARY)
+      // 📊 métricas da live
       tx.update(liveRef, {
         totalCoins:
-          firebase.firestore.FieldValue.increment(gift.value)
+          firebase.firestore.FieldValue.increment(giftCost)
       })
 
-      // 🎁 salva gift na live (realtime + histórico)
-      tx.set(
-        liveRef.collection('gifts').doc(),
-        {
-          giftId: gift.id,
-          giftName: gift.name,
-          emoji: gift.emoji,
-          value: gift.value,
-          senderId: currentUser.uid,
-          senderName: userData.name || 'Usuário',
-          createdAt:
-            firebase.firestore.FieldValue.serverTimestamp()
-        }
-      )
+      // 🎁 gift na live
+      tx.set(liveRef.collection('gifts').doc(), {
+        giftId: gift.id,
+        giftName: gift.name,
+        emoji: gift.emoji,
+        value: giftCost,
+        senderId: currentUser.uid,
+        senderName: userData?.name || 'Usuário',
+        createdAt:
+          firebase.firestore.FieldValue.serverTimestamp()
+      })
 
-      // 💰 histórico global
+      // 💳 transação global
       tx.set(db.collection('transactions').doc(), {
         type: 'gift',
-        coins: gift.value,
+        coins: giftCost,
         grossAmount: gross,
         netAmount: hostNet,
         platformFee: platformCut,
@@ -481,39 +474,50 @@ const balance = userSnap.data().balance || 0
           firebase.firestore.FieldValue.serverTimestamp()
       })
 
-      // 🎁 histórico do host
-      tx.set(
-        hostRef.collection('gift_history').doc(),
-        {
-          liveId,
-          senderId: currentUser.uid,
-          senderName: userData.name || 'Usuário',
-          giftId: gift.id,
-          giftName: gift.name,
-          coins: gift.value,
-          netAmount: hostNet,
-          createdAt:
-            firebase.firestore.FieldValue.serverTimestamp()
-        }
-      )
+      // 📜 histórico do host
+      tx.set(hostRef.collection('gift_history').doc(), {
+        liveId,
+        senderId: currentUser.uid,
+        senderName: userData?.name || 'Usuário',
+        giftId: gift.id,
+        giftName: gift.name,
+        coins: giftCost,
+        netAmount: hostNet,
+        createdAt:
+          firebase.firestore.FieldValue.serverTimestamp()
+      })
 
       // 💬 mensagem no chat
       tx.set(liveRef.collection('chat').doc(), {
         system: true,
         name: '🎁 Sistema',
-        text: `${userData.name} enviou ${gift.emoji} ${gift.name} (${gift.value} coins)`,
+        text: `${userData?.name || 'Usuário'} enviou ${gift.emoji} ${gift.name} (${giftCost} moedas)`,
         createdAt:
           firebase.firestore.FieldValue.serverTimestamp()
       })
     })
 
+    // ✅ SUCESSO
     showAppAlert('🎁 Presente enviado com sucesso!', 'success')
-
     showGiftAnimation(gift)
 
   } catch (err) {
     console.error(err)
-showAppAlert('Saldo insuficiente', 'error')
+
+    // 💎 saldo insuficiente → abre compra
+    if (err.message === 'INSUFFICIENT_BALANCE') {
+      showAppAlert(
+        'Saldo insuficiente 💎',
+        'warning'
+      )
+      showCoinsAlert()
+      return
+    }
+
+    showAppAlert(
+      'Erro ao enviar presente',
+      'error'
+    )
   }
 }
 
