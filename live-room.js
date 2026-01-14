@@ -407,10 +407,17 @@ async function sendGift(gift) {
       if (!userSnap.exists) throw new Error('Usuário não encontrado')
       if (!hostSnap.exists) throw new Error('Host não encontrado')
       if (!liveSnap.exists) throw new Error('Live não encontrada')
+const balance = userSnap.data().balance || 0
+       // ❌ saldo insuficiente
+    if (balance < giftCost) {
+      showAppAlert(
+        'Saldo insuficiente 💎',
+        'warning'
+      )
 
-      const balance = userSnap.data().balance || 0
-      if (balance < gift.value) {
-showCoinsAlert()    }
+      showCoinsAlert()
+      return
+    }
 
       // 💰 MODELO HÍBRIDO
       const gross = gift.value * COIN_INTERNAL_VALUE
@@ -820,66 +827,41 @@ document.getElementById('moreOptionsBtn').addEventListener('click', () => {
   alert('Opções: Reportar / Compartilhar')
 })
 
-
-// buy coins 
-
 function showCoinsAlert() {
-  document.getElementById('coinsAlert').classList.remove('hidden')
+  document.getElementById('coinsAlert')?.classList.remove('hidden')
+}
+
+function closeCoinsAlert() {
+  document.getElementById('coinsAlert')?.classList.add('hidden')
 }
 
 document
   .getElementById('closeCoinsAlert')
-  ?.addEventListener('click', () => {
-    document.getElementById('coinsAlert').classList.add('hidden')
-  })
+  ?.addEventListener('click', closeCoinsAlert)
 
-// selecionar pacote
 let selectedPackage = null
 
 document.querySelectorAll('.coin-pack').forEach(pack => {
   pack.addEventListener('click', () => {
-
-    // remove seleção de todos
+    // remove seleção anterior
     document.querySelectorAll('.coin-pack').forEach(p =>
       p.classList.remove('selected')
     )
 
-    // adiciona no clicado
+    // seleciona o atual
     pack.classList.add('selected')
 
     selectedPackage = {
-      coins: pack.dataset.coins,
-      price: pack.dataset.price
+      coins: Number(pack.dataset.coins),
+      price: Number(pack.dataset.price)
     }
 
     console.log('Pacote selecionado:', selectedPackage)
   })
 })
-
-
-
-
-// comprar moedas
-
-
-document.querySelectorAll('.coin-pack').forEach(pack => {
-  pack.addEventListener('click', () => {
-    document
-      .querySelectorAll('.coin-pack')
-      .forEach(p => p.classList.remove('selected'))
-
-    pack.classList.add('selected')
-    selectedPackage = pack.dataset.pack
-  })
-})
-
 document.getElementById('buyCoinsBtn')?.addEventListener('click', async () => {
   if (!selectedPackage) {
-    showAppAlert(
-      'warning',
-      'Selecione um pacote',
-      'Escolha um pacote de moedas para continuar 💎'
-    )
+    showAppAlert('Selecione um pacote de moedas 💎', 'warning')
     return
   }
 
@@ -892,7 +874,8 @@ document.getElementById('buyCoinsBtn')?.addEventListener('click', async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          packId: selectedPackage,
+          coins: selectedPackage.coins,
+          price: selectedPackage.price,
           uid: currentUser.uid,
           liveId
         })
@@ -901,58 +884,26 @@ document.getElementById('buyCoinsBtn')?.addEventListener('click', async () => {
 
     const data = await res.json()
 
-    if (!data.url) {
-      throw new Error('Erro ao iniciar pagamento')
-    }
+    if (!data.url) throw new Error('Checkout inválido')
 
     window.location.href = data.url
-
   } catch (err) {
     console.error(err)
     showAppAlert(
-      'error',
-      'Erro no pagamento',
-      'Não foi possível iniciar a compra. Tente novamente.'
+      'Não foi possível iniciar o pagamento. Tente novamente.',
+      'error'
     )
   }
 })
 
-
-document.getElementById('closeCoinsAlert')?.addEventListener('click', () => {
-  document.getElementById('coinsAlert').classList.add('hidden')
-})
-
-async function registerViewerPresence() {
-  if (!currentUser || !liveId) return
-
-  const viewerRef = db
-    .collection("lives")
-    .doc(liveId)
-    .collection("viewers")
-    .doc(currentUser.uid)
-
-  await viewerRef.set(
-    {
-      joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      paid: false
-    },
-    { merge: true }
-  )
-}
-
-
-
 function showAppAlert(message, type = 'info') {
   const alert = document.createElement('div')
-
   alert.className = `lux-alert ${type}`
   alert.innerText = message
 
   document.body.appendChild(alert)
 
-  setTimeout(() => {
-    alert.classList.add('show')
-  }, 10)
+  setTimeout(() => alert.classList.add('show'), 10)
 
   setTimeout(() => {
     alert.classList.remove('show')
